@@ -1,0 +1,12 @@
+/* chat.html: <body data-page="chat" style="background:#F3F6FB" class="text-gray-800 antialiased">.
+   The root layout owns <body>, so the same ground is applied only while this
+   page is mounted. */
+body:has(.gm-page-chat) {
+  background: #F3F6FB;
+}
+
+.gm-page-chat {
+  color: #1f2937; /* text-gray-800 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

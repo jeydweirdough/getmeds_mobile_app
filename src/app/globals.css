@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/* Class names used inside CMS-authored HTML (WordPress post bodies, Sanity policy pages), which
+   no source file contains. Refreshed before every build by scripts/collect-cms-tailwind-classes.cjs. */
+@source "../styles/cms-classes.txt";
+
+/*
+ * The original site (getmeds_frontend) was built on Tailwind v3 with one theme per page.
+ * This file restores both so every class renders the way it did there.
+ *
+ * Per-page theme: a page marks its root element with data-theme="<name>", and the
+ * :has() rules below swap the palette for the whole document, navbar and footer included.
+ * A page with no data-theme gets the default palette, which is what most pages used.
+ */
+
+/* v3 applied hover styles on touch devices too; v4 only does so where hover is supported. */
+@custom-variant hover (&:hover);
+
+@theme {
+  /* Default palette (about-us, careers, order-medicines, cancer-medicines, cart, ... themes) */
+  --color-primary: #0D99FF;
+  --color-secondary: #4A5568;
+  --color-accent: #6BB84A;
+  --color-success: #61A644;
+  --color-dark: #1A202C;
+  --color-footer: #1A1D2B;
+  --color-cardbg: #F8FAFC;
+  --color-unblue: #00ADEF;
+
+  --font-sans: 'Poppins', 'Inter', sans-serif;
+
+  /* Tailwind v3 values for the steps v4 renamed, so v3 class names keep their v3 look */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --radius-sm: 0.125rem;
+  --blur-sm: 4px;
+  --drop-shadow-sm: 0 1px 1px rgb(0 0 0 / 0.05);
+  --drop-shadow-md: 0 4px 3px rgb(0 0 0 / 0.07), 0 2px 2px rgb(0 0 0 / 0.06);
+  --drop-shadow-lg: 0 10px 8px rgb(0 0 0 / 0.04), 0 4px 3px rgb(0 0 0 / 0.1);
+  --drop-shadow-xl: 0 20px 13px rgb(0 0 0 / 0.03), 0 8px 5px rgb(0 0 0 / 0.08);
+
+  /* v3 `ring` was 3px, semi-transparent blue; v4's is 1px currentColor */
+  --default-ring-width: 3px;
+  --default-ring-color: rgb(59 130 246 / 0.5);
+}
+
+/* home.cjs / patient-assistance-program.cjs */
+:root:has([data-theme="home"]),
+:root:has([data-theme="pap"]) {
+  --color-primary: #1D9FDA;
+}
+
+/* 404.cjs (404 page and HTML sitemap) */
+:root:has([data-theme="notfound"]) {
+  --color-primary: #1D9FDA;
+  --color-secondary: #61A644;
+}
+
+/* about-us.cjs (about-us, blog, blog-detail) */
+:root:has([data-theme="about-us"]) {
+  --color-success: #5ab04c;
+}
+
+/* employee-verification.cjs (employee-verification, global-presence) */
+:root:has([data-theme="employee-verification"]) {
+  --color-footer: #111827;
+}
+
+@layer base {
+  /* Tailwind v3 preflight defaults that v4 dropped */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  html {
+    color-scheme: light;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-family: var(--font-sans);
+  }
+}

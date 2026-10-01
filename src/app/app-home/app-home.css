@@ -1,0 +1,4 @@
+/* app-home.html painted a white <body> (the root layout's default), and
+   app-home.tsx rendered this <style> inline; moved here verbatim. */
+.gm-hscroll { -ms-overflow-style: none; scrollbar-width: none; }
+.gm-hscroll::-webkit-scrollbar { display: none; }

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Getmeds</string>
+    <string name="title_activity_main">Getmeds</string>
+    <string name="package_name">com.getmeds.ph</string>
+    <string name="custom_url_scheme">com.getmeds.ph</string>
+</resources>

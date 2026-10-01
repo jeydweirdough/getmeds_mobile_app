@@ -1,0 +1,49 @@
+/* Product Range / catalog page styles.
+   Ported from getmeds_frontend/cancer-medicines.html (inline <style>) and the
+   inline <style> block inside src/pages/cancer-medicines.tsx. */
+
+/* Original page is an h-screen shell: navbar on top, sidebar + a single
+   scrolling content column (with the footer inside it) below. The layout's own
+   <footer> is moved into the scroll column by CatalogClient. The page itself doesn't
+   scroll — only once the live page has replaced the server-rendered crawler copy (see
+   PrerenderHandoff), so that copy can still be scrolled while it is on screen. */
+body:has(.catalog-root):not(:has([data-handoff-pending])) { overflow: hidden; }
+.catalog-root { height: calc(100vh - var(--catalog-nav-h, 80px)); }
+
+/* cancer-medicines.html <style> */
+.catalog-root .gradient-text {
+  background: linear-gradient(135deg, #61A644 0%, #1D9FDA 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+.catalog-root .gradient-bg { background: linear-gradient(135deg, #61A644 0%, #1D9FDA 100%); }
+.catalog-root .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.catalog-root .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+@keyframes catalogFadeUp {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.catalog-root .animate-fade-up { animation: catalogFadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* cancer-medicines.tsx inline <style> */
+@media (max-width: 767px) {
+  .catalog-root .product-range-scroll { scroll-behavior: smooth; }
+}
+.catalog-root .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+.catalog-root .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.catalog-root .sidebar-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 999px; }
+.catalog-root .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+.catalog-root .sidebar-scroll::-webkit-scrollbar-button { display: none; }
+.catalog-root .no-scrollbar::-webkit-scrollbar { display: none; }
+.catalog-root .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@keyframes breadcrumbSlideRight { from { transform: translateX(18px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes breadcrumbSlideLeft { from { transform: translateX(-18px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.catalog-root .breadcrumb-forward { animation: breadcrumbSlideRight 0.28s cubic-bezier(.22,1,.36,1) forwards; }
+.catalog-root .breadcrumb-backward { animation: breadcrumbSlideLeft 0.28s cubic-bezier(.22,1,.36,1) forwards; }
+
+/* Success modal (inline <style> in the original) */
+@keyframes checkBounce{0%{transform:scale(0);opacity:0}55%{transform:scale(1.06);opacity:1}75%{transform:scale(0.97)}100%{transform:scale(1);opacity:1}}
+.catalog-root .check-bounce{animation:checkBounce 0.8s ease-out forwards}

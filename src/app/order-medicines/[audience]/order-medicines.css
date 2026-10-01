@@ -1,0 +1,28 @@
+/* Ported verbatim from the inline <style> in order-medicines.html.
+   Tailwind preflight resets border/padding/outline on every <input>, which
+   strips intl-tel-input's dropdown styling (search box + country list).
+   These put it back. Scoped to .gcb-phone-wrap so nothing else is affected. */
+.gcb-phone-wrap .iti { width: 100%; }
+.gcb-phone-wrap .iti__tel-input { width: 100%; }
+
+.gcb-phone-wrap .iti__dropdown-content {
+    z-index: 50; border-radius: .75rem; border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,.1), 0 4px 6px -2px rgba(0,0,0,.05);
+    overflow: hidden;
+}
+.gcb-phone-wrap .iti__search-input {
+    width: 100%; box-sizing: border-box;
+    border: none !important; border-bottom: 1px solid #e5e7eb !important;
+    border-radius: 0 !important; padding: .65rem .9rem !important;
+    font-size: .875rem; font-family: inherit; outline: none !important;
+}
+.gcb-phone-wrap .iti__search-input:focus { border-bottom-color: #1D9FDA !important; }
+.gcb-phone-wrap .iti__country-list { margin: 0; padding: .35rem; list-style: none; max-height: 220px; }
+.gcb-phone-wrap .iti__country {
+    display: flex; align-items: center; gap: .6rem; padding: .55rem .6rem;
+    border-radius: .5rem; font-size: .85rem; color: #374151; cursor: pointer;
+}
+.gcb-phone-wrap .iti__country:hover,
+.gcb-phone-wrap .iti__country.iti__highlight { background-color: #f0f9ff; }
+.gcb-phone-wrap .iti__country-name { flex: 1; }
+.gcb-phone-wrap .iti__dial-code { color: #9ca3af; }

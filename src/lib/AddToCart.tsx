@@ -1,0 +1,202 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  addToCart,
+  hasConsent,
+  inCart,
+  isAppMode,
+  removeFromCart,
+  setConsent,
+  CART_CHANGED_EVENT,
+  type CartItem,
+} from './cart';
+
+/**
+ * AddToCart.tsx
+ * ─────────────────────────────────────────────
+ * The add-to-list control and the consent step in front of it.
+ *
+ * Renders nothing outside the installed app: on the website there is no cart
+ * tab to put anything in, so a button that saved to a list nobody can reach
+ * would only confuse.
+ *
+ * The consent sheet appears once, on the first attempt to save something —
+ * not on launch. It is drawn at the page level (a portal), not inside the
+ * button: the button usually sits inside a product card that is a link, and
+ * a sheet inside that link turned every tap on it, "Allow and save"
+ * included, into a trip to the product page, cutting the save short. Asking before anyone has shown interest is a dialog people
+ * dismiss without reading; asking at the moment they tap "add" makes the
+ * question concrete and the answer meaningful.
+ */
+
+function ConsentSheet({
+  onDecide,
+}: {
+  onDecide: (granted: boolean) => void;
+}) {
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/50 p-0"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="consent-title"
+      // React still bubbles portal events up to the card; stop them here.
+      onClick={(e) => {
+        e.stopPropagation();
+        if (e.target === e.currentTarget) onDecide(false);
+      }}
+    >
+      <div className="w-full max-w-lg rounded-t-3xl bg-white p-6" style={{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-gray-200" />
+        <h2 id="consent-title" className="text-[17px] font-semibold text-gray-900">Save your list on this phone?</h2>
+        <p className="mt-2 text-[13.5px] leading-relaxed text-gray-600">
+          To keep a request list, Getmeds needs to store the products you choose on this device.
+        </p>
+
+        <ul className="mt-4 space-y-2.5 text-[13px] text-gray-600">
+          <li className="flex gap-2.5">
+            <i className="fa-solid fa-mobile-screen mt-0.5 text-[12px]" style={{ color: '#1D9FDA' }} />
+            <span>It stays on this phone. It is not sent to us and will not appear on your other devices.</span>
+          </li>
+          <li className="flex gap-2.5">
+            <i className="fa-solid fa-paper-plane mt-0.5 text-[12px]" style={{ color: '#1D9FDA' }} />
+            <span>Nothing reaches Getmeds until you choose to request a quote.</span>
+          </li>
+          <li className="flex gap-2.5">
+            <i className="fa-solid fa-trash-can mt-0.5 text-[12px]" style={{ color: '#1D9FDA' }} />
+            <span>You can clear it any time under <strong>More → Clear saved data</strong>.</span>
+          </li>
+        </ul>
+
+        <p className="mt-4 text-[11.5px] leading-relaxed text-gray-400">
+          Processed in accordance with the Data Privacy Act of 2012. See our{' '}
+          <a href="/privacy-policy" className="underline">Privacy Policy</a>.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => onDecide(true)}
+          className="mt-5 w-full rounded-full py-3.5 text-[14px] font-semibold text-white"
+          style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
+        >
+          Allow and save
+        </button>
+        <button
+          type="button"
+          onClick={() => onDecide(false)}
+          className="mt-2 w-full rounded-full py-3 text-[13px] font-semibold text-gray-500"
+        >
+          Not now
+        </button>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+export function AddToCart({
+  item,
+  variant = 'icon',
+}: {
+  item: Omit<CartItem, 'addedAt'>;
+  variant?: 'icon' | 'full';
+}) {
+  const [app, setApp] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [asking, setAsking] = useState(false);
+  const [notice, setNotice] = useState('');
+
+  useEffect(() => {
+    setApp(isAppMode());
+  }, []);
+
+  useEffect(() => {
+    if (!app) return;
+    let alive = true;
+    const check = () => { inCart(item.id).then((v) => { if (alive) setSaved(v); }); };
+    check();
+    window.addEventListener(CART_CHANGED_EVENT, check);
+    return () => { alive = false; window.removeEventListener(CART_CHANGED_EVENT, check); };
+  }, [app, item.id]);
+
+  if (!app) return null;
+
+  const toggle = async (e: React.MouseEvent) => {
+    // These buttons sit inside cards that are themselves links.
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (saved) { await removeFromCart(item.id); return; }
+
+    const result = await addToCart(item);
+    if (result === 'needs-consent') setAsking(true);
+  };
+
+  const decide = async (granted: boolean) => {
+    setAsking(false);
+    const stored = await setConsent(granted);
+    if (!granted) return;
+    const result = await addToCart(item);
+    if (result === 'failed' || !stored) {
+      setNotice(
+        result === 'failed'
+          ? 'This phone is not letting Getmeds save your list. Check that site data is allowed for getmeds.ph, then try again.'
+          : 'Added for now. This phone did not keep your choice, so we may ask again next time.'
+      );
+      window.setTimeout(() => setNotice(''), 6000);
+    }
+  };
+
+  const label = saved ? 'Remove from list' : 'Add to request list';
+
+  return (
+    <>
+      {variant === 'full' ? (
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={label}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full border py-3 text-[13px] font-semibold transition"
+          style={
+            saved
+              ? { borderColor: '#61A644', color: '#61A644', background: '#f4faf1' }
+              : { borderColor: '#1D9FDA', color: '#1D9FDA', background: '#fff' }
+          }
+        >
+          <i className={`fa-solid ${saved ? 'fa-check' : 'fa-cart-plus'} text-[13px]`} />
+          {saved ? 'In your list' : 'Add to list'}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={label}
+          title={label}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition"
+          style={
+            saved
+              ? { borderColor: '#61A644', color: '#fff', background: '#61A644' }
+              : { borderColor: '#dbeafe', color: '#1D9FDA', background: '#fff' }
+          }
+        >
+          <i className={`fa-solid ${saved ? 'fa-check' : 'fa-cart-plus'} text-[13px]`} />
+        </button>
+      )}
+
+      {asking && <ConsentSheet onDecide={decide} />}
+      {notice &&
+        createPortal(
+          <div
+            role="status"
+            className="fixed inset-x-4 z-[10001] rounded-2xl bg-gray-900 px-4 py-3 text-[12.5px] leading-snug text-white shadow-lg"
+            style={{ bottom: 'calc(96px + env(safe-area-inset-bottom, 0px))' }}
+          >
+            {notice}
+          </div>,
+          document.body
+        )}
+    </>
+  );
+}

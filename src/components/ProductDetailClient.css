@@ -1,0 +1,22 @@
+/* Product detail page styles.
+   Ported from getmeds_frontend/product-detail.html (inline <style>) and the inline
+   <style> blocks inside src/pages/product-detail.tsx. */
+
+.product-detail-root .gradient-text {
+  background: linear-gradient(135deg, #61A644 0%, #1D9FDA 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+.product-detail-root .gradient-bg { background: linear-gradient(135deg, #61A644 0%, #1D9FDA 100%); }
+.product-detail-root .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.product-detail-root .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+
+/* Breadcrumb bar: sticky top-0 in the original; parked below the layout's sticky navbar. */
+.product-detail-root .product-detail-breadcrumb { top: var(--pd-nav-h, 0px); }
+
+@keyframes slideUpRx{from{opacity:0;transform:translateY(24px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.product-detail-root .rx-modal-slide{animation:slideUpRx 0.32s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes slideUpId{from{opacity:0;transform:translateY(24px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.product-detail-root .id-modal-slide{animation:slideUpId 0.32s cubic-bezier(.22,1,.36,1) forwards}

@@ -1,0 +1,63 @@
+/* Consent banner and dialog (.gmc-*), copied from getmeds-frontend-v2/src/components/chrome.css. */
+
+.gmc-root{font-family:Poppins,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1A202C;-webkit-font-smoothing:antialiased;line-height:1.5;text-align:left}
+.gmc-root *,.gmc-root *::before,.gmc-root *::after{box-sizing:border-box}
+.gmc-root p,.gmc-root h2,.gmc-root h3,.gmc-root ul{margin:0}
+.gmc-banner{position:fixed;z-index:2147483000;left:16px;bottom:16px;width:min(420px,calc(100vw - 32px));background:#fff;border-radius:20px;padding:20px;box-shadow:0 24px 48px -16px rgba(15,23,42,.35),0 0 0 1px rgba(15,23,42,.06);animation:gmc-rise .4s cubic-bezier(.2,.8,.2,1)}
+.gmc-eyebrow{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#1D9FDA}
+.gmc-root .gmc-title{margin-top:6px!important;font-size:17px;font-weight:600;line-height:1.35;color:#1A202C}
+.gmc-root .gmc-text{margin-top:6px!important;font-size:13px;line-height:1.6;color:#4A5568}
+.gmc-root .gmc-cat-desc p,.gmc-root .gmc-cat-desc li{color:#4A5568}
+.gmc-root.gmc-notice p{color:#E2E8F0}
+.gmc-root a{color:#1A7FB0;text-decoration:underline;text-underline-offset:2px}
+.gmc-root a:hover{color:#0F6C99}
+.gmc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.gmc-btn{appearance:none;-webkit-appearance:none;border:0;border-radius:999px;min-height:44px;padding:10px 16px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;transition:background-color .15s,box-shadow .15s,transform .15s}
+.gmc-btn:active{transform:translateY(1px)}
+.gmc-btn:focus-visible,.gmc-link:focus-visible,.gmc-close:focus-visible,.gmc-switch:focus-visible,.gmc-notice button:focus-visible{outline:3px solid rgba(29,159,218,.5);outline-offset:2px}
+.gmc-btn-primary{color:#fff;background:linear-gradient(135deg,#1D9FDA,#61A644);box-shadow:0 8px 18px -8px rgba(29,159,218,.7)}
+.gmc-btn-primary:hover{box-shadow:0 10px 22px -8px rgba(29,159,218,.85)}
+.gmc-btn-quiet{color:#1A202C;background:#EEF2F6}
+.gmc-btn-quiet:hover{background:#E2E8F0}
+.gmc-link{display:block;margin:12px auto 0;padding:4px 8px;background:none;border:0;font:inherit;font-size:12.5px;font-weight:500;color:#4A5568;text-decoration:underline;text-underline-offset:3px;cursor:pointer;border-radius:6px}
+.gmc-link:hover{color:#1A202C}
+.gmc-overlay{position:fixed;inset:0;z-index:2147483001;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:gmc-fade .2s ease}
+.gmc-modal{width:min(520px,100%);max-height:min(90vh,760px);overflow:auto;overscroll-behavior:contain;background:#fff;border-radius:24px;padding:24px;box-shadow:0 30px 60px -20px rgba(15,23,42,.45);animation:gmc-rise .3s cubic-bezier(.2,.8,.2,1)}
+.gmc-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.gmc-modal-head .gmc-title{margin-top:0!important;font-size:19px}
+.gmc-close{flex:none;display:grid;place-items:center;width:36px;height:36px;margin:-6px -6px 0 0;border:0;border-radius:50%;background:transparent;color:#4A5568;cursor:pointer}
+.gmc-close:hover{background:#EEF2F6;color:#1A202C}
+.gmc-note{margin-top:14px!important;padding:12px 14px;border-radius:14px;background:#EAF6FC;color:#0F5F86;font-size:12.5px;line-height:1.55}
+.gmc-cat{margin-top:12px;padding:14px 16px;border:1px solid #E2E8F0;border-radius:16px}
+.gmc-cat-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.gmc-cat-name{font-size:14px;font-weight:600;color:#1A202C;cursor:default}
+label.gmc-cat-name{cursor:pointer}
+.gmc-cat-desc{margin-top:6px;font-size:12.5px;line-height:1.6;color:#4A5568}
+.gmc-cat-desc p+p,.gmc-cat-desc ul+p{margin-top:8px!important}
+.gmc-cat-desc ul{margin-top:6px!important;padding-left:18px}
+.gmc-cat-desc li{margin:2px 0}
+.gmc-pill{flex:none;font-size:11px;font-weight:600;color:#3F7A2A;background:#EEF7E9;border-radius:999px;padding:4px 10px}
+.gmc-switch{appearance:none;-webkit-appearance:none;flex:none;position:relative;width:46px;height:28px;margin:0;border-radius:999px;background:#CBD5E1;cursor:pointer;transition:background-color .2s}
+.gmc-switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+.gmc-switch:checked{background:#61A644}
+.gmc-switch:checked::after{transform:translateX(18px)}
+.gmc-modal-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}
+.gmc-foot{margin-top:14px!important;font-size:12px;color:#4A5568;text-align:center}
+.gmc-notice{position:fixed;z-index:2147483000;left:16px;bottom:16px;width:min(400px,calc(100vw - 32px));display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:16px;background:#1A202C;color:#E2E8F0;font-size:12.5px;line-height:1.55;box-shadow:0 20px 40px -16px rgba(15,23,42,.5);animation:gmc-rise .4s cubic-bezier(.2,.8,.2,1)}
+.gmc-notice strong{color:#fff;font-weight:600}
+.gmc-notice-actions{display:flex;justify-content:flex-end;gap:4px}
+.gmc-notice button{border:0;background:transparent;color:#fff;font:inherit;font-size:12.5px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer}
+.gmc-notice button:hover{background:rgba(255,255,255,.1)}
+@media (max-width:640px){
+.gmc-banner,.gmc-notice{left:8px;right:8px;bottom:8px;width:auto}
+.gmc-banner{padding:18px 18px calc(16px + env(safe-area-inset-bottom,0px))}
+.gmc-overlay{align-items:flex-end;padding:0}
+.gmc-modal{width:100%;max-height:92vh;border-radius:24px 24px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px))}
+.gmc-modal-actions{grid-template-columns:1fr}
+.gmc-modal-actions .gmc-btn-primary{order:-1}
+}
+@keyframes gmc-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes gmc-fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.gmc-banner,.gmc-overlay,.gmc-modal,.gmc-notice{animation:none}
+.gmc-switch,.gmc-switch::after{transition:none}}
+@media print{.gmc-root{display:none!important}}

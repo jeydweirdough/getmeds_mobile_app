@@ -1,0 +1,486 @@
+'use client';
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useProducts } from '@/lib/useSanity';
+import { hasConsent } from '@/lib/cart';
+import {
+  CatalogueRow,
+  ProductRow,
+  prettyFolder,
+  productImage,
+} from '@/lib/catalogueItem';
+
+/**
+ * search.tsx
+ * ─────────────────────────────────────────────
+ * The installed app's search screen — its own page rather than a filter on the
+ * home screen, which is the pattern every app store uses and for the same
+ * reason: searching is a whole task, not a widget. It wants the full screen,
+ * the keyboard up on arrival, and a back gesture that returns you to where you
+ * were instead of dumping you at the top of a home feed.
+ *
+ * Three states, in the order a search actually happens:
+ *
+ *   browse    nothing typed yet — recent searches, then the categories, so
+ *             there is always somewhere to go from a blank box.
+ *   suggest   typing — completions drawn from the catalogue's own vocabulary
+ *             (brands, generics, conditions), plus the first few products that
+ *             already match, because often the answer is visible before the
+ *             query is finished.
+ *   results   committed — the full list.
+ *
+ * The committed query lives in the URL as ?q=, which is what makes the phone's
+ * back button behave: back from results returns to the empty box, and back
+ * again leaves the screen. Holding it in component state only would have made
+ * back exit the search entirely from the middle of a task.
+ */
+
+const GROUND = '#F3F6FB';
+const BRAND = '#1D9FDA';
+const CARD_SHADOW = '0 2px 10px rgba(23,43,77,.055)';
+const RECENTS_KEY = 'getmeds:recent-searches';
+const MAX_RECENTS = 8;
+
+/**
+ * Where recent searches are kept.
+ *
+ * What someone searched for in a pharmacy app is health information about them
+ * — a list reading "tamoxifen, letrozole, anastrozole" discloses a diagnosis to
+ * anyone who picks up the phone. So this follows the same consent the request
+ * list already asks for (see cart.ts) rather than inventing a second, quieter
+ * rule for the more sensitive data: persist across sessions only where storage
+ * was actually agreed to, and otherwise keep the convenience but let it die
+ * with the session.
+ */
+const store = (persistent: boolean): Storage | null => {
+  try {
+    return persistent ? window.localStorage : window.sessionStorage;
+  } catch {
+    return null;
+  }
+};
+
+const readRecents = (persistent: boolean): string[] => {
+  try {
+    const raw = store(persistent)?.getItem(RECENTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((v) => typeof v === 'string').slice(0, MAX_RECENTS) : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeRecents = (persistent: boolean, list: string[]) => {
+  try {
+    store(persistent)?.setItem(RECENTS_KEY, JSON.stringify(list.slice(0, MAX_RECENTS)));
+  } catch {
+    // A full or blocked storage must never take the search box down with it.
+  }
+};
+
+/** Does this row answer the query at all? One rule, used by every mode. */
+const matches = (p: CatalogueRow, q: string) =>
+  [p.name, p.brandName, p.genericName, p.subCategory, p.categoryFolder]
+    .filter(Boolean)
+    .some((v) => String(v).toLowerCase().includes(q));
+
+export default function SearchClient() {
+  const { data: raw, loading } = useProducts();
+  const products = (raw || []) as CatalogueRow[];
+
+  const [query, setQuery] = useState('');
+  const [submitted, setSubmitted] = useState<string | null>(null);
+  const [recents, setRecents] = useState<string[]>([]);
+  const [persistent, setPersistent] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // ── Boot: adopt ?q= if the screen was opened with one ──────────────────────
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('q') || '';
+    if (q.trim()) {
+      setQuery(q);
+      setSubmitted(q.trim());
+    } else {
+      // Arriving at an empty box means the keyboard should already be up —
+      // one tap on the tab bar, not one tap and then another on the field.
+      inputRef.current?.focus();
+    }
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    hasConsent()
+      .then((granted) => {
+        if (!alive) return;
+        setPersistent(granted);
+        setRecents(readRecents(granted));
+      })
+      .catch(() => { if (alive) setRecents(readRecents(false)); });
+    return () => { alive = false; };
+  }, []);
+
+  // Back/forward move between the box and the results, because the query is in
+  // the URL rather than only in state.
+  useEffect(() => {
+    const onPop = () => {
+      const q = new URLSearchParams(window.location.search).get('q') || '';
+      setQuery(q);
+      setSubmitted(q.trim() ? q.trim() : null);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  const remember = useCallback((term: string) => {
+    setRecents((prev) => {
+      const next = [term, ...prev.filter((t) => t.toLowerCase() !== term.toLowerCase())].slice(0, MAX_RECENTS);
+      writeRecents(persistent, next);
+      return next;
+    });
+  }, [persistent]);
+
+  const commit = useCallback((term: string) => {
+    const t = term.trim();
+    if (!t) return;
+    setQuery(t);
+    setSubmitted(t);
+    remember(t);
+    inputRef.current?.blur();
+    const url = `${window.location.pathname}?q=${encodeURIComponent(t)}`;
+    if (submitted === null) window.history.pushState({ q: t }, '', url);
+    else window.history.replaceState({ q: t }, '', url);
+  }, [remember, submitted]);
+
+  const clearBox = () => {
+    setQuery('');
+    setSubmitted(null);
+    window.history.replaceState({}, '', window.location.pathname);
+    inputRef.current?.focus();
+  };
+
+  const forgetOne = (term: string) => {
+    setRecents((prev) => {
+      const next = prev.filter((t) => t !== term);
+      writeRecents(persistent, next);
+      return next;
+    });
+  };
+
+  const forgetAll = () => {
+    setRecents([]);
+    writeRecents(persistent, []);
+  };
+
+  // ── The catalogue's own vocabulary, which is what completions come from ────
+  const vocabulary = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const p of products) {
+      for (const term of [p.brandName, p.genericName, p.subCategory]) {
+        const t = String(term || '').trim();
+        if (t.length < 2) continue;
+        const key = t.toLowerCase();
+        if (!seen.has(key)) seen.set(key, t);
+      }
+    }
+    return [...seen.values()];
+  }, [products]);
+
+  const suggestions = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (q.length < 1 || submitted) return [];
+    const starts: string[] = [];
+    const contains: string[] = [];
+    for (const term of vocabulary) {
+      const t = term.toLowerCase();
+      if (t === q) continue;
+      if (t.startsWith(q)) starts.push(term);
+      else if (t.includes(q)) contains.push(term);
+      if (starts.length >= 8) break;
+    }
+    // Prefix matches first: someone typing "pacli" means the word that begins
+    // that way far more often than one that merely contains it.
+    return [...starts, ...contains].slice(0, 6);
+  }, [query, vocabulary, submitted]);
+
+  const preview = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (q.length < 2 || submitted) return [];
+    return products.filter((p) => matches(p, q)).slice(0, 4);
+  }, [query, products, submitted]);
+
+  const results = useMemo(() => {
+    if (!submitted) return [];
+    const q = submitted.toLowerCase();
+    return products.filter((p) => matches(p, q)).slice(0, 60);
+  }, [submitted, products]);
+
+  const categories = useMemo(() => {
+    const acc = new Map<string, { count: number; image?: string }>();
+    for (const p of products) {
+      const f = (p.categoryFolder || '').trim();
+      if (!f) continue;
+      const cur = acc.get(f) || { count: 0 };
+      cur.count += 1;
+      if (!cur.image && p.image && p.image.asset) cur.image = productImage(p, 120);
+      acc.set(f, cur);
+    }
+    return [...acc.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 12);
+  }, [products]);
+
+  const showBrowse = !submitted && query.trim().length === 0;
+  const showSuggest = !submitted && query.trim().length > 0;
+
+  return (
+    <>
+      <style>{`
+        /* The clear button the browser draws inside type="search" sits on top
+           of ours and cannot be styled to match, so it goes. */
+        input[type="search"]::-webkit-search-decoration,
+        input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+      `}</style>
+
+      <header
+        data-page="search"
+        className="sticky top-0 z-40 px-3 pb-3 pt-3"
+        style={{ background: '#FFFFFF' }}
+      >
+        <div className="mx-auto flex max-w-2xl items-center gap-2">
+          <button
+            type="button"
+            aria-label="Back"
+            onClick={() => {
+              // From results, back returns to the empty box — the same thing
+              // the hardware back gesture does, so the two never disagree.
+              if (submitted) { window.history.back(); return; }
+              if (window.history.length > 1) window.history.back();
+              else window.location.href = '/app-home';
+            }}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700"
+          >
+            <i className="fa-solid fa-arrow-left text-[15px]" />
+          </button>
+
+          <form
+            className="relative flex-1"
+            onSubmit={(e) => { e.preventDefault(); commit(query); }}
+          >
+            <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-gray-400" />
+            <input
+              ref={inputRef}
+              type="search"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                // Editing after a search returns to suggestions, the way an
+                // app store does — the old result list under a changed query
+                // is just stale.
+                if (submitted) setSubmitted(null);
+              }}
+              enterKeyHint="search"
+              autoComplete="off"
+              placeholder="Search brand, generic or condition"
+              aria-label="Search the catalogue"
+              className="h-[46px] w-full rounded-full border border-transparent pl-11 pr-11 text-[13.5px] text-gray-800 outline-none placeholder:text-gray-400 focus:border-[#1D9FDA]"
+              style={{ background: GROUND }}
+            />
+            {query.length > 0 && (
+              <button
+                type="button"
+                onClick={clearBox}
+                aria-label="Clear search"
+                className="absolute right-1.5 top-1/2 flex h-[34px] w-[34px] -translate-y-1/2 items-center justify-center rounded-full text-gray-400"
+              >
+                <i className="fa-solid fa-xmark text-[14px]" />
+              </button>
+            )}
+          </form>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-2xl px-4 pb-6">
+        {/* ── browse ─────────────────────────────────────────────────────── */}
+        {showBrowse && (
+          <>
+            {recents.length > 0 && (
+              <section className="mb-6 pt-2">
+                <div className="mb-2 flex items-baseline justify-between">
+                  <h2 className="text-[13px] font-semibold text-gray-900">Recent searches</h2>
+                  <button type="button" onClick={forgetAll} className="text-[12px] font-semibold" style={{ color: BRAND }}>
+                    Clear all
+                  </button>
+                </div>
+                <div className="overflow-hidden rounded-[16px] bg-white" style={{ boxShadow: CARD_SHADOW }}>
+                  {recents.map((term, i) => (
+                    <div
+                      key={term}
+                      className={`flex items-center gap-3 px-3 ${i > 0 ? 'border-t border-gray-50' : ''}`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => commit(term)}
+                        className="flex min-w-0 flex-1 items-center gap-3 py-3 text-left"
+                      >
+                        <i className="fa-regular fa-clock shrink-0 text-[13px] text-gray-300" />
+                        <span className="truncate text-[13.5px] text-gray-700">{term}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => forgetOne(term)}
+                        aria-label={`Remove ${term} from recent searches`}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-300"
+                      >
+                        <i className="fa-solid fa-xmark text-[12px]" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {!persistent && (
+                  <p className="mt-2 px-1 text-[10.5px] leading-relaxed text-gray-400">
+                    Kept for this session only. Getmeds does not store what you search.
+                  </p>
+                )}
+              </section>
+            )}
+
+            <section>
+              <h2 className="mb-3 text-center text-[13px] font-semibold text-gray-900">Browse by category</h2>
+              {loading && categories.length === 0 ? (
+                <div className="flex flex-wrap justify-center gap-2">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="h-9 w-28 animate-pulse rounded-full bg-white" />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap justify-center gap-2">
+                  {categories.map(([folder, info]) => (
+                    <a
+                      key={folder}
+                      href={`/${folder}`}
+                      className="inline-flex items-center gap-2 rounded-full bg-white py-2 pl-2 pr-3.5"
+                      style={{ boxShadow: CARD_SHADOW }}
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-[#F1F6FC]">
+                        {info.image ? (
+                          <img src={info.image} alt="" loading="lazy" className="h-full w-full object-contain p-0.5 mix-blend-multiply" />
+                        ) : (
+                          <i className="fa-solid fa-pills text-[9px]" style={{ color: BRAND }} />
+                        )}
+                      </span>
+                      <span className="text-[12px] font-semibold text-gray-700">
+                        {prettyFolder(folder).replace(' Medicines', '')}
+                      </span>
+                      <span className="text-[10.5px] text-gray-400">{info.count}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </section>
+          </>
+        )}
+
+        {/* ── suggest ────────────────────────────────────────────────────── */}
+        {showSuggest && (
+          <div className="pt-2">
+            {suggestions.length > 0 && (
+              <div className="mb-4 overflow-hidden rounded-[16px] bg-white" style={{ boxShadow: CARD_SHADOW }}>
+                {suggestions.map((term, i) => (
+                  <div key={term} className={`flex items-center gap-3 px-3 ${i > 0 ? 'border-t border-gray-50' : ''}`}>
+                    <button
+                      type="button"
+                      onClick={() => commit(term)}
+                      className="flex min-w-0 flex-1 items-center gap-3 py-3 text-left"
+                    >
+                      <i className="fa-solid fa-magnifying-glass shrink-0 text-[12px] text-gray-300" />
+                      <span className="truncate text-[13.5px] text-gray-700">{term}</span>
+                    </button>
+                    {/* Fills the box without searching — the standard way to
+                        refine a nearly-right suggestion instead of retyping. */}
+                    <button
+                      type="button"
+                      onClick={() => { setQuery(term); inputRef.current?.focus(); }}
+                      aria-label={`Put ${term} in the search box`}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-300"
+                    >
+                      <i className="fa-solid fa-arrow-up-long -rotate-45 text-[12px]" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {preview.length > 0 && (
+              <section>
+                <h2 className="mb-2 text-[12px] font-bold uppercase tracking-wide text-gray-400">Products</h2>
+                <div className="space-y-2.5">
+                  {preview.map((p, i) => <ProductRow key={p._id || i} p={p} highlight={query.trim()} />)}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => commit(query)}
+                  className="mt-3 w-full rounded-full bg-white py-3 text-[12.5px] font-semibold"
+                  style={{ boxShadow: CARD_SHADOW, color: BRAND }}
+                >
+                  See all results for &ldquo;{query.trim()}&rdquo;
+                </button>
+              </section>
+            )}
+
+            {suggestions.length === 0 && preview.length === 0 && !loading && (
+              <div className="py-10 text-center">
+                <img
+                  src="/assets/noproductsfound.png"
+                  alt=""
+                  loading="lazy"
+                  className="mx-auto mb-4 h-auto w-[170px] max-w-full"
+                />
+                <p className="text-[13px] text-gray-400">
+                  Nothing matches yet. Keep typing, or press search.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── results ────────────────────────────────────────────────────── */}
+        {submitted && (
+          <div className="pt-2">
+            <p className="mb-3 text-[12.5px] text-gray-500">
+              {results.length === 0
+                ? 'No results'
+                : `${results.length}${results.length === 60 ? '+' : ''} result${results.length === 1 ? '' : 's'}`}{' '}
+              for <span className="font-semibold text-gray-800">&ldquo;{submitted}&rdquo;</span>
+            </p>
+
+            {results.length > 0 ? (
+              <div className="space-y-2.5">
+                {results.map((p, i) => <ProductRow key={p._id || i} p={p} highlight={submitted} />)}
+              </div>
+            ) : (
+              <div className="rounded-[18px] bg-white p-6 text-center" style={{ boxShadow: CARD_SHADOW }}>
+                <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#F1F6FC]">
+                  <i className="fa-solid fa-magnifying-glass text-[16px]" style={{ color: BRAND }} />
+                </span>
+                <p className="text-[14px] font-semibold text-gray-900">Nothing matched that</p>
+                <p className="mx-auto mt-1.5 max-w-[280px] text-[12px] leading-relaxed text-gray-500">
+                  Try the generic name instead of the brand, or check the spelling. If you
+                  have a prescription, send us a photo and we will look it up for you.
+                </p>
+                <a
+                  href="/order-medicines/patients"
+                  className="mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-semibold text-white"
+                  style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
+                >
+                  <i className="fa-solid fa-camera text-[11px]" /> Send a prescription
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+
+        {loading && !submitted && !showSuggest && categories.length === 0 && (
+          <p className="py-10 text-center text-[12px] text-gray-400">Loading the catalogue…</p>
+        )}
+      </main>
+    </>
+  );
+}

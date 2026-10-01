@@ -1,0 +1,12 @@
+/* The app is always the "installed app": index.html carries html.pwa-standalone, so the screens'
+   own app styles (pwa-tabbar.css and friends) apply everywhere. The website's navbar and footer
+   are not part of the app, and neither is anything a screen marks for the website only. */
+html.pwa-standalone .pwa-hide {
+  display: none !important;
+}
+
+html,
+body {
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
