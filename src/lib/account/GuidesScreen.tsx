@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { BRAND, Empty, ErrorNote, Screen, SmallButton, Toast, useToast } from '../ui/Screen';
+import { BRAND, Empty, ErrorNote, GROUND, Screen, SmallButton, Toast, useToast } from '../ui/Screen';
 import { newKey, saveList, useAccountData, type SavedArticle } from '../accountApi';
 import { call, isSignedIn } from '../rewards';
 import { getBlogListingImageUrl } from '../sanity';
+import { goTo } from '@/platform/navigation';
 
 /**
  * GuidesScreen.tsx
@@ -108,9 +109,10 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
   const current = results[condition];
 
   return (
-    <Screen title="Health guides" subtitle="Plain answers about your condition" onClose={onClose}>
+    <Screen title="Health guides" subtitle="Plain answers about your condition" onClose={onClose} ground="#FFFFFF" backIcon="chevron">
       {/* Browse / Saved */}
-      <div className="grid grid-cols-2 gap-1 rounded-full bg-white p-1" role="tablist" aria-label="Health guides">
+      {/* Tinted track: the page is white, so a white one would vanish. */}
+      <div className="grid grid-cols-2 gap-1 rounded-full p-1" style={{ background: GROUND }} role="tablist" aria-label="Health guides">
         {(['browse', 'saved'] as const).map((t) => (
           <button
             key={t}
@@ -183,7 +185,7 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
               icon="fa-book-medical"
               title={`No guides on ${condition.toLowerCase()} yet`}
               text="Try another condition, or browse every article on the blog."
-              action={<SmallButton onClick={() => { window.location.href = '/blog'; }}>Open the blog</SmallButton>}
+              action={<SmallButton onClick={() => { goTo('/blog'); }}>Open the blog</SmallButton>}
             />
           ) : (
             <div className="space-y-2.5">

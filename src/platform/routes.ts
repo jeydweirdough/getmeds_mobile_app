@@ -12,6 +12,7 @@ import { audienceBySlug } from '@/lib/orderAudiences';
 export type Route =
   | { screen: 'home' }
   | { screen: 'search' }
+  | { screen: 'categories' }
   | { screen: 'cart' }
   | { screen: 'account' }
   | { screen: 'chat' }
@@ -71,6 +72,8 @@ export function resolveRoute(pathname: string): Route {
       return { screen: 'home' };
     case '/search':
       return { screen: 'search' };
+    case '/categories':
+      return { screen: 'categories' };
     case '/cart':
       return { screen: 'cart' };
     case '/profile':

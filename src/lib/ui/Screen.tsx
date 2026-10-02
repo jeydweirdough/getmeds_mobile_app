@@ -18,6 +18,15 @@ export const BRAND = '#1D9FDA';
 export const GROUND = '#F3F6FB';
 export const GRADIENT = 'linear-gradient(135deg,#1D9FDA,#61A644)';
 
+/** The thin open chevron used as the back button on the Categories page. */
+export function BackChevron() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true">
+      <path d="M15.5 4 7.5 12l8 8" />
+    </svg>
+  );
+}
+
 /** Plain input inside a Row. */
 export const inputClass = 'mt-1 w-full bg-transparent text-[15px] text-gray-900 outline-none placeholder:text-gray-300';
 
@@ -32,9 +41,13 @@ interface ScreenProps {
   children: React.ReactNode;
   /** Stack order when one screen opens another. */
   level?: number;
+  /** Body background; the tinted ground unless a screen asks for another. */
+  ground?: string;
+  /** 'chevron' is the thin back chevron from the Categories page. */
+  backIcon?: 'arrow' | 'chevron';
 }
 
-export function Screen({ title, subtitle, onClose, footer, headerAction, children, level = 0 }: ScreenProps) {
+export function Screen({ title, subtitle, onClose, footer, headerAction, children, level = 0, ground = GROUND, backIcon = 'arrow' }: ScreenProps) {
   const pushed = useRef(false);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
@@ -70,7 +83,7 @@ export function Screen({ title, subtitle, onClose, footer, headerAction, childre
   return (
     <div
       className="fixed inset-0 flex flex-col"
-      style={{ background: GROUND, zIndex: 10040 + level * 2 }}
+      style={{ background: ground, zIndex: 10040 + level * 2 }}
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -79,8 +92,13 @@ export function Screen({ title, subtitle, onClose, footer, headerAction, childre
         className="flex items-center gap-2 border-b border-[#E7ECF2] bg-white px-2 pb-2.5"
         style={{ paddingTop: 'calc(10px + env(safe-area-inset-top, 0px))' }}
       >
-        <button type="button" onClick={close} aria-label="Back" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700">
-          <i className="fa-solid fa-arrow-left text-[16px]" />
+        <button
+          type="button"
+          onClick={close}
+          aria-label="Back"
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${backIcon === 'chevron' ? 'text-gray-900' : 'text-gray-700'}`}
+        >
+          {backIcon === 'chevron' ? <BackChevron /> : <i className="fa-solid fa-arrow-left text-[16px]" />}
         </button>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[16px] font-semibold text-gray-900">{title}</p>

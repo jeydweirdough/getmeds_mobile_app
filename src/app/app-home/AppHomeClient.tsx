@@ -4,11 +4,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useProducts } from '@/lib/useSanity';
 import { AddToCart } from '@/lib/AddToCart';
 import { CART_CHANGED_EVENT, countCart } from '@/lib/cart';
+import { ACCOUNT_CHANGED_EVENT, loadDetails, type SavedDetails } from '@/lib/accountStore';
+import { usePoints } from '@/lib/PointsCard';
+import { CategoryCard, useCatalogueCategories } from '@/lib/CategoryCard';
+import { typeByValue } from '@/lib/audienceTypes';
 import {
   CatalogueRow,
   cartItemFor,
   displayName,
-  prettyFolder,
   productImage,
   productUrl,
   rxRequired,
@@ -59,6 +62,86 @@ const BRAND_GREEN = '#61A644';
 const CARD_SHADOW = '0 2px 10px rgba(23,43,77,.055)';
 
 /**
+ * Who the greeting is for, from what is on the device: the saved details win
+ * over the sign-in entry, the same order the account screen uses. A signed-in
+ * customer's account name fills in below when neither has one.
+ */
+type Greeted = { name: string; avatar?: string; details: SavedDetails | null };
+
+const readGreeted = async (): Promise<Greeted> => {
+  let user: { name?: string; avatar?: string } | null = null;
+  try {
+    const raw = window.localStorage.getItem('getmeds_user');
+    user = raw ? JSON.parse(raw) : null;
+  } catch { /* no storage: treat as a guest */ }
+  const details = await loadDetails().catch(() => null);
+  return {
+    name: (details?.name || user?.name || '').trim(),
+    avatar: details?.avatar || user?.avatar,
+    details,
+  };
+};
+
+/**
+ * Share of "My details" filled in, counted exactly as the account screen's
+ * ring counts it, so the two rings always agree.
+ */
+const detailsCompleteness = (d: SavedDetails | null): number => {
+  if (!d) return 0;
+  const rec = d as Record<string, unknown>;
+  const audience = typeByValue(String(rec.userType ?? ''));
+  const keys = ['name', 'phone', 'userType', ...(audience?.fields.filter((f) => f.required).map((f) => f.key) ?? [])];
+  const filled = keys.filter((k) => String(rec[k] ?? '').trim() !== '').length;
+  return (filled / keys.length) * 100;
+};
+
+const AVATAR = 44;
+const AVATAR_STROKE = 3;
+
+/** The account shortcut: picture or initial inside the details-completeness ring. */
+function AvatarRing({ pct, avatar, initial }: { pct: number; avatar?: string; initial: string }) {
+  const r = (AVATAR - AVATAR_STROKE) / 2;
+  const c = 2 * Math.PI * r;
+  return (
+    <span className="relative block" style={{ width: AVATAR, height: AVATAR }}>
+      <svg width={AVATAR} height={AVATAR} viewBox={`0 0 ${AVATAR} ${AVATAR}`} className="absolute inset-0 -rotate-90" aria-hidden="true">
+        <defs>
+          <linearGradient id="home-avatar-ring" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={BRAND} />
+            <stop offset="100%" stopColor={BRAND_GREEN} />
+          </linearGradient>
+        </defs>
+        <circle cx={AVATAR / 2} cy={AVATAR / 2} r={r} fill="none" stroke="#E7ECF2" strokeWidth={AVATAR_STROKE} />
+        {pct > 0 && (
+          <circle
+            cx={AVATAR / 2}
+            cy={AVATAR / 2}
+            r={r}
+            fill="none"
+            stroke="url(#home-avatar-ring)"
+            strokeWidth={AVATAR_STROKE}
+            strokeLinecap="round"
+            strokeDasharray={`${(c * pct) / 100} ${c}`}
+          />
+        )}
+      </svg>
+      <span
+        className="absolute inset-[5px] flex items-center justify-center overflow-hidden rounded-full text-[14px] font-bold text-white"
+        style={{ background: BRAND }}
+      >
+        {avatar ? (
+          <img src={avatar} alt="" className="h-full w-full object-cover" />
+        ) : initial ? (
+          initial
+        ) : (
+          <i className="fa-solid fa-user text-[13px]" />
+        )}
+      </span>
+    </span>
+  );
+}
+
+/**
  * The promo slider at the top of the screen. A slide is either a brand gradient
  * with a big faded icon, or a photo (`image`) with a dark wash so the words stay
  * readable; `imagePosition` is where the photo is anchored when it is cropped to
@@ -83,15 +166,18 @@ const PROMO_SLIDES: PromoSlide[] = [
     cta: 'Upload now',
     background: 'linear-gradient(118deg,#1D9FDA 0%,#2F8FD6 52%,#61A644 165%)',
     icon: 'fa-file-prescription',
+    image: '/assets/app-promo-contact.webp',
+    imagePosition: 'right center',
   },
   {
     href: '/patient-assistance-program',
     title: 'Patient Assistance Program',
     sub: 'Libreng chemotherapy at gamot sa cancer sa tulong ng DSWD at PCSO.',
     cta: 'Alamin dito',
-    background: '#0A2A43',
-    image: '/assets/app-promo-pap.jpg',
-    imagePosition: 'center 30%',
+    background: 'linear-gradient(118deg,#0A2A43 0%,#14507A 60%,#1D9FDA 160%)',
+    icon: 'fa-hand-holding-medical',
+    image: '/assets/app-promo-careers.webp',
+    imagePosition: 'right center',
   },
   {
     href: '/product-range',
@@ -100,6 +186,8 @@ const PROMO_SLIDES: PromoSlide[] = [
     cta: 'Browse catalogue',
     background: 'linear-gradient(118deg,#61A644 0%,#4E9C4A 55%,#1D9FDA 165%)',
     icon: 'fa-pills',
+    image: '/assets/app-promo-services.webp',
+    imagePosition: 'right center',
   },
 ];
 
@@ -108,79 +196,72 @@ const PROMO_SLIDES: PromoSlide[] = [
 const PROMO_PAUSE_MS = 8000;
 const PROMO_INTERVAL_MS = 5000;
 
-const FOLDER_ICON: Record<string, string> = {
-  'cancer-medicines': 'fa-ribbon',
-  'blood-disorder-medicines': 'fa-droplet',
-  'antibiotics': 'fa-shield-virus',
-  'heart-medicines': 'fa-heart-pulse',
-  'anemia-medicines': 'fa-droplet',
-  'diabetes-medicines': 'fa-syringe',
-  'bone-health-medicines': 'fa-bone',
-  'allergy-medicines': 'fa-hand-dots',
-  'pain-management': 'fa-pills',
-  'kidney-medicines': 'fa-kit-medical',
-  'brain-cancer-medicines': 'fa-brain',
-  'hormonal-therapy': 'fa-flask',
-  'contrast-media': 'fa-x-ray',
-  'anti-inflammatory-medicines': 'fa-fire',
-};
-
 /**
- * The two-up grid card. Image on top the way a storefront card reads, because
- * a medicine box is recognisable at a glance in a way its name often is not —
- * people recognise the packaging of something they have taken for months.
+ * The featured card, one per row. Image on top the way a storefront card reads,
+ * because a medicine box is recognisable at a glance in a way its name often is
+ * not — people recognise the packaging of something they have taken for months.
+ * The buttons are frosted glass over a soft brand wash; the Rx and In stock
+ * pills match the search results.
  */
+
 function ProductCard({ p }: { p: CatalogueRow }) {
   const needsRx = rxRequired(p);
+  const inStock = p.availability !== false;
   return (
     <a
       href={productUrl(p)}
-      className="group flex flex-col overflow-hidden rounded-[18px] bg-white transition active:scale-[0.985]"
-      style={{ boxShadow: CARD_SHADOW }}
+      className="group relative block overflow-hidden rounded-[24px] border border-white/70 p-2 transition active:scale-[0.99]"
+      style={{
+        background: 'linear-gradient(160deg, rgba(255,255,255,.95) 0%, rgba(244,249,253,.9) 100%)',
+        boxShadow: '0 10px 30px rgba(23,43,77,.08), inset 0 1px 0 rgba(255,255,255,.9)',
+      }}
     >
-      <div className="relative aspect-square w-full bg-[#F6F8FC] p-3">
+      <div
+        className="relative h-[200px] overflow-hidden rounded-[18px]"
+        style={{ background: 'linear-gradient(135deg,#E6F4FC 0%,#F3F8FB 50%,#EEF7E9 100%)' }}
+      >
+        {/* Soft colour behind the glass, so the frost has something to blur. */}
+        <span aria-hidden="true" className="pointer-events-none absolute -left-10 -top-10 h-40 w-40 rounded-full blur-2xl" style={{ background: 'rgba(29,159,218,.18)' }} />
+        <span aria-hidden="true" className="pointer-events-none absolute -bottom-12 -right-6 h-40 w-40 rounded-full blur-2xl" style={{ background: 'rgba(97,166,68,.16)' }} />
         <img
           src={productImage(p)}
           alt=""
           loading="lazy"
-          className="h-full w-full object-contain mix-blend-multiply"
+          className="relative h-full w-full object-contain p-5 mix-blend-multiply"
           onError={(e) => { const i = e.currentTarget; i.onerror = null; i.src = '/assets/no-image.png'; }}
         />
+
+        {(needsRx || inStock) && (
+          <div className="absolute left-3 top-3 flex items-center gap-1.5">
+            {needsRx && (
+              <span className="rounded-full bg-[#E8F5FC] px-2 py-[2px] text-[9.5px] font-semibold text-[#1D9FDA]">Rx</span>
+            )}
+            {inStock && (
+              <span className="rounded-full bg-[#EEF6EA] px-2 py-[2px] text-[9.5px] font-semibold text-[#4E8F35]">In stock</span>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-1 flex-col p-3 pt-2.5">
-        <h3 className="line-clamp-2 text-[13px] font-semibold leading-snug text-gray-900">
+      <div className="px-2.5 pb-2 pt-3">
+        <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-gray-900">
           {displayName(p)}
         </h3>
-        <p className="mt-1 line-clamp-1 text-[11px] text-gray-400">{specLine(p)}</p>
+        <p className="mt-1 line-clamp-1 text-[12px] text-gray-400">{specLine(p)}</p>
 
-        <div className="mt-auto pt-2.5">
-          {(needsRx || p.availability !== false) && (
-            <div className="mb-2 flex flex-wrap items-center gap-1.5">
-              {needsRx && (
-                <span
-                  className="rounded-full px-2 py-[3px] text-[9.5px] font-medium uppercase tracking-wide text-white"
-                  style={{ background: BRAND }}
-                >
-                  Rx
-                </span>
-              )}
-              {p.availability !== false && (
-                <span
-                  className="rounded-full px-2 py-[3px] text-[9.5px] font-medium text-white"
-                  style={{ background: BRAND_GREEN }}
-                >
-                  In stock
-                </span>
-              )}
-            </div>
-          )}
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[11.5px] font-semibold" style={{ color: BRAND }}>
-              Inquire
-            </span>
-            <AddToCart item={cartItemFor(p)} />
-          </div>
+        <div className="mt-3.5 flex items-center gap-2">
+          <span
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-[12.5px] font-semibold text-white backdrop-blur-md"
+            style={{
+              background: 'linear-gradient(135deg, rgba(29,159,218,.92), rgba(47,127,214,.92))',
+              border: '1px solid rgba(255,255,255,.35)',
+              boxShadow: '0 6px 16px rgba(29,159,218,.28), inset 0 1px 0 rgba(255,255,255,.35)',
+            }}
+          >
+            Inquire
+            <i className="fa-solid fa-arrow-right text-[11px]" />
+          </span>
+          <AddToCart item={cartItemFor(p)} variant="glass" />
         </div>
       </div>
     </a>
@@ -200,6 +281,8 @@ function AppHome() {
   const { data: raw } = useProducts();
   const products = (raw || []) as CatalogueRow[];
   const [cartCount, setCartCount] = useState(0);
+  const [greeted, setGreeted] = useState<Greeted>({ name: '', details: null });
+  const points = usePoints();
 
   useEffect(() => {
     document.title = 'Getmeds';
@@ -220,6 +303,16 @@ function AppHome() {
     window.addEventListener(CART_CHANGED_EVENT, paint);
     return () => window.removeEventListener(CART_CHANGED_EVENT, paint);
   }, []);
+
+  useEffect(() => {
+    const paint = () => { readGreeted().then(setGreeted); };
+    paint();
+    window.addEventListener(ACCOUNT_CHANGED_EVENT, paint);
+    return () => window.removeEventListener(ACCOUNT_CHANGED_EVENT, paint);
+  }, []);
+  const fullName = greeted.name || points.summary?.account?.name?.trim() || '';
+  const firstName = fullName.split(/\s+/)[0];
+  const completeness = Math.round(detailsCompleteness(greeted.details));
 
   // The promo slider. Native scroll-snap does the swiping, so the state here is
   // only which slide is in view (for the dots) and when the slider was last
@@ -247,21 +340,8 @@ function AppHome() {
     return () => clearInterval(id);
   }, []);
 
-  // Each tile borrows the first real photo in its folder, so the strip reads as
-  // a catalogue rather than a list of icons. Folders whose products have no
-  // image attached yet fall back to the icon.
-  const categories = useMemo(() => {
-    const acc = new Map<string, { count: number; image?: string }>();
-    for (const p of products) {
-      const f = (p.categoryFolder || '').trim();
-      if (!f) continue;
-      const cur = acc.get(f) || { count: 0 };
-      cur.count += 1;
-      if (!cur.image && p.image && p.image.asset) cur.image = productImage(p, 120);
-      acc.set(f, cur);
-    }
-    return [...acc.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 10);
-  }, [products]);
+  // The strip shows the ten biggest; "See all" opens every one, stacked.
+  const categories = useCatalogueCategories(products).slice(0, 10);
 
   const featured = useMemo(
     () => products.filter((p) => p.availability !== false).slice(0, 6),
@@ -270,57 +350,82 @@ function AppHome() {
 
   return (
     <>
+      {/* Brand on the left, the two personal shortcuts on the right — the
+          request list and the account. Scrolls away; the search bar below is
+          what stays. */}
+      <header className="px-4 pt-4" style={{ background: '#FFFFFF' }}>
+        <div className="mx-auto flex max-w-2xl items-center justify-between">
+          <a href="/app-home" aria-label="Getmeds home" className="shrink-0">
+            <img src="/assets/getmeds-logo-sm.png" alt="Getmeds" className="h-[38px] w-auto" />
+          </a>
+
+          <div className="flex items-center gap-2.5">
+            <a
+              href="/cart"
+              aria-label={`Request list, ${cartCount} item${cartCount === 1 ? '' : 's'}`}
+              className="relative flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full"
+              style={{ background: GROUND }}
+            >
+              <i className="fa-solid fa-cart-shopping text-[14px] text-gray-700" />
+              {cartCount > 0 && (
+                <span
+                  className="absolute -right-0.5 -top-0.5 flex h-[19px] min-w-[19px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
+                  style={{ background: BRAND, boxShadow: '0 0 0 2px #FFFFFF' }}
+                >
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </a>
+
+            <a
+              href="/profile"
+              aria-label={`${fullName ? `My account, ${fullName}` : 'My account'}. Details ${completeness}% complete`}
+              className="shrink-0"
+            >
+              <AvatarRing pct={completeness} avatar={greeted.avatar} initial={firstName.charAt(0).toUpperCase()} />
+            </a>
+          </div>
+        </div>
+
+        <div className="mx-auto mt-4 max-w-2xl">
+          <p className="text-[12.5px] text-gray-500">
+            {firstName ? `Welcome to Getmeds, ${firstName}` : 'Welcome to Getmeds'}
+          </p>
+          <h1 className="mt-0.5 text-[21px] font-semibold leading-tight text-gray-900">
+            What medicine are you looking for today?
+          </h1>
+        </div>
+      </header>
+
       {/* Sticky because this row is the only way back to the whole catalogue —
           scrolling six product cards deep should not mean scrolling back up to
           look something up. */}
-      <header
-        className="sticky top-0 z-40 px-4 pb-3 pt-4"
-        style={{ background: '#FFFFFF' }}
-      >
-        <div className="mx-auto flex max-w-2xl items-center gap-2.5">
+      <div className="sticky top-0 z-40 px-4 pb-3 pt-3" style={{ background: '#FFFFFF' }}>
+        <div className="relative mx-auto max-w-2xl">
           {/* The camera is a sibling of the search link rather than a child of
               it: one anchor cannot live inside another, and these are two
               genuinely different destinations. */}
-          <div className="relative flex-1">
-            <a
-              href="/search"
-              className="flex h-[46px] w-full items-center rounded-full pl-11 pr-12 text-[13.5px] text-gray-400"
-              style={{ background: GROUND }}
-            >
-              Search medicine
-            </a>
-            <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-gray-400" />
-            {/* A visual-search shortcut in spirit: there is no image search to
-                point it at, but there is something better — photograph the
-                prescription and let a person read it. */}
-            <a
-              href="/order-medicines/patients"
-              aria-label="Send a photo of your prescription"
-              title="Send a photo of your prescription"
-              className="absolute right-1.5 top-1/2 flex h-[36px] w-[36px] -translate-y-1/2 items-center justify-center rounded-full bg-white"
-            >
-              <i className="fa-solid fa-camera text-[13px]" style={{ color: BRAND }} />
-            </a>
-          </div>
-
           <a
-            href="/cart"
-            aria-label={`Request list, ${cartCount} item${cartCount === 1 ? '' : 's'}`}
-            className="relative flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full"
+            href="/search"
+            className="flex h-[46px] w-full items-center rounded-full pl-11 pr-12 text-[13.5px] text-gray-400"
             style={{ background: GROUND }}
           >
-            <i className="fa-solid fa-cart-shopping text-[15px] text-gray-700" />
-            {cartCount > 0 && (
-              <span
-                className="absolute -right-0.5 -top-0.5 flex h-[19px] min-w-[19px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
-                style={{ background: BRAND, boxShadow: '0 0 0 2px #FFFFFF' }}
-              >
-                {cartCount > 99 ? '99+' : cartCount}
-              </span>
-            )}
+            Search medicine
+          </a>
+          <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-gray-400" />
+          {/* A visual-search shortcut in spirit: there is no image search to
+              point it at, but there is something better — photograph the
+              prescription and let a person read it. */}
+          <a
+            href="/order-medicines/patients"
+            aria-label="Send a photo of your prescription"
+            title="Send a photo of your prescription"
+            className="absolute right-1.5 top-1/2 flex h-[36px] w-[36px] -translate-y-1/2 items-center justify-center rounded-full bg-white"
+          >
+            <i className="fa-solid fa-camera text-[13px]" style={{ color: BRAND }} />
           </a>
         </div>
-      </header>
+      </div>
 
       <main className="mx-auto max-w-2xl px-4 pb-2">
         {/* A storefront puts an offer in this slot. The first slide is the errand
@@ -376,11 +481,11 @@ function AppHome() {
                   </>
                 )}
                 <div className="relative max-w-[64%]">
-                  <p className="text-[19px] font-medium leading-tight">{slide.title}</p>
-                  <p className="mt-1.5 text-[12.5px] leading-snug text-white/85">{slide.sub}</p>
+                  <p className="text-[16.5px] font-medium leading-tight">{slide.title}</p>
+                  <p className="mt-1 text-[11.5px] leading-snug text-white/85">{slide.sub}</p>
                   <span
-                    className="mt-3.5 inline-flex items-center rounded-full bg-white px-4 py-2 text-[12px] font-medium"
-                    style={{ color: BRAND }}
+                    className="mt-3 inline-flex items-center rounded-full px-3.5 py-1.5 text-[11px] font-medium text-white"
+                    style={{ background: BRAND }}
                   >
                     {slide.cta}
                   </span>
@@ -406,43 +511,21 @@ function AppHome() {
         </div>
 
         <section className="mb-6">
-          <SectionHeading title="Categories" href="/product-range" />
+          <SectionHeading title="Categories" href="/categories" />
           {categories.length === 0 ? (
-            <div className="gm-hscroll flex gap-4 overflow-x-auto pb-1">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="shrink-0">
-                  <div className="h-[62px] w-[62px] animate-pulse rounded-full bg-white" />
-                  <div className="mx-auto mt-2 h-2 w-12 animate-pulse rounded-full bg-white" />
-                </div>
+            <div className="gm-hscroll -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="h-[178px] w-[78%] shrink-0 animate-pulse rounded-[22px] bg-white" />
               ))}
             </div>
           ) : (
             // Horizontal, not a grid: the folder list grows as the catalogue
             // does, and a scroll strip absorbs that without pushing the
-            // products below the fold.
-            <div className="gm-hscroll -mx-4 flex gap-4 overflow-x-auto px-4 pb-1">
-              {categories.map(([folder, info]) => (
-                <a key={folder} href={`/${folder}`} className="flex w-[68px] shrink-0 flex-col items-center gap-2">
-                  <span
-                    className="flex h-[62px] w-[62px] items-center justify-center overflow-hidden rounded-full bg-white"
-                    style={{ boxShadow: CARD_SHADOW }}
-                  >
-                    {info.image ? (
-                      <img
-                        src={info.image}
-                        alt=""
-                        loading="lazy"
-                        className="h-full w-full object-contain p-2.5 mix-blend-multiply"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                      />
-                    ) : (
-                      <i className={`fa-solid ${FOLDER_ICON[folder] || 'fa-pills'} text-[19px]`} style={{ color: BRAND }} />
-                    )}
-                  </span>
-                  <span className="text-center text-[10px] font-semibold leading-tight text-gray-600">
-                    {prettyFolder(folder).replace(' Medicines', '')}
-                  </span>
-                </a>
+            // products below the fold. Cards are narrower than the screen so
+            // the next one peeks in and says "swipe".
+            <div className="gm-hscroll -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-1">
+              {categories.map(([folder, info], i) => (
+                <CategoryCard key={folder} folder={folder} info={info} index={i} className="w-[78%] shrink-0 snap-start" />
               ))}
             </div>
           )}
@@ -451,13 +534,13 @@ function AppHome() {
         <section className="mb-6">
           <SectionHeading title="Featured products" href="/product-range" cta="Browse all" />
           {featured.length === 0 ? (
-            <div className="grid grid-cols-2 gap-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-[230px] animate-pulse rounded-[18px] bg-white" />
+            <div className="flex flex-col gap-4">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="h-[320px] animate-pulse rounded-[24px] bg-white" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-4">
               {featured.map((p, i) => <ProductCard key={p._id || i} p={p} />)}
             </div>
           )}

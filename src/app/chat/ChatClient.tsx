@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { shortDate, useAccountData, type ServerRequest } from '@/lib/accountApi';
 import { usePoints } from '@/lib/PointsCard';
 import { BRAND, GRADIENT, GROUND } from '@/lib/ui/Screen';
+import { goTo } from '@/platform/navigation';
 
 /**
  * chat.tsx
@@ -74,7 +75,7 @@ function goBack() {
     /* unreadable referrer: treat as arriving from outside */
   }
   if (sameSite && window.history.length > 1) window.history.back();
-  else window.location.href = '/app-home';
+  else goTo('/app-home');
 }
 
 /** The short text a customer pastes into the chat, and the agent's event. */

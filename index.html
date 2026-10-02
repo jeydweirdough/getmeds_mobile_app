@@ -8,7 +8,25 @@
     <title>Getmeds</title>
   </head>
   <body class="bg-white text-gray-800 antialiased">
-    <div id="root"></div>
+    <!-- Shown until the app renders into #root (React replaces it), so a cold start is a
+         skeleton rather than a white page. Plain HTML and inline CSS: nothing else has loaded yet.
+         Roughly matches PageSkeleton's list variant. -->
+    <style>
+      .gm-boot { max-width: 42rem; margin: 0 auto; padding: 16px; }
+      .gm-boot i { display: block; border-radius: 12px; background: #EEF1F5; animation: gm-boot 1.2s ease-in-out infinite; }
+      .gm-boot .row { display: flex; align-items: center; justify-content: space-between; }
+      @keyframes gm-boot { 50% { opacity: .5; } }
+      @media (prefers-reduced-motion: reduce) { .gm-boot i { animation: none; } }
+    </style>
+    <div id="root"><div class="gm-boot" aria-busy="true" aria-label="Loading">
+      <div class="row"><i style="height:36px;width:112px"></i><i style="height:42px;width:42px;border-radius:50%"></i></div>
+      <i style="height:14px;width:45%;margin-top:18px"></i>
+      <i style="height:22px;width:85%;margin-top:8px"></i>
+      <i style="height:46px;margin-top:16px;border-radius:999px"></i>
+      <i style="height:150px;margin-top:16px;border-radius:20px"></i>
+      <i style="height:18px;width:120px;margin-top:24px"></i>
+      <i style="height:178px;width:78%;margin-top:12px;border-radius:22px"></i>
+    </div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

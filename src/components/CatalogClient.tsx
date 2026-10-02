@@ -12,6 +12,7 @@ import { setPageMeta, injectJsonLd, removeJsonLd, specialtyUrl, conditionReviewF
 import { folderDisplayName } from '@/lib/queries';
 import { usePageReady } from '@/lib/handoff';
 import './CatalogClient.css';
+import { goTo } from '@/platform/navigation';
 
 
 interface ProductWithCategory extends Omit<SanityProduct, 'category'> {
@@ -201,7 +202,7 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
 
   const navigateWithUserType = (p: ProductWithCategory, userType: string) => {
     const url = getProductDetailUrl(p) + `?userType=${userType}`;
-    window.location.href = url;
+    goTo(url);
   };
 
   // Positions the inquiry dropdown as a fixed-position portal anchored to the
@@ -889,7 +890,7 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
   };
 
   const openModal = (product: ProductWithCategory) => {
-    window.location.href = getProductDetailUrl(product);
+    goTo(getProductDetailUrl(product));
   };
 
 

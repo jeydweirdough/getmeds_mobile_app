@@ -100,7 +100,7 @@ export function ProductRow({ p, highlight }: { p: CatalogueRow; highlight?: stri
     <a
       href={productUrl(p)}
       className="flex items-center gap-3 rounded-[16px] bg-white p-2.5 transition active:scale-[0.99]"
-      style={{ boxShadow: '0 2px 10px rgba(23,43,77,.055)' }}
+      style={{ boxShadow: '0 1px 4px rgba(23,43,77,.04)' }}
     >
       <div className="h-[58px] w-[58px] shrink-0 overflow-hidden rounded-xl bg-[#F6F8FC] p-1.5">
         <img
@@ -119,10 +119,10 @@ export function ProductRow({ p, highlight }: { p: CatalogueRow; highlight?: stri
         <p className="mt-0.5 line-clamp-1 text-[11.5px] text-gray-400">{specLine(p)}</p>
         <div className="mt-1 flex items-center gap-1.5">
           {needsRx && (
-            <span className="rounded-full bg-amber-50 px-1.5 py-[2px] text-[9.5px] font-bold text-amber-700">Rx</span>
+            <span className="rounded-full bg-[#E8F5FC] px-2 py-[2px] text-[9.5px] font-semibold text-[#1D9FDA]">Rx</span>
           )}
           {p.availability !== false && (
-            <span className="rounded-full bg-green-50 px-1.5 py-[2px] text-[9.5px] font-bold text-green-700">In stock</span>
+            <span className="rounded-full bg-[#EEF6EA] px-2 py-[2px] text-[9.5px] font-semibold text-[#4E8F35]">In stock</span>
           )}
         </div>
       </div>

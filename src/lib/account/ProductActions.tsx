@@ -6,6 +6,7 @@ import { slugOf, useAccountData } from '../accountApi';
 import { PrimaryButton, Sheet, Toast, useToast, BRAND } from '../ui/Screen';
 import { errorText, saveProduct, unsaveProduct, type ProductRef } from './listActions';
 import { AddReminderSheet } from './RemindersScreen';
+import { goTo } from '@/platform/navigation';
 
 /**
  * ProductActions.tsx
@@ -43,7 +44,7 @@ function SignInSheet({ feature, onClose }: { feature: Feature; onClose: () => vo
     <Sheet title={copy.title} onClose={onClose}>
       <p className="px-1 text-[13px] leading-relaxed text-gray-600">{copy.text}</p>
       <p className="px-1 text-[12px] leading-relaxed text-gray-500">Sign in with your mobile number. It takes a minute.</p>
-      <PrimaryButton onClick={() => { window.location.href = '/profile'; }}>Sign in</PrimaryButton>
+      <PrimaryButton onClick={() => { goTo('/profile'); }}>Sign in</PrimaryButton>
       <button type="button" onClick={onClose} className="w-full rounded-full py-2 text-[13px] font-semibold text-gray-500">
         Not now
       </button>

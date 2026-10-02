@@ -26,6 +26,7 @@ import {
   BRAND,
 } from '../ui/Screen';
 import { addResultMessage, cartItemFor, errorText, Switch, type ProductRef, useAddToList } from './listActions';
+import { goTo } from '@/platform/navigation';
 
 /**
  * RemindersScreen.tsx
@@ -385,7 +386,7 @@ export default function RemindersScreen({ onClose }: { onClose: () => void }) {
     } catch {
       // Without it the request still goes out, just without the refill bonus.
     }
-    window.location.href = '/cart';
+    goTo('/cart');
   };
 
   const addButton = (

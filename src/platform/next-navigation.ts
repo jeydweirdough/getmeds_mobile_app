@@ -1,19 +1,22 @@
+import { goTo } from './navigation';
+import { useLocation } from './router';
+
 /**
- * next/navigation for the app. Each screen is a fresh load of index.html, so the address never
- * changes under a mounted screen and these can read window.location directly.
+ * next/navigation for the app. Screens switch in place (see router.ts), so these follow the
+ * router rather than reading window.location once.
  */
 export function usePathname(): string {
-  return typeof window === 'undefined' ? '/' : window.location.pathname;
+  return useLocation().pathname;
 }
 
 export function useSearchParams(): URLSearchParams {
-  return new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
+  return new URLSearchParams(useLocation().search);
 }
 
 export function useRouter() {
   return {
-    push: (href: string) => { window.location.href = href; },
-    replace: (href: string) => { window.location.replace(href); },
+    push: (href: string) => goTo(href),
+    replace: (href: string) => goTo(href, { replace: true }),
     back: () => window.history.back(),
     forward: () => window.history.forward(),
     refresh: () => window.location.reload(),
@@ -22,11 +25,11 @@ export function useRouter() {
 }
 
 export function redirect(href: string): never {
-  window.location.replace(href);
+  goTo(href, { replace: true });
   throw new Error(`Redirecting to ${href}`);
 }
 
 export function notFound(): never {
-  window.location.replace('/');
+  goTo('/', { replace: true });
   throw new Error('Not found');
 }

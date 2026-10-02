@@ -5,6 +5,7 @@ import { shortDate, useAccountData, type RequestItem, type ServerRequest } from 
 import { Empty, ErrorNote, PrimaryButton, Screen, SmallButton, Toast, useToast, BRAND } from '../ui/Screen';
 import { addResultMessage, cartItemFor, detailOf, Thumb, useAddToList } from './listActions';
 import { AddReminderSheet } from './RemindersScreen';
+import { goTo } from '@/platform/navigation';
 
 /**
  * RequestsScreen.tsx
@@ -33,7 +34,7 @@ export default function RequestsScreen({ onClose, embedded }: { onClose?: () => 
       return;
     }
     const result = await add(items.map((i) => cartItemFor(i)));
-    if (result === 'added') window.location.href = '/cart';
+    if (result === 'added') goTo('/cart');
     else setError(addResultMessage(result));
   };
 
@@ -61,7 +62,7 @@ export default function RequestsScreen({ onClose, embedded }: { onClose?: () => 
           icon="fa-paper-plane"
           title="No requests yet"
           text="Requests you send while signed in show here, so you can ask for the same medicines again in one tap."
-          action={<SmallButton onClick={() => { window.location.href = '/search'; }}>Find a medicine</SmallButton>}
+          action={<SmallButton onClick={() => { goTo('/search'); }}>Find a medicine</SmallButton>}
         />
       )}
 
@@ -112,7 +113,7 @@ export default function RequestsScreen({ onClose, embedded }: { onClose?: () => 
                   <i className="fa-solid fa-rotate-right mr-1.5 text-[11px]" />
                   Order again
                 </SmallButton>
-                <SmallButton onClick={() => { window.location.href = `/chat?request=${encodeURIComponent(r._id)}`; }}>
+                <SmallButton onClick={() => { goTo(`/chat?request=${encodeURIComponent(r._id)}`); }}>
                   <i className="fa-regular fa-comment mr-1.5 text-[11px]" />
                   Ask about this
                 </SmallButton>

@@ -2,6 +2,7 @@ import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { SITE_URL } from './config';
 import { isAppPath } from './routes';
+import { navigate } from './router';
 
 const SITE_ORIGIN = new URL(SITE_URL).origin;
 const SITE_HOSTS = new Set([new URL(SITE_URL).host, 'getmeds.ph', 'www.getmeds.ph']);
@@ -18,7 +19,8 @@ export function openOnWebsite(pathOrUrl: string): void {
 
 /**
  * Link handling for the whole app, in one place:
- *   - a link to an app screen, even one written as https://getmeds.ph/..., stays in the app;
+ *   - a link to an app screen, even one written as https://getmeds.ph/..., stays in the app and
+ *     switches screens in place (router.ts) rather than reloading it;
  *   - a link to any other getmeds.ph page opens that page in the in-app browser;
  *   - any other web address opens in the in-app browser too, so the app is never replaced by it;
  *   - tel:, mailto:, viber: and the like are left to the phone.
@@ -44,10 +46,9 @@ export function installLinkHandling(): void {
       const own = url.origin === window.location.origin;
       const website = SITE_HOSTS.has(url.host);
       if ((own || website) && isAppPath(url.pathname)) {
-        if (website) {
-          event.preventDefault();
-          window.location.href = url.pathname + url.search + url.hash;
-        }
+        if (anchor.target && anchor.target !== '_self') return;
+        event.preventDefault();
+        navigate(url.pathname + url.search + url.hash);
         return;
       }
       event.preventDefault();
@@ -57,8 +58,18 @@ export function installLinkHandling(): void {
   );
 }
 
+/**
+ * Programmatic counterpart of a link tap: an app screen switches in place, a
+ * website page opens in the in-app browser.
+ */
+export function goTo(href: string, opts?: { replace?: boolean }): void {
+  const url = new URL(href, window.location.href);
+  if (isAppPath(url.pathname)) navigate(url.pathname + url.search + url.hash, opts);
+  else openOnWebsite(url.pathname + url.search + url.hash);
+}
+
 /** Leaves a screen the app does not have: back where the user came from, or home. */
 export function leaveUnknownScreen(): void {
   if (window.history.length > 1) window.history.back();
-  else window.location.replace('/');
+  else navigate('/', { replace: true });
 }

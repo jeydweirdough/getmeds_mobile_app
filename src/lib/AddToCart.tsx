@@ -101,7 +101,8 @@ export function AddToCart({
   variant = 'icon',
 }: {
   item: Omit<CartItem, 'addedAt'>;
-  variant?: 'icon' | 'full';
+  /** 'glass' is the frosted pill on the home screen's featured cards. */
+  variant?: 'icon' | 'full' | 'glass';
 }) {
   const [app, setApp] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -153,7 +154,22 @@ export function AddToCart({
 
   return (
     <>
-      {variant === 'full' ? (
+      {variant === 'glass' ? (
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={label}
+          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full border px-4 py-2.5 text-[12.5px] font-semibold backdrop-blur-md transition active:scale-95"
+          style={
+            saved
+              ? { borderColor: 'rgba(97,166,68,.35)', color: '#4E8F35', background: 'rgba(97,166,68,.14)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.7)' }
+              : { borderColor: 'rgba(29,159,218,.28)', color: '#1D9FDA', background: 'rgba(29,159,218,.10)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.7)' }
+          }
+        >
+          <i className={`fa-solid ${saved ? 'fa-check' : 'fa-cart-plus'} text-[12px]`} />
+          {saved ? 'In list' : 'Add to list'}
+        </button>
+      ) : variant === 'full' ? (
         <button
           type="button"
           onClick={toggle}

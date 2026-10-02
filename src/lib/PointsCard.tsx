@@ -27,7 +27,6 @@ import {
  */
 
 const BRAND = '#1D9FDA';
-const CARD = '0 2px 10px rgba(23,43,77,.055)';
 const GRADIENT = 'linear-gradient(135deg,#1D9FDA,#61A644)';
 /** Movider will not send a second code sooner than this. */
 const RESEND_SECONDS = 60;
@@ -280,7 +279,7 @@ export default function PointsCard({ points, bare = false }: { points: PointsSta
   if (signedIn) {
     const account = summary?.account;
     return (
-      <section id="points" className="mb-5 scroll-mt-4 rounded-[24px] border border-[#EEF1F5] bg-white p-4" style={{ boxShadow: CARD }} aria-label="Getmeds Points">
+      <section id="points" className="mb-5 scroll-mt-4 rounded-[24px] border border-[#EEF1F5] bg-white p-4" aria-label="Getmeds Points">
         <div className="mb-3 flex items-center gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white" style={{ background: GRADIENT }}>
             <i className="fa-solid fa-star text-[13px]" />
@@ -342,7 +341,6 @@ export default function PointsCard({ points, bare = false }: { points: PointsSta
     <section
       id={bare ? undefined : 'points'}
       className={bare ? '' : 'mb-5 scroll-mt-4 rounded-[24px] border border-[#EEF1F5] bg-white p-4'}
-      style={bare ? undefined : { boxShadow: CARD }}
       aria-label="Getmeds Points"
     >
       <div className="flex items-start gap-3.5">

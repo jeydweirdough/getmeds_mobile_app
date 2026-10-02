@@ -92,7 +92,6 @@ export function GuestCard({ onSignIn }: { onSignIn: () => void }) {
   return (
     <section
       className="mb-5 rounded-[28px] border border-[#EEF1F5] bg-white p-2 pb-5"
-      style={{ boxShadow: '0 10px 30px rgba(23,43,77,.07)' }}
       aria-label="Sign in"
     >
       <div className="h-[92px] rounded-[22px]" style={{ background: SKY }} />
@@ -185,7 +184,6 @@ export default function ProfileCard({ name, subtitle, avatar, completeness, onEd
   return (
     <section
       className="mb-5 rounded-[28px] border border-[#EEF1F5] bg-white p-2 pb-3"
-      style={{ boxShadow: '0 10px 30px rgba(23,43,77,.07)' }}
       aria-label="Your profile"
     >
       {/* Cover: a soft sky, drawn in CSS so it costs no download. */}

@@ -14,9 +14,7 @@ import {
 } from '@/lib/fileUpload';
 import {
   CART_CHANGED_EVENT,
-  clearAllDeviceData,
   clearCart,
-  hasConsent,
   isAppMode,
   listCart,
   patchCartItems,
@@ -122,7 +120,6 @@ function Chip({ id, on, onClick, children }: { id: string; on: boolean; onClick:
 
 function Cart({ app, member }: { app: boolean; member: boolean }) {
   const [items, setItems] = useState<CartItem[] | null>(null);
-  const [consented, setConsented] = useState<boolean | null>(null);
   const [step, setStep] = useState<Step>('list');
   const [type, setType] = useState<TypeDef | null>(null);
   const [sending, setSending] = useState(false);
@@ -339,18 +336,10 @@ function Cart({ app, member }: { app: boolean; member: boolean }) {
       return next;
     });
     knownIds.current = new Set(list.map((i) => i.id));
-
-    setConsented(await hasConsent());
   }, []);
 
   useEffect(() => {
     document.title = 'Your Request List | Getmeds';
-
-    // The app's tinted ground, so the white item cards below have something to
-    // sit on. Set on <body> rather than a wrapper because the list is often
-    // short and a wrapper's background would stop halfway down the screen.
-    // Only in the app: on the website this page keeps the site's white.
-    if (app) document.body.style.background = '#F3F6FB';
 
     refresh();
     window.addEventListener(CART_CHANGED_EVENT, refresh);
@@ -389,11 +378,6 @@ function Cart({ app, member }: { app: boolean; member: boolean }) {
     }
     if (Object.keys(patches).length > 0) patchCartItems(patches);
   }, [items, catalogue]);
-
-  const wipe = async () => {
-    if (!window.confirm('Remove everything Getmeds has saved on this device? This clears your list and any inquiry waiting to be sent.')) return;
-    await clearAllDeviceData();
-  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -602,7 +586,7 @@ function Cart({ app, member }: { app: boolean; member: boolean }) {
                 : 'Our team will get back to you with availability and pricing. Prescription items still need a valid prescription.'}
             </p>
             {walletNote && (
-              <p className="mt-3 flex max-w-sm items-start gap-2 rounded-2xl bg-white px-3.5 py-2.5 text-left text-[12px] leading-snug text-gray-600">
+              <p className="mt-3 flex max-w-sm items-start gap-2 rounded-2xl bg-[#F6F7F9] px-3.5 py-2.5 text-left text-[12px] leading-snug text-gray-600">
                 <i className="fa-solid fa-file-prescription mt-[2px] text-[11px] text-[#1D9FDA]"></i>
                 {walletNote}
               </p>
@@ -854,19 +838,19 @@ function Cart({ app, member }: { app: boolean; member: boolean }) {
           </>
         ) : (
           <>
+            {/* Only the heading shares its row with "Clear list"; the note
+                below gets the full width rather than wrapping beside it. */}
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-semibold text-gray-900">Your request list</h1>
-                <p className="mt-1.5 text-sm leading-relaxed text-gray-500">
-                  Add medicines you want a quote for, then send them to us in one request.
-                </p>
-              </div>
+              <h1 className="text-2xl font-semibold text-gray-900">Your request list</h1>
               {count > 0 && (
-                <button type="button" onClick={() => clearCart()} className="shrink-0 text-[12px] font-semibold text-gray-400 hover:text-gray-600">
+                <button type="button" onClick={() => clearCart()} className="mt-1.5 shrink-0 text-[12px] font-semibold text-gray-400 hover:text-gray-600">
                   Clear list
                 </button>
               )}
             </div>
+            <p className="mt-1.5 text-sm leading-relaxed text-gray-500">
+              Add medicines you want a quote for, then send them to us in one request.
+            </p>
 
             {items === null ? (
               <div className="mt-8 space-y-3">
@@ -894,8 +878,7 @@ function Cart({ app, member }: { app: boolean; member: boolean }) {
                   {items.map((it) => (
                     <li
                       key={it.id}
-                      className={`flex items-center gap-3 rounded-[16px] bg-white ${app ? 'p-2.5' : 'border border-gray-100 p-3'}`}
-                      style={app ? { boxShadow: '0 2px 10px rgba(23,43,77,.055)' } : undefined}
+                      className={`flex items-center gap-3 rounded-[16px] border border-gray-100 bg-white ${app ? 'p-2.5' : 'p-3'}`}
                     >
                       {/* Only asked when there is genuinely something to choose
                           between. With a single row the answer is already known,
@@ -940,7 +923,7 @@ function Cart({ app, member }: { app: boolean; member: boolean }) {
                           <p className="mt-0.5 line-clamp-1 text-[11.5px] text-gray-400">{[it.strength, it.form].filter(Boolean).join(' · ')}</p>
                         )}
                         {it.needsRx && (
-                          <span className="mt-1.5 inline-block rounded-full bg-amber-50 px-2 py-[3px] text-[10px] font-semibold text-amber-700">
+                          <span className="mt-1.5 inline-block rounded-full bg-[#E8F5FC] px-2 py-[3px] text-[10px] font-semibold text-[#1D9FDA]">
                             <i className="fa-solid fa-file-prescription mr-1"></i>Prescription required
                           </span>
                         )}
@@ -954,6 +937,11 @@ function Cart({ app, member }: { app: boolean; member: boolean }) {
                   ))}
                 </ul>
 
+                {/* Pinned to the bottom of the screen, just above the tab bar,
+                    so it is in reach however long the list gets. The spacer
+                    keeps the last item from ending up underneath it. */}
+                <div aria-hidden="true" className="h-24" />
+                <div className="gm-cart-cta fixed inset-x-0 z-30 mx-auto max-w-3xl px-4">
                 <button
                   type="button"
                   disabled={count === 0}
@@ -963,8 +951,8 @@ function Cart({ app, member }: { app: boolean; member: boolean }) {
                   // nothing — and the form's own back button still leads to
                   // the picker for anyone who needs to change it.
                   onClick={() => setStep(type ? 'form' : 'type')}
-                  className="mt-6 w-full rounded-full py-3.5 text-[14px] font-semibold text-white disabled:opacity-40"
-                  style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
+                  className="w-full rounded-full py-3.5 text-[14px] font-semibold text-white disabled:opacity-40"
+                  style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)', boxShadow: '0 8px 20px rgba(29,159,218,.28)' }}
                 >
                   {/* Says what happens next, not what the screen wants from
                       you. "Select items to inquire about" was a label for a
@@ -977,19 +965,9 @@ function Cart({ app, member }: { app: boolean; member: boolean }) {
                       ? 'Request a quote'
                       : `Request a quote for ${count} item${count === 1 ? '' : 's'}`}
                 </button>
+                </div>
               </>
             )}
-
-            <div className="mt-10 border-t border-gray-100 pt-4">
-              <p className="text-[11.5px] leading-relaxed text-gray-400">
-                {consented
-                  ? 'Your list is saved on this device only. It is not sent to us until you request a quote, and it will not appear on your other devices.'
-                  : 'Nothing is saved on this device yet. You will be asked before anything is stored.'}
-              </p>
-              <button type="button" onClick={wipe} className="mt-3 text-[12px] font-semibold text-gray-400 underline hover:text-gray-600">
-                Clear saved data on this device
-              </button>
-            </div>
           </>
         )}
       </div>

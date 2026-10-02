@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import AppHomeClient from '@/app/app-home/AppHomeClient';
 import SearchClient from '@/app/search/SearchClient';
+import CategoriesClient from '@/app/categories/CategoriesClient';
 import CartClient from '@/app/cart/CartClient';
 import AccountClient from '@/app/account/AccountClient';
 import ChatClient from '@/app/chat/ChatClient';
@@ -8,17 +9,21 @@ import OrderMedicinesClient from '@/app/order-medicines/[audience]/OrderMedicine
 import CatalogClient from '@/components/CatalogClient';
 import ProductDetailClient from '@/components/ProductDetailClient';
 import ChromeExtras from '@/components/ChromeExtras';
+import Onboarding from '@/components/Onboarding';
 import PwaTabbar from '@/lib/PwaTabbar';
 import { QueuedInquiryNotice } from '@/lib/QueuedInquiryNotice';
 import { useCategories } from '@/lib/useSanity';
 import { resolveRoute, type Route } from '@/platform/routes';
 import { leaveUnknownScreen, openOnWebsite } from '@/platform/navigation';
+import { navigate, useLocation } from '@/platform/router';
+import PageSkeleton from '@/components/PageSkeleton';
 import '@/app/app-home/app-home.css';
 import '@/app/chat/chat.css';
 
 const TITLES: Partial<Record<Route['screen'], string>> = {
   home: 'Getmeds',
   search: 'Search | Getmeds',
+  categories: 'Categories | Getmeds',
   cart: 'Your Request List | Getmeds',
   account: 'My Account | Getmeds',
   chat: 'Chat with Getmeds | Getmeds',
@@ -34,7 +39,7 @@ const slugify = (value: string) => String(value || '').toLowerCase().replace(/\s
  */
 function CatalogOrProduct({ prefix, slug }: { prefix: string; slug: string }) {
   const { data: categories, loading } = useCategories();
-  if (loading) return <div className="min-h-screen bg-white" aria-busy="true" />;
+  if (loading) return <PageSkeleton variant="detail" />;
   const target = slug.toLowerCase();
   const isCondition = (categories || []).some((c) =>
     (c.subcategory || []).some((s) => s.toLowerCase() === target || slugify(s) === target),
@@ -47,7 +52,7 @@ function WebsitePage({ path }: { path: string }) {
     openOnWebsite(path);
     leaveUnknownScreen();
   }, [path]);
-  return <div className="min-h-screen bg-white" />;
+  return <PageSkeleton />;
 }
 
 function Screen({ route }: { route: Route }) {
@@ -61,6 +66,8 @@ function Screen({ route }: { route: Route }) {
       );
     case 'search':
       return <SearchClient />;
+    case 'categories':
+      return <CategoriesClient />;
     case 'cart':
       return <CartClient />;
     case 'account':
@@ -91,21 +98,26 @@ function Screen({ route }: { route: Route }) {
 }
 
 export default function App() {
-  const route = useMemo(() => resolveRoute(window.location.pathname), []);
+  const location = useLocation();
+  // Keyed by the router's screen key, not the full address: a same-path change
+  // (search's ?q=, an account sub-screen) is the mounted screen's own business.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const route = useMemo(() => resolveRoute(location.pathname), [location.key]);
 
   useEffect(() => {
-    if (route.screen === 'redirect') window.location.replace(route.to);
+    if (route.screen === 'redirect') navigate(route.to, { replace: true });
     const title = TITLES[route.screen];
     if (title) document.title = title;
   }, [route]);
 
   return (
     <>
-      <main>
+      <main key={location.key} className="gm-screen-in">
         <Screen route={route} />
       </main>
       <PwaTabbar />
       <ChromeExtras />
+      <Onboarding />
     </>
   );
 }

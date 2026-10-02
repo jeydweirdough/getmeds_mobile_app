@@ -94,18 +94,31 @@ import type {
 // Generic fetch hook
 // ─────────────────────────────────────────────
 
+// What each query last returned, for the life of the app. Screens switch in
+// place now (platform/router.ts), so a screen opened a second time starts from
+// this instead of a skeleton, and the fetch below quietly refreshes it.
+// Keyed by the fetcher function itself, plus the param for the param variant.
+const memo = new Map<unknown, Map<string, unknown>>()
+const cached = <T,>(fn: unknown, key = ''): T | undefined => memo.get(fn)?.get(key) as T | undefined
+const remember = (fn: unknown, key: string, value: unknown) => {
+  let m = memo.get(fn)
+  if (!m) memo.set(fn, (m = new Map()))
+  m.set(key, value)
+}
+
 function useFetch<T>(fetcher: () => Promise<T>) {
-  const [data, setData] = useState<T | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<T | null>(() => cached<T>(fetcher) ?? null)
+  const [loading, setLoading] = useState(() => cached<T>(fetcher) === undefined)
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
+    if (cached<T>(fetcher) === undefined) setLoading(true)
     setError(null)
 
     fetcher()
       .then((result) => {
+        remember(fetcher, '', result)
         if (!cancelled) setData(result)
       })
       .catch((err) => {
@@ -126,8 +139,12 @@ function useFetch<T>(fetcher: () => Promise<T>) {
 // `preloaded` returns data the build baked into the page for this param (see ./preload), which
 // then stands in for the fetch — including on the very first render.
 function useFetchWithParam<T, P>(fetcher: (param: P) => Promise<T>, param: P, preloaded?: (param: P) => T | undefined) {
-  const [data, setData] = useState<T | null>(() => (param && preloaded ? preloaded(param) ?? null : null))
-  const [loading, setLoading] = useState(() => !(param && preloaded && preloaded(param) !== undefined))
+  const [data, setData] = useState<T | null>(
+    () => (param && preloaded ? preloaded(param) ?? null : null) ?? (param ? cached<T>(fetcher, String(param)) ?? null : null),
+  )
+  const [loading, setLoading] = useState(
+    () => !(param && ((preloaded && preloaded(param) !== undefined) || cached<T>(fetcher, String(param)) !== undefined)),
+  )
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
@@ -140,11 +157,14 @@ function useFetchWithParam<T, P>(fetcher: (param: P) => Promise<T>, param: P, pr
       return
     }
     let cancelled = false
-    setLoading(true)
+    const hit = cached<T>(fetcher, String(param))
+    if (hit !== undefined) setData(hit)
+    else setLoading(true)
     setError(null)
 
     fetcher(param)
       .then((result) => {
+        remember(fetcher, String(param), result)
         if (!cancelled) setData(result)
       })
       .catch((err) => {

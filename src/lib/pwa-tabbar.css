@@ -7,6 +7,10 @@
    reveals it, so nothing changes for the website. */
 .gm-tabbar, .gm-sheet, .gm-sheet-backdrop { display: none; }
 
+/* The request list's pinned "Request a quote" button (app/cart). Off the
+   floor of the screen on the website; just above the bar in the app. */
+.gm-cart-cta { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+
 /* The bar's geometry, in one place. --gm-tabbar-space is the figure every
    other pinned element measures from; see the note at the top of this file.
    Declared unscoped on purpose: custom properties are inert until something
@@ -75,6 +79,7 @@ html.pwa-standalone body:not(:has([data-page="chat"])) .tawk-min-container {
 /* The offline-inquiry notice spans the full width and would otherwise cover
    the tab bar completely — it sits directly above it instead. */
 html.pwa-standalone .gm-queued-notice { bottom: calc(var(--gm-tabbar-space) + 4px); }
+html.pwa-standalone .gm-cart-cta { bottom: calc(var(--gm-tabbar-space) + 10px); }
 
 /* Same for the cookie banner and its privacy-signal notice
    (public/components/analytics-consent.js). The banner's own bottom padding
@@ -140,6 +145,7 @@ body:not(:has([data-page="chat"])) .tawk-min-container {
 /* The offline-inquiry notice spans the full width and would otherwise cover
    the tab bar completely — it sits directly above it instead. */
 .gm-queued-notice { bottom: calc(var(--gm-tabbar-space) + 4px); }
+.gm-cart-cta { bottom: calc(var(--gm-tabbar-space) + 10px); }
 
 /* Same for the cookie banner and its privacy-signal notice
    (public/components/analytics-consent.js). The banner's own bottom padding
@@ -237,9 +243,13 @@ body:not(:has([data-page="chat"])) .tawk-min-container {
    Search holds that slot: in a catalogue this size — thousands of rows,
    most of them near-identical oncology names — finding one specific thing
    is the errand people arrive with far more often than any other. */
+/* Centred on the same line as its neighbours' icons rather than raised above
+   the bar: a normal tab's stack (18px icon + 3px gap + ~14px caption) is
+   centred in the 66px bar, which puts its icon's middle ~24.5px from the
+   top, and -3px is what puts this 54px circle's middle there too. */
 .gm-tabbar .gm-mid .gm-mid-btn {
   position: absolute;
-  top: -16px;
+  top: -3px;
   left: 50%;
   margin-left: -27px;
   width: 54px; height: 54px;

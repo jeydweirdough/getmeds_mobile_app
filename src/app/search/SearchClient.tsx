@@ -7,8 +7,8 @@ import {
   CatalogueRow,
   ProductRow,
   prettyFolder,
-  productImage,
 } from '@/lib/catalogueItem';
+import { goTo } from '@/platform/navigation';
 
 /**
  * search.tsx
@@ -35,9 +35,10 @@ import {
  * back exit the search entirely from the middle of a task.
  */
 
-const GROUND = '#F3F6FB';
 const BRAND = '#1D9FDA';
-const CARD_SHADOW = '0 2px 10px rgba(23,43,77,.055)';
+const CARD_SHADOW = '0 1px 4px rgba(23,43,77,.04)';
+/** The search box: a neutral light grey. */
+const FIELD = '#F6F7F9';
 const RECENTS_KEY = 'getmeds:recent-searches';
 const MAX_RECENTS = 8;
 
@@ -215,13 +216,12 @@ export default function SearchClient() {
   }, [submitted, products]);
 
   const categories = useMemo(() => {
-    const acc = new Map<string, { count: number; image?: string }>();
+    const acc = new Map<string, { count: number }>();
     for (const p of products) {
       const f = (p.categoryFolder || '').trim();
       if (!f) continue;
       const cur = acc.get(f) || { count: 0 };
       cur.count += 1;
-      if (!cur.image && p.image && p.image.asset) cur.image = productImage(p, 120);
       acc.set(f, cur);
     }
     return [...acc.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 12);
@@ -253,7 +253,7 @@ export default function SearchClient() {
               // the hardware back gesture does, so the two never disagree.
               if (submitted) { window.history.back(); return; }
               if (window.history.length > 1) window.history.back();
-              else window.location.href = '/app-home';
+              else goTo('/app-home');
             }}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700"
           >
@@ -281,7 +281,7 @@ export default function SearchClient() {
               placeholder="Search brand, generic or condition"
               aria-label="Search the catalogue"
               className="h-[46px] w-full rounded-full border border-transparent pl-11 pr-11 text-[13.5px] text-gray-800 outline-none placeholder:text-gray-400 focus:border-[#1D9FDA]"
-              style={{ background: GROUND }}
+              style={{ background: FIELD }}
             />
             {query.length > 0 && (
               <button
@@ -303,73 +303,65 @@ export default function SearchClient() {
           <>
             {recents.length > 0 && (
               <section className="mb-6 pt-2">
-                <div className="mb-2 flex items-baseline justify-between">
-                  <h2 className="text-[13px] font-semibold text-gray-900">Recent searches</h2>
-                  <button type="button" onClick={forgetAll} className="text-[12px] font-semibold" style={{ color: BRAND }}>
+                <div className="mb-1 flex items-center justify-between">
+                  <h2 className="flex items-center gap-2 text-[12.5px] font-medium text-gray-400">
+                    <i className="fa-solid fa-clock-rotate-left text-[11px]" />
+                    Recent Searches
+                  </h2>
+                  <button type="button" onClick={forgetAll} className="text-[11.5px] font-medium" style={{ color: BRAND }}>
                     Clear all
                   </button>
                 </div>
-                <div className="overflow-hidden rounded-[16px] bg-white" style={{ boxShadow: CARD_SHADOW }}>
-                  {recents.map((term, i) => (
-                    <div
-                      key={term}
-                      className={`flex items-center gap-3 px-3 ${i > 0 ? 'border-t border-gray-50' : ''}`}
-                    >
+                <ul>
+                  {recents.map((term) => (
+                    <li key={term} className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => commit(term)}
-                        className="flex min-w-0 flex-1 items-center gap-3 py-3 text-left"
+                        className="min-w-0 flex-1 truncate py-2.5 text-left text-[13.5px] text-gray-800"
                       >
-                        <i className="fa-regular fa-clock shrink-0 text-[13px] text-gray-300" />
-                        <span className="truncate text-[13.5px] text-gray-700">{term}</span>
+                        {term}
                       </button>
                       <button
                         type="button"
                         onClick={() => forgetOne(term)}
                         aria-label={`Remove ${term} from recent searches`}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-300"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center text-gray-300"
                       >
                         <i className="fa-solid fa-xmark text-[12px]" />
                       </button>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
                 {!persistent && (
-                  <p className="mt-2 px-1 text-[10.5px] leading-relaxed text-gray-400">
+                  <p className="mt-1 text-[10.5px] leading-relaxed text-gray-400">
                     Kept for this session only. Getmeds does not store what you search.
                   </p>
                 )}
               </section>
             )}
 
-            <section>
-              <h2 className="mb-3 text-center text-[13px] font-semibold text-gray-900">Browse by category</h2>
+            <section className={recents.length > 0 ? '' : 'pt-2'}>
+              <h2 className="mb-3 flex items-center gap-2 text-[12.5px] font-medium text-gray-400">
+                <i className="fa-solid fa-arrow-trend-up text-[11px]" />
+                Featured Categories
+              </h2>
               {loading && categories.length === 0 ? (
-                <div className="flex flex-wrap justify-center gap-2">
+                <div className="flex flex-wrap gap-2">
                   {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="h-9 w-28 animate-pulse rounded-full bg-white" />
+                    <div key={i} className="h-[30px] w-24 animate-pulse rounded-lg" style={{ background: FIELD }} />
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-wrap justify-center gap-2">
-                  {categories.map(([folder, info]) => (
+                <div className="flex flex-wrap gap-2">
+                  {categories.map(([folder]) => (
                     <a
                       key={folder}
                       href={`/${folder}`}
-                      className="inline-flex items-center gap-2 rounded-full bg-white py-2 pl-2 pr-3.5"
-                      style={{ boxShadow: CARD_SHADOW }}
+                      className="rounded-lg px-3 py-1.5 text-[12px] font-medium text-gray-600 transition active:scale-95"
+                      style={{ background: '#EEF0F3' }}
                     >
-                      <span className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-[#F1F6FC]">
-                        {info.image ? (
-                          <img src={info.image} alt="" loading="lazy" className="h-full w-full object-contain p-0.5 mix-blend-multiply" />
-                        ) : (
-                          <i className="fa-solid fa-pills text-[9px]" style={{ color: BRAND }} />
-                        )}
-                      </span>
-                      <span className="text-[12px] font-semibold text-gray-700">
-                        {prettyFolder(folder).replace(' Medicines', '')}
-                      </span>
-                      <span className="text-[10.5px] text-gray-400">{info.count}</span>
+                      {prettyFolder(folder).replace(' Medicines', '')}
                     </a>
                   ))}
                 </div>
@@ -410,7 +402,7 @@ export default function SearchClient() {
 
             {preview.length > 0 && (
               <section>
-                <h2 className="mb-2 text-[12px] font-bold uppercase tracking-wide text-gray-400">Products</h2>
+                <h2 className="mb-2 text-[13px] font-semibold text-gray-900">Products</h2>
                 <div className="space-y-2.5">
                   {preview.map((p, i) => <ProductRow key={p._id || i} p={p} highlight={query.trim()} />)}
                 </div>

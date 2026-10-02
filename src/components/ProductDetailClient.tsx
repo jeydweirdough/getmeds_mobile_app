@@ -1516,12 +1516,12 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                 the breadcrumb; in the app there is no breadcrumb, so this is
                 the only sideways move on the screen. */}
             {app && similar.length > 0 && (
-              /* Tinted, unlike everything above it. The white cards need a
-                 ground to sit on, and the colour change doubles as the break
-                 between "this product" and "other products". */
-              <section className="bg-[#F3F6FB] px-4 pb-8 pt-6">
+              /* White like the rest of the screen; a hairline above marks the
+                 break between "this product" and "other products", and the
+                 cards carry a border rather than a shadow. */
+              <section className="border-t border-[#EEF1F5] bg-white px-4 pb-8 pt-6">
                 <div className="mb-3 flex items-baseline justify-between">
-                  <h2 className="text-[16px] font-bold tracking-tight text-gray-900">Similar products</h2>
+                  <h2 className="text-[16px] font-medium tracking-tight text-gray-900">Similar products</h2>
                   <a href={backUrl} className="text-[12px] font-semibold" style={{ color: '#0D99FF' }}>See all</a>
                 </div>
                 <div className="space-y-2.5">
@@ -1532,8 +1532,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                       <a
                         key={s._id}
                         href={productHref(s)}
-                        className="flex items-center gap-3 rounded-[16px] bg-white p-2.5"
-                        style={{ boxShadow: '0 2px 10px rgba(23,43,77,.055)' }}
+                        className="flex items-center gap-3 rounded-[16px] border border-[#EEF1F5] bg-white p-2.5"
                       >
                         <div className="flex h-[56px] w-[56px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#F6F8FC] p-1.5">
                           {hasImg ? (
@@ -1557,7 +1556,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                           </p>
                         </div>
                         {s.prescription?.toUpperCase() === 'RX' && (
-                          <span className="shrink-0 rounded-full bg-amber-50 px-2 py-[3px] text-[9.5px] font-bold text-amber-700">
+                          <span className="shrink-0 rounded-full bg-[#E8F5FC] px-2 py-[2px] text-[9.5px] font-semibold text-[#1D9FDA]">
                             Rx
                           </span>
                         )}

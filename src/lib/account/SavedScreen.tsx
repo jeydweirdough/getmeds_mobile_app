@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { saveList, shortDate, useAccountData, type SavedProduct } from '../accountApi';
 import { Empty, ErrorNote, PrimaryButton, Screen, SmallButton, Toast, useToast } from '../ui/Screen';
 import { addResultMessage, cartItemFor, detailOf, errorText, Switch, Thumb, unsaveProduct, useAddToList } from './listActions';
+import { goTo } from '@/platform/navigation';
 
 /**
  * SavedScreen.tsx
@@ -73,7 +74,7 @@ export default function SavedScreen({ onClose }: { onClose: () => void }) {
           title="No saved medicines yet"
           text="Tap the bookmark on a medicine's page to keep it here. You can also ask us to text you when it's back in stock."
           action={
-            <SmallButton onClick={() => { window.location.href = '/search'; }}>
+            <SmallButton onClick={() => { goTo('/search'); }}>
               Find a medicine
             </SmallButton>
           }

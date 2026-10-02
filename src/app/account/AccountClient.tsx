@@ -31,6 +31,7 @@ import PapScreen from '@/lib/account/PapScreen';
 import GuidesScreen from '@/lib/account/GuidesScreen';
 import PrivacyScreen from '@/lib/account/PrivacyScreen';
 import { captureReferralFromUrl, inviteLink, signOut as signOutOfPoints } from '@/lib/rewards';
+import { goTo } from '@/platform/navigation';
 
 /**
  * account.tsx
@@ -65,7 +66,6 @@ import { captureReferralFromUrl, inviteLink, signOut as signOutOfPoints } from '
 
 const GROUND = '#F3F6FB';
 const BRAND = '#1D9FDA';
-const CARD = '0 2px 10px rgba(23,43,77,.055)';
 
 type Tab = 'inquiries' | 'details';
 
@@ -116,7 +116,7 @@ function Segmented({ tab, setTab, counts }: { tab: Tab; setTab: (t: Tab) => void
     { id: 'details', label: 'Details' },
   ];
   return (
-    <div className="mb-5 flex gap-1 rounded-full bg-white p-1" style={{ boxShadow: CARD }}>
+    <div className="mb-5 flex gap-1 rounded-full p-1" style={{ background: GROUND }}>
       {items.map((it) => {
         const on = tab === it.id;
         return (
@@ -198,7 +198,7 @@ function Account() {
 
   useEffect(() => {
     document.title = 'My Account | Getmeds';
-    if (app) document.body.style.background = GROUND;
+    if (app) document.body.style.background = '#FFFFFF';
     setUser(readUser());
     // /edit-profile redirects here with #details, so the old "Edit Profile"
     // links from the navbar, the blog and the homepage land on the form
@@ -228,6 +228,8 @@ function Account() {
     return () => {
       window.removeEventListener(ACCOUNT_CHANGED_EVENT, refresh);
       window.removeEventListener(CART_CHANGED_EVENT, refresh);
+      // Screens now switch in place, so the tint must not follow us to the next one.
+      if (app) document.body.style.background = '';
     };
   }, [refresh, app]);
 
@@ -449,7 +451,7 @@ function Account() {
                   onClick: () => setDetailsOpen(true),
                 },
                 { icon: 'fa-book-medical', label: 'Health guides', onClick: () => open('guides') },
-                { icon: 'fa-comments', label: 'Chat with us', onClick: () => { window.location.href = '/chat'; } },
+                { icon: 'fa-comments', label: 'Chat with us', onClick: () => { goTo('/chat'); } },
               ]}
             />
           </>
@@ -487,18 +489,18 @@ function Account() {
               points.signedIn
                 ? [
                     { icon: 'fa-share-nodes', label: 'Invite a friend', onClick: invite },
-                    { icon: 'fa-headset', label: 'Contact us', onClick: () => { window.location.href = '/contact-us'; } },
+                    { icon: 'fa-headset', label: 'Contact us', onClick: () => { goTo('/contact-us'); } },
                     { icon: 'fa-arrow-right-from-bracket', label: 'Log out', onClick: logout, tone: 'danger' },
                   ]
                 : [
                     { icon: 'fa-right-to-bracket', label: 'Sign in', onClick: () => { scrollTo('points'); document.getElementById('points-mobile')?.focus({ preventScroll: true }); } },
-                    { icon: 'fa-headset', label: 'Contact us', onClick: () => { window.location.href = '/contact-us'; } },
+                    { icon: 'fa-headset', label: 'Contact us', onClick: () => { goTo('/contact-us'); } },
                   ]
             }
           />
         )}
         {!app && (
-        <div className="mb-5 flex items-center gap-3.5 rounded-[18px] bg-white p-4" style={{ boxShadow: CARD }}>
+        <div className="mb-5 flex items-center gap-3.5 rounded-[18px] border border-[#EEF1F5] bg-white p-4">
           <span
             className="flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-full text-[20px] font-bold text-white"
             style={{ background: BRAND }}
@@ -554,7 +556,7 @@ function Account() {
               <ListRow icon="fa-gift" title="Rewards" detail="Use your points" hint={pointsAccount ? `${pointsAccount.pointsBalance.toLocaleString('en-PH')} pts` : undefined} onClick={() => open('rewards')} />
               <ListRow icon="fa-hand-holding-heart" title="Patient Assistance" detail={papOpen ? 'Application in progress' : 'Support for long-course treatment'} onClick={() => open('pap')} />
               <ListRow icon="fa-book-medical" title="Health guides" onClick={() => open('guides')} />
-              <ListRow icon="fa-comments" title="Chat with us" detail="Ask about a medicine or a request" onClick={() => { window.location.href = '/chat'; }} />
+              <ListRow icon="fa-comments" title="Chat with us" detail="Ask about a medicine or a request" onClick={() => { goTo('/chat'); }} />
             </Card>
             <Card>
               <ListRow icon="fa-shield-halved" title="Privacy and data" detail="Download or delete your account" onClick={() => open('privacy')} />
@@ -607,7 +609,7 @@ function Account() {
         </SignInSheet>
 
         {consented === false && showSections && (
-          <div className="mb-5 rounded-[18px] bg-white p-4" style={{ boxShadow: CARD }}>
+          <div className="mb-5 rounded-[18px] border border-[#EEF1F5] bg-white p-4">
             <p className="text-[13.5px] font-semibold text-gray-900">Keep your details on this phone?</p>
             <p className="mt-1.5 text-[12px] leading-relaxed text-gray-500">
               Your inquiries and saved details stay on this device. Nothing is sent to
@@ -656,11 +658,11 @@ function Account() {
             {inquiries === null ? (
               <div className="space-y-2.5">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="h-[92px] animate-pulse rounded-[16px] bg-white" />
+                  <div key={i} className="h-[92px] animate-pulse rounded-[16px] bg-gray-100" />
                 ))}
               </div>
             ) : inquiries.length === 0 ? (
-              <div className="rounded-[18px] bg-white p-7 text-center" style={{ boxShadow: CARD }}>
+              <div className="rounded-[18px] border border-[#EEF1F5] bg-white p-7 text-center">
                 <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F6FC]">
                   <i className="fa-solid fa-file-lines text-[18px]" style={{ color: BRAND }} />
                 </span>
@@ -682,7 +684,7 @@ function Account() {
                 {inquiries.map((q) => {
                   const s = STATUS[q.status];
                   return (
-                    <li key={q.id} className="rounded-[16px] bg-white p-4" style={{ boxShadow: CARD }}>
+                    <li key={q.id} className="rounded-[16px] border border-[#EEF1F5] bg-white p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-[13.5px] font-semibold text-gray-900">
@@ -735,8 +737,7 @@ function Account() {
                 app, so there is no status to show and none is implied. */}
             <a
               href="/patient-assistance-program"
-              className="mt-4 flex items-center gap-3.5 rounded-[18px] bg-white p-4"
-              style={{ boxShadow: CARD }}
+              className="mt-4 flex items-center gap-3.5 rounded-[18px] border border-[#EEF1F5] bg-white p-4"
             >
               <img src="/assets/pap-logo-sm.png" alt="Patient Assistance Program" loading="lazy" className="h-[38px] w-auto shrink-0" />
               <span className="min-w-0 flex-1 text-[11.5px] leading-snug text-gray-500">
@@ -749,7 +750,7 @@ function Account() {
 
         {/* ── Details ───────────────────────────────────────────────────── */}
         {tab === 'details' && showSections && !app && (
-          <section className="rounded-[18px] bg-white p-4" style={{ boxShadow: CARD }}>
+          <section className="rounded-[18px] border border-[#EEF1F5] bg-white p-4">
             <p className="text-[13.5px] font-semibold text-gray-900">Your details</p>
             <p className="mt-1 text-[11.5px] leading-relaxed text-gray-500">
               Saved on this phone and used to fill in inquiry forms, so you do not type them
