@@ -112,6 +112,7 @@ export default function App() {
 
   return (
     <>
+      <div className="gm-statusbar-fill" aria-hidden="true" />
       <main key={location.key} className="gm-screen-in">
         <Screen route={route} />
       </main>

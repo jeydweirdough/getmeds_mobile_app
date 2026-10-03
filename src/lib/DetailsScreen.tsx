@@ -171,7 +171,7 @@ export default function DetailsScreen({
       {/* Header */}
       <header
         className="flex items-center gap-2 border-b border-[#E7ECF2] bg-white px-2 pb-2.5"
-        style={{ paddingTop: 'calc(10px + env(safe-area-inset-top, 0px))' }}
+        style={{ paddingTop: 'calc(10px + var(--gm-safe-top))' }}
       >
         <button type="button" onClick={close} aria-label="Back" className="flex h-10 w-10 items-center justify-center rounded-full text-gray-700">
           <i className="fa-solid fa-arrow-left text-[16px]" />
@@ -327,7 +327,7 @@ export default function DetailsScreen({
       {/* Save bar */}
       <div
         className="border-t border-[#E7ECF2] bg-white px-4 pt-3"
-        style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}
+        style={{ paddingBottom: 'calc(12px + var(--gm-safe-bottom))' }}
       >
         <button
           type="button"

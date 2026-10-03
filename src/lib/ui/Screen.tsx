@@ -92,7 +92,7 @@ export function Screen({ title, subtitle, onClose, footer, headerAction, childre
     >
       <header
         className="flex items-center gap-2 border-b border-[#E7ECF2] bg-white px-2 pb-2.5"
-        style={{ paddingTop: 'calc(10px + env(safe-area-inset-top, 0px))' }}
+        style={{ paddingTop: 'calc(10px + var(--gm-safe-top))' }}
       >
         <button
           type="button"
@@ -112,7 +112,7 @@ export function Screen({ title, subtitle, onClose, footer, headerAction, childre
       <div className="flex-1 space-y-5 overflow-y-auto px-4 pb-8 pt-5">{children}</div>
 
       {footer && (
-        <div className="border-t border-[#E7ECF2] bg-white px-4 pt-3" style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="border-t border-[#E7ECF2] bg-white px-4 pt-3" style={{ paddingBottom: 'calc(12px + var(--gm-safe-bottom))' }}>
           {footer}
         </div>
       )}
@@ -273,7 +273,7 @@ export function Toast({ text }: { text: string }) {
     <div
       role="status"
       className="fixed inset-x-4 z-[10100] rounded-2xl bg-gray-900 px-4 py-3 text-center text-[13px] text-white shadow-lg"
-      style={{ bottom: 'calc(96px + env(safe-area-inset-bottom, 0px))' }}
+      style={{ bottom: 'calc(96px + var(--gm-safe-bottom))' }}
     >
       {text}
     </div>
@@ -298,7 +298,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-[rgba(15,23,42,.45)]" />
       <div
         className="relative max-h-[88vh] w-full overflow-y-auto rounded-t-[28px] px-4 pt-3"
-        style={{ background: GROUND, paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))' }}
+        style={{ background: GROUND, paddingBottom: 'calc(20px + var(--gm-safe-bottom))' }}
       >
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300" />
         <div className="mb-4 flex items-center justify-between px-1">

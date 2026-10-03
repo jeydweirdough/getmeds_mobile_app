@@ -168,7 +168,7 @@ export function SignInSheet({ open, onClose, children }: { open: boolean; onClos
       <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-[rgba(15,23,42,.45)]" />
       <div
         className="relative max-h-[90vh] w-full overflow-y-auto rounded-t-[28px] bg-white px-5 pt-3"
-        style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))' }}
+        style={{ paddingBottom: 'calc(20px + var(--gm-safe-bottom))' }}
       >
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
         <button

@@ -11,6 +11,40 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Safe areas: the status bar on top, the gesture/button bar at the bottom.
+   Android 15+ draws every app edge to edge (the app targets SDK 36), so the
+   page runs under both bars. Capacitor's SystemBars injects --safe-area-inset-*
+   with the real sizes (its default insetsHandling "css"); env() is the
+   browser's own value, the fallback. Everything in the app reads these two. */
+:root {
+  --gm-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --gm-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --gm-safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+  --gm-safe-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+}
+
+/* Every screen starts below the status bar... */
+main.gm-screen-in {
+  padding-top: var(--gm-safe-top);
+}
+/* ...its sticky headers stop under it instead of sliding behind it... */
+main.gm-screen-in .sticky.top-0 {
+  top: var(--gm-safe-top);
+}
+/* ...and what scrolls up past them is hidden behind a white strip, so the
+   status bar's icons never sit on top of content. Under the full screens and
+   sheets (z-index 10040+), which pad for the status bar themselves. */
+.gm-statusbar-fill {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--gm-safe-top);
+  background: #fff;
+  z-index: 9999;
+  pointer-events: none;
+}
+
 /* Screen change (platform/router.ts): a quick fade so the swap reads as motion
    rather than a flash. Opacity only — a transform here would turn every
    position:fixed sheet and header inside the screen into position:absolute. */

@@ -21,7 +21,7 @@ export default function CategoriesClient() {
     <div className="min-h-screen text-gray-800 antialiased" data-page="categories" style={{ background: '#FFFFFF' }}>
       <header
         className="sticky top-0 z-40 px-3 pb-3"
-        style={{ background: '#FFFFFF', paddingTop: 'calc(10px + env(safe-area-inset-top, 0px))' }}
+        style={{ background: '#FFFFFF', paddingTop: '10px' /* the screen (App.tsx) already clears the status bar */ }}
       >
         {/* Title centred on the screen, not in the space beside the back
             button, so it sits in the middle the way a native title bar does. */}

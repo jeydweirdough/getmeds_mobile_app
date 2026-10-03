@@ -9,7 +9,7 @@
 
 /* The request list's pinned "Request a quote" button (app/cart). Off the
    floor of the screen on the website; just above the bar in the app. */
-.gm-cart-cta { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+.gm-cart-cta { bottom: calc(16px + var(--gm-safe-bottom)); }
 
 /* The bar's geometry, in one place. --gm-tabbar-space is the figure every
    other pinned element measures from; see the note at the top of this file.
@@ -19,8 +19,12 @@
    capsule would sit on top of the iPhone home indicator. */
 :root {
   --gm-tabbar-inset: 12px;
+  /* The gap under the capsule. Small: on a phone it already sits above the
+     system's gesture/button bar (--gm-safe-bottom), so a large gap on top of
+     that left a tall empty band at the bottom of the screen. */
+  --gm-tabbar-gap: 4px;
   --gm-tabbar-height: 66px;
-  --gm-tabbar-space: calc(var(--gm-tabbar-inset) + var(--gm-tabbar-height) + env(safe-area-inset-bottom, 0px));
+  --gm-tabbar-space: calc(var(--gm-tabbar-gap) + var(--gm-tabbar-height) + var(--gm-safe-bottom));
 }
 
 @media (max-width: 1024px) {
@@ -32,7 +36,7 @@ html.pwa-standalone .gm-sheet-backdrop { display: block; }
 /* Clear the bar so the end of the page is never trapped behind it. The
    extra 12px is the gap below the capsule, which content should not sit in
    either — it is what makes the bar look like it is floating. */
-html.pwa-standalone body { padding-bottom: calc(var(--gm-tabbar-space) + 12px); }
+html.pwa-standalone body { padding-bottom: calc(var(--gm-tabbar-space) + 8px); }
 
 /* The footer repeats what Contact Us already covers, so the app drops it. */
 html.pwa-standalone #site-footer { display: none; }
@@ -98,7 +102,7 @@ html.pwa-standalone .gmc-banner { padding-bottom: 18px !important; }
 /* Clear the bar so the end of the page is never trapped behind it. The
    extra 12px is the gap below the capsule, which content should not sit in
    either — it is what makes the bar look like it is floating. */
-body { padding-bottom: calc(var(--gm-tabbar-space) + 12px); }
+body { padding-bottom: calc(var(--gm-tabbar-space) + 8px); }
 
 /* The footer repeats what Contact Us already covers, so the app drops it. */
 #site-footer { display: none; }
@@ -191,7 +195,7 @@ body:not(:has([data-page="chat"])) .tawk-min-container {
   position: fixed;
   left: var(--gm-tabbar-inset);
   right: var(--gm-tabbar-inset);
-  bottom: calc(var(--gm-tabbar-inset) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--gm-tabbar-gap) + var(--gm-safe-bottom));
   z-index: 9997;
   height: var(--gm-tabbar-height);
   align-items: stretch;
@@ -318,7 +322,7 @@ body:not(:has([data-page="chat"])) .tawk-min-container {
   z-index: 9999;
   background: #fff;
   border-radius: 22px 22px 0 0;
-  padding: 10px 10px calc(14px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 10px calc(14px + var(--gm-safe-bottom));
   box-shadow: 0 -10px 40px rgba(23, 43, 77, .22);
   /* Parked off-screen rather than display:none, so it can animate in and so
      the transition has something to move from on the very first open. */

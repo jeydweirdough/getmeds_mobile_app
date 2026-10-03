@@ -50,9 +50,9 @@ label.gmc-cat-name{cursor:pointer}
 .gmc-notice button:hover{background:rgba(255,255,255,.1)}
 @media (max-width:640px){
 .gmc-banner,.gmc-notice{left:8px;right:8px;bottom:8px;width:auto}
-.gmc-banner{padding:18px 18px calc(16px + env(safe-area-inset-bottom,0px))}
+.gmc-banner{padding:18px 18px calc(16px + var(--gm-safe-bottom))}
 .gmc-overlay{align-items:flex-end;padding:0}
-.gmc-modal{width:100%;max-height:92vh;border-radius:24px 24px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px))}
+.gmc-modal{width:100%;max-height:92vh;border-radius:24px 24px 0 0;padding:20px 18px calc(20px + var(--gm-safe-bottom))}
 .gmc-modal-actions{grid-template-columns:1fr}
 .gmc-modal-actions .gmc-btn-primary{order:-1}
 }

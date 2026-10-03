@@ -50,7 +50,7 @@ function ConsentSheet({
         if (e.target === e.currentTarget) onDecide(false);
       }}
     >
-      <div className="w-full max-w-lg rounded-t-3xl bg-white p-6" style={{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="w-full max-w-lg rounded-t-3xl bg-white p-6" style={{ paddingBottom: 'calc(32px + var(--gm-safe-bottom))' }}>
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-gray-200" />
         <h2 id="consent-title" className="text-[17px] font-semibold text-gray-900">Save your list on this phone?</h2>
         <p className="mt-2 text-[13.5px] leading-relaxed text-gray-600">
@@ -209,7 +209,7 @@ export function AddToCart({
           <div
             role="status"
             className="fixed inset-x-4 z-[10001] rounded-2xl bg-gray-900 px-4 py-3 text-[12.5px] leading-snug text-white shadow-lg"
-            style={{ bottom: 'calc(96px + env(safe-area-inset-bottom, 0px))' }}
+            style={{ bottom: 'calc(96px + var(--gm-safe-bottom))' }}
           >
             {notice}
           </div>,

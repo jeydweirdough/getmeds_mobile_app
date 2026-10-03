@@ -86,7 +86,7 @@ const matches = (p: CatalogueRow, q: string) =>
     .some((v) => String(v).toLowerCase().includes(q));
 
 export default function SearchClient() {
-  const { data: raw, loading } = useProducts();
+  const { data: raw, loading, error: catalogueError } = useProducts();
   const products = (raw || []) as CatalogueRow[];
 
   const [query, setQuery] = useState('');
@@ -470,6 +470,24 @@ export default function SearchClient() {
 
         {loading && !submitted && !showSuggest && categories.length === 0 && (
           <p className="py-10 text-center text-[12px] text-gray-400">Loading the catalogue…</p>
+        )}
+
+        {/* The catalogue could not be fetched at all: say so, instead of an empty screen. */}
+        {!loading && catalogueError && categories.length === 0 && (
+          <div className="py-10 text-center">
+            <p className="text-[13px] font-semibold text-gray-800">We couldn’t load the medicines</p>
+            <p className="mx-auto mt-1 max-w-[260px] text-[12px] leading-relaxed text-gray-500">
+              Check your connection, then try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-full px-5 py-2.5 text-[12.5px] font-semibold text-white"
+              style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
+            >
+              Try again
+            </button>
+          </div>
         )}
       </main>
     </>

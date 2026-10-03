@@ -201,7 +201,7 @@ function Chat() {
     <div className="min-h-screen" style={{ background: GROUND }}>
       <header
         className="sticky top-0 z-40 flex items-center gap-2 border-b border-[#E7ECF2] bg-white px-2 pb-2.5"
-        style={{ paddingTop: 'calc(10px + env(safe-area-inset-top, 0px))' }}
+        style={{ paddingTop: '10px' /* the screen (App.tsx) already clears the status bar */ }}
       >
         <button type="button" onClick={goBack} aria-label="Back" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700">
           <i className="fa-solid fa-arrow-left text-[16px]" />

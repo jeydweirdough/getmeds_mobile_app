@@ -180,7 +180,7 @@ function AuthStep({ onDone }: { onDone: () => void }) {
         </p>
       </div>
 
-      <div className="space-y-3 px-6 pt-4" style={{ paddingBottom: 'calc(22px + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="space-y-3 px-6 pt-4" style={{ paddingBottom: 'calc(22px + var(--gm-safe-bottom))' }}>
         <button
           type="button"
           onClick={() => setMode('signup')}
@@ -257,7 +257,7 @@ export default function Onboarding() {
         src="/assets/getmeds-logo-sm.png"
         alt="Getmeds"
         className="absolute left-4 z-20 h-[38px] w-auto"
-        style={{ top: 'calc(8px + env(safe-area-inset-top, 0px))', filter: 'brightness(0) invert(1)' }}
+        style={{ top: 'calc(8px + var(--gm-safe-top))', filter: 'brightness(0) invert(1)' }}
         draggable={false}
       />
 
@@ -266,7 +266,7 @@ export default function Onboarding() {
         type="button"
         onClick={toAuth}
         className="absolute right-4 z-20 rounded-full px-3 py-1.5 text-[13px] font-medium text-white"
-        style={{ top: 'calc(10px + env(safe-area-inset-top, 0px))', background: 'rgba(10,42,67,.35)', backdropFilter: 'blur(8px)' }}
+        style={{ top: 'calc(10px + var(--gm-safe-top))', background: 'rgba(10,42,67,.35)', backdropFilter: 'blur(8px)' }}
       >
         Skip
       </button>
@@ -306,7 +306,7 @@ export default function Onboarding() {
         ))}
       </div>
 
-      <div className="px-6 pt-4" style={{ paddingBottom: 'calc(22px + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="px-6 pt-4" style={{ paddingBottom: 'calc(22px + var(--gm-safe-bottom))' }}>
         <div className="mb-6 flex justify-center gap-1.5" role="tablist" aria-label="Slides">
           {SLIDES.map((_, i) => (
             <button
