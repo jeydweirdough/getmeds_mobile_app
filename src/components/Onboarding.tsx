@@ -149,17 +149,16 @@ const SLIDES = [
 /* ── Sign up / log in ──────────────────────────────────────────────────── */
 
 /**
- * The last step. Signing up and logging in are the same flow underneath —
- * mobile number, then a texted code; a number we have not seen becomes a new
- * account — so both buttons open the account screen's sign-in form, just
- * introduced differently. Its own component so the points hook only runs
- * once someone gets this far, not on every launch.
+ * The last step. Sign up and Log in open the same sheet (AuthForm), each on
+ * its own form; the form links to the other and to "Forgot password". Its own
+ * component so the points hook only runs once someone gets this far, not on
+ * every launch.
  */
 function AuthStep({ onDone }: { onDone: () => void }) {
   const points = usePoints();
   const [mode, setMode] = useState<'signup' | 'login' | null>(null);
 
-  // A verified code flips signedIn; that is the end of onboarding.
+  // Signing up or logging in flips signedIn; that is the end of onboarding.
   const done = useRef(false);
   useEffect(() => {
     if (!mode || !points.signedIn || done.current) return;
@@ -177,7 +176,7 @@ function AuthStep({ onDone }: { onDone: () => void }) {
         </span>
         <h1 className="text-[26px] font-medium leading-[1.18] text-white">Welcome to Getmeds</h1>
         <p className="mx-auto mt-3 max-w-[300px] text-[13px] leading-relaxed text-white/85">
-          Create an account or log in with your mobile number to earn points on every request. No password needed.
+          Create an account with your email or mobile number to earn points on every request.
         </p>
       </div>
 
@@ -203,15 +202,8 @@ function AuthStep({ onDone }: { onDone: () => void }) {
       </div>
 
       <SignInSheet open={mode !== null} onClose={() => setMode(null)}>
-        <h2 className="mb-1 pr-10 text-[18px] font-semibold text-gray-900">
-          {mode === 'signup' ? 'Create your account' : 'Log in'}
-        </h2>
-        <p className="mb-4 text-[12.5px] leading-relaxed text-gray-500">
-          {mode === 'signup'
-            ? 'Enter your mobile number and we’ll text you a 6-digit code to set up your account.'
-            : 'Enter the mobile number on your account and we’ll text you a 6-digit code.'}
-        </p>
-        <PointsCard points={points} bare />
+        {/* Keyed so each button opens its own form fresh. */}
+        <PointsCard key={mode ?? 'closed'} points={points} bare initialMode={mode ?? 'signup'} />
       </SignInSheet>
     </>
   );

@@ -25,7 +25,8 @@ import { useProducts } from '@/lib/useSanity';
 import { type CatalogueRow, productImage } from '@/lib/catalogueItem';
 import { USER_TYPES, type TypeDef, typeByValue } from '@/lib/audienceTypes';
 import { loadDetails, type SavedDetails } from '@/lib/accountStore';
-import { isSignedIn } from '@/lib/rewards';
+import PointsCard, { usePoints } from '@/lib/PointsCard';
+import { SignInSheet } from '@/lib/ProfileCard';
 import { addRx, useAccountData, type AccountData } from '@/lib/accountApi';
 import PatientsScreen from '@/lib/account/PatientsScreen';
 import AddressesScreen from '@/lib/account/AddressesScreen';
@@ -118,7 +119,19 @@ function Chip({ id, on, onClick, children }: { id: string; on: boolean; onClick:
   );
 }
 
-function Cart({ app, member }: { app: boolean; member: boolean }) {
+function Cart({
+  app,
+  member,
+  onNeedAccount,
+  resume = false,
+}: {
+  app: boolean;
+  member: boolean;
+  /** Asking for a quote needs an account in the app; called instead of opening the form. */
+  onNeedAccount?: () => void;
+  /** Just signed in from the quote button: carry on to the form without a second tap. */
+  resume?: boolean;
+}) {
   const [items, setItems] = useState<CartItem[] | null>(null);
   const [step, setStep] = useState<Step>('list');
   const [type, setType] = useState<TypeDef | null>(null);
@@ -337,6 +350,15 @@ function Cart({ app, member }: { app: boolean; member: boolean }) {
     });
     knownIds.current = new Set(list.map((i) => i.id));
   }, []);
+
+  // Signed in from the quote button: continue to the form as if Request had
+  // been tapped again, once the list has loaded.
+  const resumed = React.useRef(false);
+  useEffect(() => {
+    if (!resume || resumed.current || !items?.length) return;
+    resumed.current = true;
+    setStep(type ? 'form' : 'type');
+  }, [resume, items, type]);
 
   useEffect(() => {
     document.title = 'Your Request List | Getmeds';
@@ -950,7 +972,16 @@ function Cart({ app, member }: { app: boolean; member: boolean }) {
                   // of someone who has answered it before is a step that buys
                   // nothing — and the form's own back button still leads to
                   // the picker for anyone who needs to change it.
-                  onClick={() => setStep(type ? 'form' : 'type')}
+                  onClick={() => {
+                    // A quote needs an account in the app (it is what the
+                    // points are credited to); the sign-in sheet carries the
+                    // visitor straight back here once they're in.
+                    if (app && !member) {
+                      onNeedAccount?.();
+                      return;
+                    }
+                    setStep(type ? 'form' : 'type');
+                  }}
                   className="w-full rounded-full py-3.5 text-[14px] font-semibold text-white disabled:opacity-40"
                   style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)', boxShadow: '0 8px 20px rgba(29,159,218,.28)' }}
                 >
@@ -1007,14 +1038,39 @@ function Cart({ app, member }: { app: boolean; member: boolean }) {
  */
 export default function CartClient() {
   const [mode, setMode] = useState({ app: false, member: false });
+  const points = usePoints();
+  const [needAccount, setNeedAccount] = useState(false);
+  const [resume, setResume] = useState(false);
   useEffect(() => {
     const app = isAppMode();
-    setMode({ app, member: app && isSignedIn() });
-  }, []);
+    setMode({ app, member: app && points.signedIn });
+  }, [points.signedIn]);
+  // Signed in (or up) from the sheet the quote button opened: close it and
+  // let the new member Cart carry on to the form.
+  useEffect(() => {
+    if (needAccount && points.signedIn) {
+      setNeedAccount(false);
+      setResume(true);
+    }
+  }, [needAccount, points.signedIn]);
   // cart.html's <body class="text-gray-800"> and its Poppins font rule.
   return (
     <div className="text-gray-800" style={{ fontFamily: "'Poppins', sans-serif" }}>
-      <Cart key={mode.member ? 'member' : 'guest'} app={mode.app} member={mode.member} />
+      <Cart
+        key={mode.member ? 'member' : 'guest'}
+        app={mode.app}
+        member={mode.member}
+        resume={resume}
+        onNeedAccount={() => setNeedAccount(true)}
+      />
+      <SignInSheet open={needAccount && !points.signedIn} onClose={() => setNeedAccount(false)}>
+        <PointsCard
+          points={points}
+          bare
+          initialMode="signup"
+          intro="You need a free account to request a quote. It also earns you Getmeds Points on every request."
+        />
+      </SignInSheet>
     </div>
   );
 }

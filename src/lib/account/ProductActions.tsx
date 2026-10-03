@@ -25,15 +25,15 @@ type Feature = 'save' | 'stock' | 'refill';
 
 const SIGN_IN_COPY: Record<Feature, { title: string; text: string }> = {
   save: {
-    title: 'Sign in to save medicines',
+    title: 'Log in to save medicines',
     text: 'Saved medicines are kept with your account, so you find them again on any phone.',
   },
   stock: {
-    title: 'Sign in for stock alerts',
-    text: "We text the mobile number you sign in with when this medicine is back in stock.",
+    title: 'Log in for stock alerts',
+    text: "We text your mobile number when this medicine is back in stock.",
   },
   refill: {
-    title: 'Sign in for refill reminders',
+    title: 'Log in for refill reminders',
     text: 'We text you the day before a medicine runs out, and you earn bonus points when you request it on time.',
   },
 };
@@ -43,8 +43,8 @@ function SignInSheet({ feature, onClose }: { feature: Feature; onClose: () => vo
   return (
     <Sheet title={copy.title} onClose={onClose}>
       <p className="px-1 text-[13px] leading-relaxed text-gray-600">{copy.text}</p>
-      <p className="px-1 text-[12px] leading-relaxed text-gray-500">Sign in with your mobile number. It takes a minute.</p>
-      <PrimaryButton onClick={() => { goTo('/profile'); }}>Sign in</PrimaryButton>
+      <p className="px-1 text-[12px] leading-relaxed text-gray-500">Log in, or create an account with your email or mobile number. It takes a minute.</p>
+      <PrimaryButton onClick={() => { goTo('/profile'); }}>Log in or sign up</PrimaryButton>
       <button type="button" onClick={onClose} className="w-full rounded-full py-2 text-[13px] font-semibold text-gray-500">
         Not now
       </button>

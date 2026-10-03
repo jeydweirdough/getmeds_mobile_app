@@ -1,4 +1,4 @@
-import { goTo } from './navigation';
+import { goBack, goTo } from './navigation';
 import { useLocation } from './router';
 
 /**
@@ -17,7 +17,7 @@ export function useRouter() {
   return {
     push: (href: string) => goTo(href),
     replace: (href: string) => goTo(href, { replace: true }),
-    back: () => window.history.back(),
+    back: () => goBack(),
     forward: () => window.history.forward(),
     refresh: () => window.location.reload(),
     prefetch: () => undefined,

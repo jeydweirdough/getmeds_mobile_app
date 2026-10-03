@@ -1,8 +1,9 @@
+import { App } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { SITE_URL } from './config';
 import { isAppPath } from './routes';
-import { navigate } from './router';
+import { canGoBack, navigate } from './router';
 
 const SITE_ORIGIN = new URL(SITE_URL).origin;
 const SITE_HOSTS = new Set([new URL(SITE_URL).host, 'getmeds.ph', 'www.getmeds.ph']);
@@ -70,6 +71,67 @@ export function goTo(href: string, opts?: { replace?: boolean }): void {
 
 /** Leaves a screen the app does not have: back where the user came from, or home. */
 export function leaveUnknownScreen(): void {
-  if (window.history.length > 1) window.history.back();
-  else navigate('/', { replace: true });
+  goBack('/');
+}
+
+/**
+ * What every Back button in the app does: return to the previous footprint
+ * (router.ts), i.e. exactly the screen the user came from. With nothing
+ * behind it (the app opened straight onto this screen from a link or a
+ * notification), go to `fallback` instead, the screen's natural parent,
+ * replacing this one so Back from there doesn't bounce back here.
+ */
+export function goBack(fallback: string = '/'): void {
+  if (canGoBack()) window.history.back();
+  else goTo(fallback, { replace: true });
+}
+
+/**
+ * Bottom sheets (sign-in, add to cart, the More menu...) open without a
+ * history entry. The phone's Back closes the topmost one first, as a native
+ * app would. Full screens opened over a page (Screen, DetailsScreen) do make
+ * an entry, so plain Back already closes those; they are marked
+ * data-history-backed and skipped here.
+ */
+function closeTopSheet(): boolean {
+  // The tab bar's More menu stays in the page while closed; its toggle closes it.
+  const more = document.getElementById('gm-more');
+  if (more?.getAttribute('aria-expanded') === 'true') {
+    more.click();
+    return true;
+  }
+  const open = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]')).filter(
+    (el) => !el.closest('[data-history-backed]') && el.getAttribute('aria-hidden') !== 'true' && el.getClientRects().length > 0
+  );
+  const top = open[open.length - 1];
+  if (!top) return false;
+  // A sheet names what closes it with data-sheet-close; otherwise its Close button.
+  const close = top.matches('[data-sheet-close]')
+    ? top
+    : top.querySelector<HTMLElement>('[data-sheet-close], button[aria-label="Close"]');
+  if (!close) return false;
+  close.click();
+  return true;
+}
+
+/**
+ * The Android Back button (and gesture). Registering a listener replaces
+ * Capacitor's default, which walked the WebView's raw history and closed the
+ * app from wherever that ran out.
+ */
+export function installBackButton(): void {
+  if (!Capacitor.isNativePlatform()) return;
+  App.addListener('backButton', () => {
+    if (closeTopSheet()) return;
+    if (canGoBack()) {
+      window.history.back();
+      return;
+    }
+    // Nothing behind this screen: Home first, then leave the app.
+    if (window.location.pathname !== '/' && window.location.pathname !== '/app-home') {
+      navigate('/', { replace: true });
+      return;
+    }
+    App.exitApp();
+  }).catch(() => undefined);
 }

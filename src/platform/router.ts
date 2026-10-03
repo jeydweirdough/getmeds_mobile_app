@@ -21,6 +21,95 @@ import { normalisePath } from './routes';
 
 export const NAVIGATE_EVENT = 'getmeds:navigate';
 
+/* ── Footprints: where Back goes ─────────────────────────────────────────────
+ *
+ * Every history entry the app makes carries its step number (gmIdx) in its
+ * history state, and the trail of addresses is mirrored in localStorage. So
+ * the app always knows whether there is an in-app step behind the current one
+ * and where it leads, which `window.history.length` cannot say: it also
+ * counts forward entries and anything before the app.
+ *
+ * Every pushState/replaceState goes through here (patched below), so the
+ * screens that push their own entries (account sub-screens, the details
+ * sheet, search's ?q=, the catalog's subcategory URL) are counted too, and
+ * Back closes them in the right order.
+ *
+ * A cold start is a new trail: the WebView's history starts empty then, and a
+ * stored trail from an earlier session would point Back at screens that are
+ * no longer behind this one.
+ */
+const FOOTPRINTS_KEY = 'getmeds:footprints';
+const MAX_FOOTPRINTS = 100;
+
+const here = () => window.location.pathname + window.location.search + window.location.hash;
+
+const stepOf = (state: unknown): number | null => {
+  const n = Number((state as { gmIdx?: unknown } | null)?.gmIdx);
+  return Number.isInteger(n) && n >= 0 ? n : null;
+};
+
+const withStep = (state: unknown, step: number) =>
+  state && typeof state === 'object' ? { ...(state as object), gmIdx: step } : { gmIdx: step };
+
+const readTrail = (): string[] => {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(FOOTPRINTS_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed.filter((p) => typeof p === 'string') : [];
+  } catch {
+    return [];
+  }
+};
+
+let step = 0;
+let trail: string[] = [];
+
+const saveTrail = () => {
+  try {
+    // Only the steps up to here matter for Back; keep the stored copy small.
+    window.localStorage.setItem(FOOTPRINTS_KEY, JSON.stringify(trail.slice(Math.max(0, step + 1 - MAX_FOOTPRINTS), step + 1)));
+  } catch { /* storage blocked: the step numbers in history still work */ }
+};
+
+const nativePush = window.history.pushState.bind(window.history);
+const nativeReplace = window.history.replaceState.bind(window.history);
+
+{
+  const resumed = stepOf(window.history.state);
+  if (resumed === null) {
+    // Cold start (or a page that never had a step): this is step 0.
+    step = 0;
+    trail = [here()];
+    nativeReplace(withStep(window.history.state, 0), '');
+  } else {
+    // A reload inside the same WebView session: history kept its steps.
+    step = resumed;
+    const stored = readTrail();
+    trail = stored.length > step ? stored : [...stored, ...Array(step + 1 - stored.length).fill('')];
+    trail[step] = here();
+  }
+  saveTrail();
+}
+
+window.history.pushState = function (state: unknown, unused: string, url?: string | URL | null) {
+  step += 1;
+  nativePush(withStep(state, step), unused, url);
+  trail = trail.slice(0, step);
+  trail[step] = here();
+  saveTrail();
+};
+
+window.history.replaceState = function (state: unknown, unused: string, url?: string | URL | null) {
+  nativeReplace(withStep(state, step), unused, url);
+  trail[step] = here();
+  saveTrail();
+};
+
+/** Is there an in-app step behind this one for Back to return to? */
+export const canGoBack = (): boolean => step > 0;
+
+/** Where Back would land, or undefined at the first step. */
+export const previousPath = (): string | undefined => (step > 0 ? trail[step - 1] || undefined : undefined);
+
 export interface Location {
   pathname: string;
   search: string;
@@ -57,9 +146,11 @@ export function navigate(href: string, { replace = false }: { replace?: boolean 
   const samePage =
     normalisePath(url.pathname) === normalisePath(window.location.pathname) && url.search === window.location.search;
 
-  // Only the hash differs: let the browser move to it, as a plain link would.
+  // Only the hash differs: move to it as a plain link would, but as a counted
+  // step (location.hash would make an entry the footprints can't see).
   if (samePage && url.hash && url.hash !== window.location.hash) {
-    window.location.hash = url.hash;
+    window.history.pushState({}, '', url.hash);
+    document.getElementById(decodeURIComponent(url.hash.slice(1)))?.scrollIntoView({ behavior: 'smooth' });
     return;
   }
   // Exactly where we are already (the Home tab tapped on Home): back to the
@@ -81,6 +172,12 @@ export function navigate(href: string, { replace = false }: { replace?: boolean 
 }
 
 window.addEventListener('popstate', (e) => {
+  // Back or Forward: the entry we landed on says which step it is.
+  const landed = stepOf(e.state);
+  step = landed ?? Math.max(0, step - 1);
+  trail[step] = here();
+  saveTrail();
+
   const next = { pathname: window.location.pathname, search: window.location.search, hash: window.location.hash };
   const newScreen = normalisePath(next.pathname) !== normalisePath(current.pathname);
   current = { ...next, key: newScreen ? current.key + 1 : current.key };

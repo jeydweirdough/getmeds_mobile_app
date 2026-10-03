@@ -42,6 +42,8 @@ function ConsentSheet({
       role="dialog"
       aria-modal="true"
       aria-labelledby="consent-title"
+      // The phone's Back taps this (see closeTopSheet): the same as tapping outside, "not now".
+      data-sheet-close=""
       // React still bubbles portal events up to the card; stop them here.
       onClick={(e) => {
         e.stopPropagation();

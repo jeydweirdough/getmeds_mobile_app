@@ -18,7 +18,7 @@ import { signOut } from '../rewards';
  */
 
 const KEPT = [
-  { icon: 'fa-mobile-screen-button', text: 'Your mobile number, used to sign in' },
+  { icon: 'fa-mobile-screen-button', text: 'Your email or mobile number, used to log in (your password is stored only as a scrambled hash)' },
   { icon: 'fa-id-card', text: 'My details: name, email and delivery details' },
   { icon: 'fa-user-group', text: 'Patients and delivery addresses you add' },
   { icon: 'fa-heart', text: 'Saved medicines, saved guides and refill reminders' },

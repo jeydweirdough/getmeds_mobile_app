@@ -83,11 +83,11 @@ const SKY =
  * code and nothing to log out of, so this says what signing in gives and
  * offers one way in. The sign-in itself opens in a sheet (see SignInSheet).
  */
-export function GuestCard({ onSignIn }: { onSignIn: () => void }) {
+export function GuestCard({ onSignIn }: { onSignIn: (mode: 'signup' | 'login') => void }) {
   const perks: Array<[string, string]> = [
     ['fa-star', 'Earn points on every request you send'],
     ['fa-user-plus', 'Get more when a friend joins with your code'],
-    ['fa-mobile-screen', 'No password. We text you a 6-digit code.'],
+    ['fa-envelope', 'Sign up with your email or mobile number'],
   ];
   return (
     <section
@@ -103,7 +103,7 @@ export function GuestCard({ onSignIn }: { onSignIn: () => void }) {
       <div className="mt-3 px-5 text-center">
         <h1 className="text-[21px] font-semibold text-gray-900">Welcome to Getmeds</h1>
         <p className="mx-auto mt-1 max-w-[290px] text-[13px] leading-relaxed text-gray-500">
-          Sign in with your mobile number to start collecting Getmeds Points.
+          Create an account to request quotes and start collecting Getmeds Points.
         </p>
       </div>
       <ul className="mx-4 mt-4 space-y-2.5">
@@ -119,11 +119,19 @@ export function GuestCard({ onSignIn }: { onSignIn: () => void }) {
       <div className="mx-4 mt-5">
         <button
           type="button"
-          onClick={onSignIn}
+          onClick={() => onSignIn('signup')}
           className="w-full rounded-full py-3.5 text-[14px] font-semibold text-white"
           style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
         >
-          Sign in with mobile number
+          Create account
+        </button>
+        <button
+          type="button"
+          onClick={() => onSignIn('login')}
+          className="mt-2.5 w-full rounded-full border-[1.5px] py-3 text-[14px] font-semibold"
+          style={{ borderColor: BRAND, color: BRAND }}
+        >
+          Log in
         </button>
       </div>
     </section>
@@ -133,8 +141,8 @@ export function GuestCard({ onSignIn }: { onSignIn: () => void }) {
 /** A plain list of what a guest can still open, one row each. */
 export function GuestList({ rows }: { rows: Array<{ icon: string; label: string; hint?: string; onClick: () => void }> }) {
   return (
-    <section className="mb-5 overflow-hidden rounded-[22px] border border-[#EEF1F5] bg-white" aria-label="On this phone">
-      <p className="px-4 pb-1 pt-3.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">On this phone</p>
+    <section className="mb-5 overflow-hidden rounded-[22px] border border-[#EEF1F5] bg-white" aria-label="More">
+      <p className="px-4 pb-1 pt-3.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">More</p>
       {rows.map((r) => (
         <button
           key={r.label}

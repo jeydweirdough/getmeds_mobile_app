@@ -161,6 +161,16 @@ function Account() {
   const [alert, setAlert] = useState<{ title?: string; message: string | string[] } | null>(null);
   const points = usePoints();
   const [signInOpen, setSignInOpen] = useState(false);
+  // Which form the sign-in sheet opens on; screens that need an account open it on Sign up.
+  const [signInMode, setSignInMode] = useState<'signup' | 'login'>('signup');
+  // Why the sheet opened, when a feature needing an account sent the guest there.
+  const [signInIntro, setSignInIntro] = useState<string | undefined>(undefined);
+  /** Opens Create account (with `intro` saying what it unlocks) for a guest. */
+  const askToSignIn = (intro?: string) => {
+    setSignInMode('signup');
+    setSignInIntro(intro);
+    setSignInOpen(true);
+  };
   /**
    * A guest in the app sees a short list instead of the tabs, and opens one
    * section at a time; everything else about the account needs signing in.
@@ -385,11 +395,6 @@ function Account() {
     setScreen(key);
   };
   const showSections = !guest || guestOpen !== null;
-  const openGuest = (t: Tab) => {
-    setTab(t);
-    setGuestOpen(t);
-    window.setTimeout(() => scrollTo('account-tabs'), 50);
-  };
 
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -435,20 +440,28 @@ function Account() {
             plain row, since it has no points to show. */}
         {guest && (
           <>
-            <GuestCard onSignIn={() => setSignInOpen(true)} />
+            <GuestCard
+              onSignIn={(mode) => {
+                setSignInMode(mode);
+                setSignInIntro(undefined);
+                setSignInOpen(true);
+              }}
+            />
             <GuestList
               rows={[
+                // Both need an account: requests and details are kept with it,
+                // so they follow the customer to any phone.
                 {
                   icon: 'fa-file-lines',
-                  label: 'Requests sent from this phone',
-                  hint: inquiries && inquiries.length > 0 ? String(inquiries.length) : undefined,
-                  onClick: () => openGuest('inquiries'),
+                  label: 'My requests',
+                  hint: 'Log in',
+                  onClick: () => askToSignIn('Log in or create a free account to see your requests and earn points on every one.'),
                 },
                 {
                   icon: 'fa-id-card',
                   label: 'My details',
-                  hint: completeness >= 100 ? 'Complete' : `${Math.round(completeness)}%`,
-                  onClick: () => setDetailsOpen(true),
+                  hint: 'Log in',
+                  onClick: () => askToSignIn('Log in or create a free account to keep your details and fill in request forms faster.'),
                 },
                 { icon: 'fa-book-medical', label: 'Health guides', onClick: () => open('guides') },
                 { icon: 'fa-comments', label: 'Chat with us', onClick: () => { goTo('/chat'); } },
@@ -605,7 +618,7 @@ function Account() {
           />
         )}
         <SignInSheet open={signInOpen && guest} onClose={() => setSignInOpen(false)}>
-          <PointsCard points={points} bare />
+          <PointsCard key={`${signInMode}:${signInIntro || ''}`} points={points} bare initialMode={signInMode} intro={signInIntro} />
         </SignInSheet>
 
         {consented === false && showSections && (

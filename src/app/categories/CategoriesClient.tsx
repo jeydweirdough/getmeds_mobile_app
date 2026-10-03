@@ -3,7 +3,7 @@
 import { useProducts } from '@/lib/useSanity';
 import { CatalogueRow } from '@/lib/catalogueItem';
 import { CategoryCard, useCatalogueCategories } from '@/lib/CategoryCard';
-import { goTo } from '@/platform/navigation';
+import { goBack } from '@/platform/navigation';
 import { BackChevron } from '@/lib/ui/Screen';
 
 /**
@@ -29,10 +29,7 @@ export default function CategoriesClient() {
           <button
             type="button"
             aria-label="Back"
-            onClick={() => {
-              if (window.history.length > 1) window.history.back();
-              else goTo('/app-home');
-            }}
+            onClick={() => goBack('/app-home')}
             className="absolute left-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-gray-900"
           >
             <BackChevron />

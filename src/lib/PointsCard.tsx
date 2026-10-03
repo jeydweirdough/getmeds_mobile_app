@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Turnstile, useTurnstile } from './turnstile';
+import React, { useCallback, useEffect, useState } from 'react';
+import AuthForm, { type AuthMode } from './AuthForm';
 import {
   REWARDS_CHANGED_EVENT,
   RewardsError,
@@ -10,17 +10,15 @@ import {
   inviteLink,
   pendingReferral,
   isSignedIn,
-  requestCode,
   signOut,
-  verifyCode,
   type PointsSummary,
 } from './rewards';
 
 /**
  * PointsCard.tsx
  * ─────────────────────────────────────────────
- * Getmeds Points on the app's account screen: sign in by SMS code, then the
- * balance and what earned it, and referral codes. Balance only — there is
+ * Getmeds Points on the app's account screen: Log in / Sign up (AuthForm),
+ * then the balance and what earned it, and referral codes. Balance only — there is
  * nothing to spend points on yet, so nothing here suggests there is.
  *
  * Rendered by account.tsx only when isAppMode(); the website never shows it.
@@ -28,11 +26,6 @@ import {
 
 const BRAND = '#1D9FDA';
 const GRADIENT = 'linear-gradient(135deg,#1D9FDA,#61A644)';
-/** Movider will not send a second code sooner than this. */
-const RESEND_SECONDS = 60;
-
-type Step = 'number' | 'code';
-
 const when = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString('en-PH', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
@@ -201,79 +194,20 @@ export function usePoints(): PointsState {
  * `bare` drops the card around the sign-in form, for when it is shown inside
  * the account screen's sign-in sheet rather than on the page.
  */
-export default function PointsCard({ points, bare = false }: { points: PointsState; bare?: boolean }) {
+export default function PointsCard({
+  points,
+  bare = false,
+  initialMode = 'signup',
+  intro,
+}: {
+  points: PointsState;
+  bare?: boolean;
+  /** Which form a logged-out visitor sees first. */
+  initialMode?: AuthMode;
+  /** Replaces the sign-up form's opening line, e.g. to say why an account is needed here. */
+  intro?: string;
+}) {
   const { signedIn, summary, loadError } = points;
-
-  const [step, setStep] = useState<Step>('number');
-  const [mobile, setMobile] = useState('');
-  const [ticket, setTicket] = useState('');
-  const [sentTo, setSentTo] = useState('');
-  const [code, setCode] = useState('');
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [wait, setWait] = useState(0);
-  const codeInput = useRef<HTMLInputElement>(null);
-
-  const turnstile = useTurnstile(!signedIn && step === 'number');
-
-  // The profile page does not ship Cloudflare's script (it has no other
-  // form), so fetch it only once someone is actually signing in. The hook
-  // above keeps polling until it arrives.
-  useEffect(() => {
-    if (signedIn || !turnstile.enabled || window.turnstile) return;
-    const src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-    if (document.querySelector(`script[src="${src}"]`)) return;
-    const s = document.createElement('script');
-    s.src = src;
-    s.async = true;
-    document.head.appendChild(s);
-  }, [signedIn, turnstile.enabled]);
-
-  useEffect(() => {
-    if (wait <= 0) return;
-    const t = window.setTimeout(() => setWait((w) => w - 1), 1000);
-    return () => window.clearTimeout(t);
-  }, [wait]);
-
-  useEffect(() => {
-    if (step === 'code') codeInput.current?.focus();
-  }, [step]);
-
-  const sendCode = async () => {
-    setError('');
-    setBusy(true);
-    try {
-      const r = await requestCode(mobile, turnstile.token);
-      setTicket(r.ticket);
-      setSentTo(r.mobile);
-      setCode('');
-      setStep('code');
-      setWait(RESEND_SECONDS);
-    } catch (e) {
-      setError(message(e));
-      turnstile.reset();
-    }
-    setBusy(false);
-  };
-
-  const confirm = async (value = code) => {
-    if (value.length !== 6 || busy) return;
-    setError('');
-    setBusy(true);
-    try {
-      await verifyCode(ticket, value);
-      setStep('number');
-      setMobile('');
-      setCode('');
-    } catch (e) {
-      setError(message(e));
-      setCode('');
-    }
-    setBusy(false);
-  };
-
-  const field =
-    'w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-[13px] text-gray-800 outline-none focus:border-[#1D9FDA]';
 
   // ── Signed in ──────────────────────────────────────────────────────────────
   if (signedIn) {
@@ -326,9 +260,9 @@ export default function PointsCard({ points, bare = false }: { points: PointsSta
           )}
 
           <div className="mt-3 flex items-center justify-between border-t border-gray-50 pt-3">
-            <span className="text-[11.5px] text-gray-400">{account?.mobile}</span>
+            <span className="text-[11.5px] text-gray-400">{account?.login || account?.mobile}</span>
             <button type="button" onClick={signOut} className="text-[12px] font-semibold text-gray-400">
-              Sign out of points
+              Log out
             </button>
           </div>
         </div>
@@ -336,118 +270,14 @@ export default function PointsCard({ points, bare = false }: { points: PointsSta
     );
   }
 
-  // ── Signing in ─────────────────────────────────────────────────────────────
+  // ── Logged out: Log in / Sign up / Forgot password ──────────────────────────
   return (
     <section
       id={bare ? undefined : 'points'}
       className={bare ? '' : 'mb-5 scroll-mt-4 rounded-[24px] border border-[#EEF1F5] bg-white p-4'}
-      aria-label="Getmeds Points"
+      aria-label="Getmeds account"
     >
-      <div className="flex items-start gap-3.5">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full" style={{ background: '#F1F8FE' }}>
-          <i className="fa-solid fa-star text-[16px]" style={{ color: BRAND }} />
-        </span>
-        <div className="min-w-0">
-          <p className="text-[13.5px] font-semibold text-gray-900">Getmeds Points</p>
-          <p className="mt-0.5 text-[12px] leading-relaxed text-gray-500">
-            {step === 'number'
-              ? 'Earn points for every request you send from the app. Sign in with your mobile number to start.'
-              : `Enter the 6-digit code we sent to ${sentTo}.`}
-          </p>
-        </div>
-      </div>
-
-      {step === 'number' ? (
-        <form
-          className="mt-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            sendCode();
-          }}
-        >
-          <label className="mb-1.5 block text-[12px] font-medium text-gray-500" htmlFor="points-mobile">
-            Mobile number
-          </label>
-          <input
-            id="points-mobile"
-            className={field}
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            placeholder="0917 123 4567"
-            value={mobile}
-            onChange={(e) => setMobile(e.target.value.replace(/[^\d+\s\-()]/g, ''))}
-          />
-          <Turnstile turnstile={turnstile} className="mt-3 w-full max-w-full overflow-x-auto" />
-          {error && <p className="mt-2 text-[12px] text-red-500">{error}</p>}
-          <button
-            type="submit"
-            disabled={busy || mobile.replace(/\D/g, '').length < 10 || (turnstile.enabled && !turnstile.token)}
-            className="mt-3 w-full rounded-full py-3 text-[13.5px] font-semibold text-white disabled:opacity-50"
-            style={{ background: GRADIENT }}
-          >
-            {busy ? 'Sending…' : 'Send code by SMS'}
-          </button>
-        </form>
-      ) : (
-        <form
-          className="mt-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            confirm();
-          }}
-        >
-          <input
-            ref={codeInput}
-            className={`${field} text-center text-[20px] font-semibold tracking-[0.5em]`}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            aria-label="6-digit code"
-            maxLength={6}
-            value={code}
-            onChange={(e) => {
-              const v = e.target.value.replace(/\D/g, '').slice(0, 6);
-              setCode(v);
-              // A code filled in from the SMS goes straight through.
-              if (v.length === 6) confirm(v);
-            }}
-          />
-          {error && <p className="mt-2 text-[12px] text-red-500">{error}</p>}
-          <button
-            type="submit"
-            disabled={busy || code.length !== 6}
-            className="mt-3 w-full rounded-full py-3 text-[13.5px] font-semibold text-white disabled:opacity-50"
-            style={{ background: GRADIENT }}
-          >
-            {busy ? 'Checking…' : 'Confirm'}
-          </button>
-          <div className="mt-3 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => {
-                setStep('number');
-                setError('');
-              }}
-              className="text-[12px] font-semibold text-gray-400"
-            >
-              Change number
-            </button>
-            <button
-              type="button"
-              disabled={wait > 0}
-              onClick={() => {
-                // A new code needs a fresh bot check, which lives on the first step.
-                setStep('number');
-                setError('');
-              }}
-              className="text-[12px] font-semibold disabled:text-gray-300"
-              style={wait > 0 ? undefined : { color: BRAND }}
-            >
-              {wait > 0 ? `Resend in ${wait}s` : 'Send a new code'}
-            </button>
-          </div>
-        </form>
-      )}
+      <AuthForm initialMode={initialMode} intro={intro} />
     </section>
   );
 }

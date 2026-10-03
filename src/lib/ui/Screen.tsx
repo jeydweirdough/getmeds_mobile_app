@@ -87,6 +87,8 @@ export function Screen({ title, subtitle, onClose, footer, headerAction, childre
       role="dialog"
       aria-modal="true"
       aria-label={title}
+      // Has its own history entry, so the phone's Back closes it like any page.
+      data-history-backed=""
     >
       <header
         className="flex items-center gap-2 border-b border-[#E7ECF2] bg-white px-2 pb-2.5"

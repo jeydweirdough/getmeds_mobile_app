@@ -8,7 +8,7 @@ import {
   ProductRow,
   prettyFolder,
 } from '@/lib/catalogueItem';
-import { goTo } from '@/platform/navigation';
+import { goBack } from '@/platform/navigation';
 
 /**
  * search.tsx
@@ -252,8 +252,7 @@ export default function SearchClient() {
               // From results, back returns to the empty box — the same thing
               // the hardware back gesture does, so the two never disagree.
               if (submitted) { window.history.back(); return; }
-              if (window.history.length > 1) window.history.back();
-              else goTo('/app-home');
+              goBack('/app-home');
             }}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700"
           >

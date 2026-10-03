@@ -16,6 +16,7 @@ import { validateFiles, ALLOWED_FILE_TYPES_ACCEPT } from '@/lib/fileUpload';
 import AlertModal from '@/lib/AlertModal';
 import { PortableText } from '@portabletext/react';
 import { usePageReady } from '@/lib/handoff';
+import { goBack, goTo } from '@/platform/navigation';
 import './ProductDetailClient.css';
 
 interface ProductWithCategory extends Omit<SanityProduct, 'category'> {
@@ -342,7 +343,9 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
           const carryOverParams = new URLSearchParams(window.location.search);
           carryOverParams.delete('product');
           const query = carryOverParams.toString();
-          window.location.replace(prettyPath + (query ? `?${query}` : ''));
+          // In place, not location.replace: a reload would restart the app and
+          // lose the Back trail (platform/router.ts).
+          goTo(prettyPath + (query ? `?${query}` : ''), { replace: true });
           return;
         }
 
@@ -674,13 +677,18 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
             spare and the back arrow says the same thing in one glyph. */}
         {app && (
           <div className="sticky top-0 z-30 flex items-center justify-between bg-white px-4 py-3">
-            <a
-              href={backUrl}
+            {/* Back to wherever the visitor came from (Home, search, a
+                category...); the category only when they arrived straight
+                here. It used to be a link to the category, which sent people
+                who came from Home somewhere they had never been. */}
+            <button
+              type="button"
+              onClick={() => goBack(backUrl)}
               aria-label="Back"
               className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F3F6FB] text-gray-700"
             >
               <i className="fa-solid fa-arrow-left text-[14px]" />
-            </a>
+            </button>
             <div className="flex items-center gap-2">
               {accountProduct && <SaveProductButton product={accountProduct} />}
               <button

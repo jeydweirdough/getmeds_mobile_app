@@ -3,9 +3,11 @@
  * ─────────────────────────────────────────────
  * Getmeds points, for the installed app only.
  *
- * A customer signs in with their mobile number and a code sent by SMS; the
- * backend (app/api/routes/account.py) keeps the account and its points in
- * Sanity and hands back a session token, kept here in localStorage.
+ * A customer signs up with their full name, an email or mobile number, and a
+ * password, then logs in with that email or number and the password. A code
+ * (by email or SMS) is only used for "Forgot password". The backend (app/api/routes/account.py) keeps the account
+ * and its points in Sanity and hands back a session token, kept here in
+ * localStorage.
  *
  * Every inquiry sent from the app carries that token, and the backend adds
  * the points for it — see submitInquiry() in offlineInquiry.ts. The website
@@ -25,8 +27,10 @@ export const REWARDS_CHANGED_EVENT = 'getmeds:rewards-changed';
 const apiBase = (): string => '/api';
 
 export interface PointsAccount {
-  /** Masked, e.g. "+63 917 *** 4567". */
+  /** Masked, e.g. "+63 917 *** 4567". Empty for accounts opened with an email. */
   mobile: string;
+  /** What they sign in with, masked: "+63 917 *** 4567" or "j***z@gmail.com". */
+  login?: string;
   name: string;
   pointsBalance: number;
   memberSince?: string;
@@ -128,18 +132,26 @@ export async function call<T>(path: string, init: RequestInit = {}): Promise<T> 
   return body as T;
 }
 
-/** Texts a code. Returns the ticket to send back with the code. */
-export const requestCode = (mobile: string, turnstileToken: string) =>
-  call<{ ticket: string; mobile: string; expiresIn: number }>('/account/otp/request', {
+export interface CodeTicket {
+  ticket: string;
+  /** Masked number or email the code went to. */
+  sentTo: string;
+  /** 'mobile' when it went by SMS, 'email' when by email. */
+  via: 'mobile' | 'email';
+  expiresIn: number;
+}
+
+/**
+ * "Forgot password": sends a 6-digit code to the account's email or mobile
+ * number (by SMS). Returns the ticket to send back with the code.
+ */
+export const requestResetCode = (login: string, turnstileToken: string) =>
+  call<CodeTicket>('/account/code/request', {
     method: 'POST',
-    body: JSON.stringify({ mobile, turnstileToken }),
+    body: JSON.stringify({ login, purpose: 'reset', turnstileToken }),
   });
 
-export async function verifyCode(ticket: string, code: string): Promise<PointsAccount> {
-  const result = await call<{ token: string; account: PointsAccount }>('/account/otp/verify', {
-    method: 'POST',
-    body: JSON.stringify({ ticket, code }),
-  });
+function keepSession(result: { token: string; account: PointsAccount }): PointsAccount {
   try {
     window.localStorage.setItem(SESSION_KEY, result.token);
   } catch {
@@ -147,6 +159,36 @@ export async function verifyCode(ticket: string, code: string): Promise<PointsAc
   }
   changed();
   return result.account;
+}
+
+/** Full name, email or mobile number, and password: opens the account and signs in. */
+export async function signUp(name: string, login: string, password: string, turnstileToken: string): Promise<PointsAccount> {
+  return keepSession(
+    await call<{ token: string; account: PointsAccount }>('/account/signup', {
+      method: 'POST',
+      body: JSON.stringify({ name, login, password, turnstileToken }),
+    })
+  );
+}
+
+/** Email or mobile number, and password. */
+export async function logIn(login: string, password: string): Promise<PointsAccount> {
+  return keepSession(
+    await call<{ token: string; account: PointsAccount }>('/account/login', {
+      method: 'POST',
+      body: JSON.stringify({ login, password }),
+    })
+  );
+}
+
+/** Sets a new password with the code from "Forgot password", signs in, and signs out every other device. */
+export async function resetPassword(ticket: string, code: string, password: string): Promise<PointsAccount> {
+  return keepSession(
+    await call<{ token: string; account: PointsAccount }>('/account/password/reset', {
+      method: 'POST',
+      body: JSON.stringify({ ticket, code, password }),
+    })
+  );
 }
 
 /** Balance and history. Signs out when the backend no longer accepts the session. */

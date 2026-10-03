@@ -167,7 +167,7 @@ export default function DetailsScreen({
   const initial = (details.name || 'U').trim().charAt(0).toUpperCase();
 
   return (
-    <div className="fixed inset-0 z-[10040] flex flex-col" style={{ background: GROUND }} role="dialog" aria-modal="true" aria-labelledby="details-title">
+    <div className="fixed inset-0 z-[10040] flex flex-col" style={{ background: GROUND }} role="dialog" aria-modal="true" aria-labelledby="details-title" data-history-backed="">
       {/* Header */}
       <header
         className="flex items-center gap-2 border-b border-[#E7ECF2] bg-white px-2 pb-2.5"

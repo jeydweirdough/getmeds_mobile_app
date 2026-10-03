@@ -3,7 +3,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { BRAND, Empty, ErrorNote, GROUND, Screen, SmallButton, Toast, useToast } from '../ui/Screen';
 import { newKey, saveList, useAccountData, type SavedArticle } from '../accountApi';
-import { call, isSignedIn } from '../rewards';
+import { call } from '../rewards';
+import PointsCard, { usePoints } from '../PointsCard';
+import { SignInSheet } from '../ProfileCard';
 import { getBlogListingImageUrl } from '../sanity';
 import { goTo } from '@/platform/navigation';
 
@@ -20,7 +22,9 @@ import { goTo } from '@/platform/navigation';
  * broad topics the blog actually writes about.
  *
  * Signed-in customers can bookmark articles (savedArticles on their account).
- * Guests can browse everything; the bookmark tells them to sign in.
+ * Guests can browse and read everything; saving needs an account, so the
+ * bookmark opens Create account / Log in, and the guide is saved as soon as
+ * they're in.
  */
 
 const CONDITIONS = ['Cancer', 'Anemia', 'Diabetes', 'Heart health', 'Kidney health', 'Bone health', 'Pain', 'Allergies', 'Infections'];
@@ -49,7 +53,12 @@ const readTimeText = (t: Article['readTime']) => {
 };
 
 export default function GuidesScreen({ onClose }: { onClose: () => void }) {
-  const signedIn = isSignedIn();
+  const points = usePoints();
+  const signedIn = points.signedIn;
+  // Guest tapped a bookmark (or Saved's button): the sign-in sheet is open,
+  // and `pendingSave` is saved once they're in.
+  const [askSignIn, setAskSignIn] = useState(false);
+  const [pendingSave, setPendingSave] = useState<{ slug: string; title: string; image?: string } | null>(null);
   const { data } = useAccountData();
   const saved = data?.savedArticles ?? [];
   const [tab, setTab] = useState<'browse' | 'saved'>('browse');
@@ -82,7 +91,8 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
 
   const toggle = async (a: { slug: string; title: string; image?: string }) => {
     if (!signedIn) {
-      setNote('Sign in under My account to save guides and read them later on any phone.');
+      setPendingSave(a);
+      setAskSignIn(true);
       return;
     }
     if (!data) {
@@ -105,6 +115,19 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
       setNote(`${(e as Error)?.message || 'Could not save.'} Check your connection and try again.`);
     }
   };
+
+  // In: close the sheet, and save the guide they tapped once the account has loaded.
+  useEffect(() => {
+    if (!signedIn) return;
+    setAskSignIn(false);
+    if (pendingSave && data) {
+      const a = pendingSave;
+      setPendingSave(null);
+      if (!data.savedArticles.some((x) => x.slug === a.slug)) toggle(a);
+    }
+    // toggle reads the latest data on each render; only these changes matter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signedIn, pendingSave, data]);
 
   const current = results[condition];
 
@@ -209,8 +232,9 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
       ) : !signedIn ? (
         <Empty
           icon="fa-bookmark"
-          title="Sign in to save guides"
-          text="Sign in under My account to bookmark guides and find them again on any phone."
+          title="Log in to save guides"
+          text="Create a free account or log in to bookmark guides and find them again on any phone."
+          action={<SmallButton onClick={() => setAskSignIn(true)}>Log in or create account</SmallButton>}
         />
       ) : saved.length === 0 ? (
         <Empty
@@ -228,6 +252,20 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
       )}
 
       <Toast text={toast} />
+      <SignInSheet
+        open={askSignIn && !signedIn}
+        onClose={() => {
+          setAskSignIn(false);
+          setPendingSave(null);
+        }}
+      >
+        <PointsCard
+          points={points}
+          bare
+          initialMode="signup"
+          intro="Saving guides needs a free account, so you can read them later on any phone."
+        />
+      </SignInSheet>
     </Screen>
   );
 }

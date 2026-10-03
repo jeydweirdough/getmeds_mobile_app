@@ -15,13 +15,15 @@ import '@/app/globals.css';
 import '@/styles/app.css';
 import '@/styles/consent.css';
 import { installServiceRouting } from '@/platform/http';
-import { installLinkHandling } from '@/platform/navigation';
+import { installBackButton, installLinkHandling } from '@/platform/navigation';
 import App from './App';
 
-// Before any screen runs: relative /api and /wp-json calls go to the real services, and links
-// to website-only pages open in the in-app browser.
+// Before any screen runs: relative /api and /wp-json calls go to the real services, links
+// to website-only pages open in the in-app browser, and the phone's Back button follows the
+// app's footprints (platform/router.ts).
 installServiceRouting();
 installLinkHandling();
+installBackButton();
 
 createRoot(document.getElementById('root')!).render(<App />);
 
