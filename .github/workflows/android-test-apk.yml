@@ -1,0 +1,87 @@
+# Builds a test APK of the app on GitHub's servers, so nothing has to be installed on a PC.
+#
+# Run it from GitHub -> Actions -> "Android test APK" -> Run workflow. When it finishes, the APK
+# is on the "test-build" release, always at the same address, which is what the QR code opens:
+#   https://github.com/<owner>/<repo>/releases/download/test-build/getmeds-test.apk
+#
+# This is a debug build for testing on the team's phones (Install unknown apps), not a Play
+# Store release: that needs the store app's upload key and an .aab, signed separately.
+#
+# The app's settings come from this repository's Variables (Settings -> Secrets and variables ->
+# Actions -> Variables), the same NEXT_PUBLIC_* values as the local .env. They are public values
+# (they end up inside the APK), so they are Variables, not Secrets.
+name: Android test APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write # to update the test-build release
+
+concurrency:
+  group: android-test-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_BACKEND_API_URL: ${{ vars.NEXT_PUBLIC_BACKEND_API_URL }}
+      NEXT_PUBLIC_WORDPRESS_API_ROOT: ${{ vars.NEXT_PUBLIC_WORDPRESS_API_ROOT }}
+      NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+      NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ vars.NEXT_PUBLIC_SANITY_PROJECT_ID }}
+      NEXT_PUBLIC_SANITY_DATASET: ${{ vars.NEXT_PUBLIC_SANITY_DATASET }}
+      NEXT_PUBLIC_SANITY_API_VERSION: ${{ vars.NEXT_PUBLIC_SANITY_API_VERSION }}
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Capacitor 8 / Android Gradle Plugin need Java 21. The Android SDK is already on the runner.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the app's screens
+        run: npm run build
+
+      - name: Copy them into the Android project
+        run: npx cap sync android
+
+      - name: Build the APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Name the APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk getmeds-test.apk
+
+      # Same release, same file name every time: the download link (and the QR code) never change.
+      - name: Publish to the test-build release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="Test build of ${GITHUB_SHA::7} ($(date -u '+%Y-%m-%d %H:%M UTC')). For testing only: install with \"Install unknown apps\"."
+          if gh release view test-build >/dev/null 2>&1; then
+            gh release edit test-build --notes "$notes" --prerelease
+            gh release upload test-build getmeds-test.apk --clobber
+          else
+            gh release create test-build getmeds-test.apk --title "Getmeds test build" --notes "$notes" --prerelease
+          fi
+
+      - name: Also keep it on the run page
+        uses: actions/upload-artifact@v4
+        with:
+          name: getmeds-test-apk
+          path: getmeds-test.apk
+          retention-days: 14
