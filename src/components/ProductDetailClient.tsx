@@ -1,5 +1,6 @@
 'use client';
 
+import { createPortal } from 'react-dom';
 import React, { useEffect, useLayoutEffect, useMemo, useState, useRef } from 'react';
 import { useProducts, useCategories, useImageMapper } from '@/lib/useSanity';
 import { urlFor } from '@/lib/sanity';
@@ -11,6 +12,7 @@ import { AddToCart } from '@/lib/AddToCart';
 import { ProductAccountPanel, SaveProductButton } from '@/lib/account/ProductActions';
 import { isAppMode, needsPrescription } from '@/lib/cart';
 import { loadDetails } from '@/lib/accountStore';
+import { useAccountData } from '@/lib/accountApi';
 import { setPageMeta, injectJsonLd, truncateAtWord, ogImageForFolder, ORGANIZATION_ID } from '@/lib/seo';
 import { validateFiles, ALLOWED_FILE_TYPES_ACCEPT } from '@/lib/fileUpload';
 import AlertModal from '@/lib/AlertModal';
@@ -61,6 +63,25 @@ const renderRichContent = (val: any) => {
 // Props are informational only: like the original, the product is resolved from
 // window.location (path segment, then ?product=).
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+/**
+ * My details takes the relationship as free text ("Daughter", "Spouse"); this
+ * form asks for one of a fixed list. Map the one onto the other so autofill
+ * can choose it: an exact match stays, family words become "Family member",
+ * anything else "Other". Empty stays empty.
+ */
+const RELATIONSHIP_OPTIONS = ['Family member', 'Caregiver', 'Guardian', 'Healthcare professional', 'Other'];
+const FAMILY_WORDS = /\b(family|spouse|wife|husband|partner|mother|mom|mum|father|dad|parent|daughter|son|child|sister|brother|sibling|grand\w*|aunt|uncle|niece|nephew|cousin|in-?law|asawa|anak|nanay|tatay|kapatid|lola|lolo)\b/i;
+function toRelationshipOption(raw?: string): string {
+  const v = (raw || '').trim();
+  if (!v) return '';
+  const exact = RELATIONSHIP_OPTIONS.find((o) => o.toLowerCase() === v.toLowerCase());
+  if (exact) return exact;
+  if (/caregiver|yaya|nurse aide/i.test(v)) return 'Caregiver';
+  if (/guardian/i.test(v)) return 'Guardian';
+  if (/doctor|physician|nurse|pharmacist|health/i.test(v)) return 'Healthcare professional';
+  return FAMILY_WORDS.test(v) ? 'Family member' : 'Other';
+}
+
 export default function ProductDetailClient(_props: { categorySlug?: string; productSlug?: string } = {}) {
   const { getImage } = useImageMapper('product-range');
   const { data: productsDataRaw, loading: productsLoading } = useProducts();
@@ -120,10 +141,70 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
         age: f.age || d.age || '',
         address: f.address || d.address || '',
         contactName: f.contactName || d.contactName || '',
-        contactRelationship: f.contactRelationship || d.contactRelationship || '',
+        contactRelationship: f.contactRelationship || toRelationshipOption(d.contactRelationship),
       }));
     });
   }, []);
+
+  /**
+   * The signed-in customer's profile (My details) fills the form too, and
+   * says who they are, so "Who is requesting?" is answered for them (they can
+   * still change it). Like the phone's saved details above, it only fills
+   * fields that are still empty, so nothing typed is overwritten.
+   */
+  const accountData = useAccountData().data;
+  const accountPrefilled = useRef(false);
+  useEffect(() => {
+    const prof = accountData?.profile;
+    if (!prof || accountPrefilled.current) return;
+    accountPrefilled.current = true;
+    setFormData((f) => ({
+      ...f,
+      name: f.name || prof.name || '',
+      email: f.email || prof.email || '',
+      phone: f.phone || prof.phone || '',
+      age: f.age || prof.age || '',
+      address: f.address || prof.address || '',
+      contactName: f.contactName || prof.contactName || '',
+      contactRelationship: f.contactRelationship || toRelationshipOption(prof.contactRelationship),
+    }));
+    if (prof.userType && ['patient', 'doctor', 'pharmacy', 'hospital'].includes(prof.userType)) {
+      setUserType((t) => t || prof.userType!);
+      setUserTypeConfirmed(true);
+    }
+  }, [accountData]);
+
+  /**
+   * In the app the inquiry form is a sheet over the page, opened by "Send
+   * inquiry", instead of a long form at the bottom of it. It takes a history
+   * entry, so the phone's Back closes it like any screen.
+   */
+  const [inquiryOpen, setInquiryOpen] = useState(false);
+  const inquiryPushed = useRef(false);
+  const openInquiry = () => {
+    if (inquiryOpen) return;
+    window.history.pushState({ gmInquiry: true }, '');
+    inquiryPushed.current = true;
+    setInquiryOpen(true);
+  };
+  const closeInquiry = () => {
+    if (inquiryPushed.current) window.history.back();
+    else setInquiryOpen(false);
+  };
+  useEffect(() => {
+    if (!inquiryOpen) return;
+    const onPop = () => {
+      inquiryPushed.current = false;
+      setInquiryOpen(false);
+    };
+    window.addEventListener('popstate', onPop);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      document.body.style.overflow = prev;
+    };
+  }, [inquiryOpen]);
 
   const [ageDropdownOpen, setAgeDropdownOpen] = useState(false);
   const ageDropdownRef = useRef<HTMLDivElement>(null);
@@ -632,6 +713,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
 
       setSubmitState('sent');
       resetForm();
+      if (inquiryOpen) closeInquiry();
       submission.status === 'sent' && setSuccessModalOpen(true);
       setTimeout(() => setSubmitState('idle'), 300);
     } catch (error) {
@@ -1109,7 +1191,33 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
               {/* Right Column: Inquiry Form */}
               {/* scroll-mt clears the app's sticky header, which would
                   otherwise cover the heading this scrolls to. */}
-              <div id="gm-inquiry" className="lg:w-1/2 bg-white p-6 lg:p-8 pb-10 scroll-mt-[68px]">
+              {(() => {
+                const form = (
+              <div
+                id="gm-inquiry"
+                {...(app ? { role: 'dialog', 'aria-modal': true, 'aria-label': 'Send inquiry', 'data-history-backed': '' } : {})}
+                className={
+                  app
+                    ? inquiryOpen
+                      ? 'fixed inset-x-0 bottom-0 z-[10060] max-h-[92vh] overflow-y-auto rounded-t-[28px] bg-white px-6 pt-3 shadow-[0_-10px_40px_rgba(15,23,42,.18)]'
+                      : 'hidden'
+                    : 'lg:w-1/2 bg-white p-6 lg:p-8 pb-10 scroll-mt-[68px]'
+                }
+                style={app && inquiryOpen ? { paddingBottom: 'calc(28px + var(--gm-safe-bottom))' } : undefined}
+              >
+                {app && (
+                  <div className="sticky -top-3 z-10 -mx-6 mb-2 flex items-center justify-center bg-white px-6 pb-2 pt-3">
+                    <div className="h-1 w-10 rounded-full bg-gray-200" />
+                    <button
+                      type="button"
+                      onClick={closeInquiry}
+                      aria-label="Close"
+                      className="absolute right-4 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500"
+                    >
+                      <i className="fa-solid fa-xmark text-[13px]" />
+                    </button>
+                  </div>
+                )}
                 <div className="mb-6">
                   <h4 className="text-lg font-bold text-gray-900">Send Inquiry</h4>
                   <p className="text-xs text-gray-500 mt-1">Submit your details to get a formal quote for this product.</p>
@@ -1521,6 +1629,26 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                 </form>
                 )}
               </div>
+                );
+                if (!app) return form;
+                // In the app the form floats over the whole screen, tab bar
+                // included, so it is rendered straight into <body>: inside the
+                // page it sat in the page's own layer, under the tab bar.
+                return createPortal(
+                  <>
+                    {inquiryOpen && (
+                      <button
+                        type="button"
+                        aria-label="Close inquiry"
+                        onClick={closeInquiry}
+                        className="fixed inset-0 z-[10055] bg-[rgba(15,23,42,.45)]"
+                      />
+                    )}
+                    {form}
+                  </>,
+                  document.body
+                );
+              })()}
             </div>
 
             {/* Similar products — app only. On the website this row would be
@@ -1630,7 +1758,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
           </div>
           <button
             type="button"
-            onClick={() => document.getElementById('gm-inquiry')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            onClick={openInquiry}
             className="flex-1 rounded-full py-3 text-[13px] font-semibold text-white"
             style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
           >
@@ -1642,7 +1770,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
 
       {/* Success Modal */}
       {successModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" style={{ background: 'rgba(26,32,44,0.7)' }}>
+        <div className="fixed inset-0 z-[10070] flex items-center justify-center p-4" style={{ background: 'rgba(26,32,44,0.7)' }}>
           <div className="bg-white rounded-[20px] shadow-2xl p-10 max-w-sm w-full text-center">
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
@@ -1671,7 +1799,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
       {prescriptionRequiredModalOpen && (
         <>
           <div
-            className={`fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 transition-opacity duration-200 ${prescriptionModalVisible ? 'opacity-100' : 'opacity-0'}`}
+            className={`fixed inset-0 z-[10080] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 transition-opacity duration-200 ${prescriptionModalVisible ? 'opacity-100' : 'opacity-0'}`}
             onClick={() => { setPrescriptionModalVisible(false); setTimeout(() => setPrescriptionRequiredModalOpen(false), 200); }}
           >
             <div
@@ -1728,7 +1856,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
       {idRequiredModalOpen && (
         <>
           <div
-            className={`fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 transition-opacity duration-200 ${idModalVisible ? 'opacity-100' : 'opacity-0'}`}
+            className={`fixed inset-0 z-[10080] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 transition-opacity duration-200 ${idModalVisible ? 'opacity-100' : 'opacity-0'}`}
             onClick={() => { setIdModalVisible(false); setTimeout(() => setIdRequiredModalOpen(false), 200); }}
           >
             <div
@@ -1780,7 +1908,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
       {/* Uploaded ID Preview Modal — Patient/Caregiver flow */}
       {viewingFileUrl && (
         <div
-          className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md transition-all duration-300"
+          className="fixed inset-0 z-[10080] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md transition-all duration-300"
           onClick={() => setViewingFileUrl(null)}
         >
           <button
@@ -1805,7 +1933,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
       {/* Zoomed Image Modal */}
       {zoomedImageOpen && product && (
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md transition-all duration-300"
+          className="fixed inset-0 z-[10070] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md transition-all duration-300"
           onClick={() => setZoomedImageOpen(false)}
         >
           <button

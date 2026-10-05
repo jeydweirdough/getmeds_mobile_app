@@ -113,7 +113,17 @@ export default function App() {
   return (
     <>
       <div className="gm-statusbar-fill" aria-hidden="true" />
-      <main key={location.key} className="gm-screen-in">
+      {/* gm-screen: the safe-area spacing (app.css). gm-screen-in: the fade, taken
+          off once it has played: while an element has an opacity animation it is
+          its own stacking layer, which kept every sheet and modal inside the page
+          (inquiry form, prescription prompts) underneath the tab bar. */}
+      <main
+        key={location.key}
+        className="gm-screen gm-screen-in"
+        onAnimationEnd={(e) => {
+          if (e.target === e.currentTarget) e.currentTarget.classList.remove('gm-screen-in');
+        }}
+      >
         <Screen route={route} />
       </main>
       <PwaTabbar />

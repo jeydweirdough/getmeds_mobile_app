@@ -24,11 +24,11 @@ body {
 }
 
 /* Every screen starts below the status bar... */
-main.gm-screen-in {
+main.gm-screen {
   padding-top: var(--gm-safe-top);
 }
 /* ...its sticky headers stop under it instead of sliding behind it... */
-main.gm-screen-in .sticky.top-0 {
+main.gm-screen .sticky.top-0 {
   top: var(--gm-safe-top);
 }
 /* ...and what scrolls up past them is hidden behind a white strip, so the
