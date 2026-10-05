@@ -6,9 +6,15 @@ import { hasConsent } from '@/lib/cart';
 import {
   CatalogueRow,
   ProductRow,
+  displayName,
   prettyFolder,
+  productImage,
+  productUrl,
+  rxRequired,
+  specLine,
 } from '@/lib/catalogueItem';
 import { goBack } from '@/platform/navigation';
+import { useLang } from '@/lib/i18n';
 
 /**
  * search.tsx
@@ -85,7 +91,35 @@ const matches = (p: CatalogueRow, q: string) =>
     .filter(Boolean)
     .some((v) => String(v).toLowerCase().includes(q));
 
+/**
+ * One card in the Featured Products strip — packshot on top, name and strength
+ * under it, the way a store's "trending" shelf reads. Deliberately smaller than
+ * the home screen's featured card: here it is a way into a product, not the
+ * product's pitch, and several should fit across before the swipe.
+ */
+function FeaturedCard({ p }: { p: CatalogueRow }) {
+  return (
+    <a href={productUrl(p)} className="block w-[124px] shrink-0 snap-start transition active:scale-[0.98]">
+      <div className="relative h-[124px] overflow-hidden rounded-[14px] bg-[#F6F8FC] p-3">
+        <img
+          src={productImage(p)}
+          alt=""
+          loading="lazy"
+          className="h-full w-full object-contain mix-blend-multiply"
+          onError={(e) => { const i = e.currentTarget; i.onerror = null; i.src = '/assets/no-image.png'; }}
+        />
+        {rxRequired(p) && (
+          <span className="absolute left-2 top-2 rounded-full bg-[#E8F5FC] px-1.5 py-[1px] text-[9px] font-semibold text-[#1D9FDA]">Rx</span>
+        )}
+      </div>
+      <h3 className="mt-2 line-clamp-1 text-[12.5px] font-semibold text-gray-900">{displayName(p)}</h3>
+      <p className="mt-0.5 line-clamp-1 text-[11px] text-gray-400">{specLine(p)}</p>
+    </a>
+  );
+}
+
 export default function SearchClient() {
+  const { tr } = useLang();
   const { data: raw, loading, error: catalogueError } = useProducts();
   const products = (raw || []) as CatalogueRow[];
 
@@ -227,6 +261,14 @@ export default function SearchClient() {
     return [...acc.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 12);
   }, [products]);
 
+  // In-stock rows, pictured ones first: the strip is a row of packshots, and a
+  // run of placeholder boxes at the front of it reads as broken, not featured.
+  const featured = useMemo(() => {
+    const inStock = products.filter((p) => p.availability !== false);
+    const pictured = inStock.filter((p) => p.image?.asset);
+    return [...pictured, ...inStock.filter((p) => !p.image?.asset)].slice(0, 10);
+  }, [products]);
+
   const showBrowse = !submitted && query.trim().length === 0;
   const showSuggest = !submitted && query.trim().length > 0;
 
@@ -237,6 +279,8 @@ export default function SearchClient() {
            of ours and cannot be styled to match, so it goes. */
         input[type="search"]::-webkit-search-decoration,
         input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+        .gm-hscroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .gm-hscroll::-webkit-scrollbar { display: none; }
       `}</style>
 
       <header
@@ -247,7 +291,7 @@ export default function SearchClient() {
         <div className="mx-auto flex max-w-2xl items-center gap-2">
           <button
             type="button"
-            aria-label="Back"
+            aria-label={tr('Back', 'Bumalik')}
             onClick={() => {
               // From results, back returns to the empty box — the same thing
               // the hardware back gesture does, so the two never disagree.
@@ -277,8 +321,8 @@ export default function SearchClient() {
               }}
               enterKeyHint="search"
               autoComplete="off"
-              placeholder="Search brand, generic or condition"
-              aria-label="Search the catalogue"
+              placeholder={tr('Search brand, generic or condition', 'Maghanap ng brand, generic o kondisyon')}
+              aria-label={tr('Search the catalogue', 'Maghanap sa catalogue')}
               className="h-[46px] w-full rounded-full border border-transparent pl-11 pr-11 text-[13.5px] text-gray-800 outline-none placeholder:text-gray-400 focus:border-[#1D9FDA]"
               style={{ background: FIELD }}
             />
@@ -286,7 +330,7 @@ export default function SearchClient() {
               <button
                 type="button"
                 onClick={clearBox}
-                aria-label="Clear search"
+                aria-label={tr('Clear search', 'I-clear ang search')}
                 className="absolute right-1.5 top-1/2 flex h-[34px] w-[34px] -translate-y-1/2 items-center justify-center rounded-full text-gray-400"
               >
                 <i className="fa-solid fa-xmark text-[14px]" />
@@ -305,10 +349,10 @@ export default function SearchClient() {
                 <div className="mb-1 flex items-center justify-between">
                   <h2 className="flex items-center gap-2 text-[12.5px] font-medium text-gray-400">
                     <i className="fa-solid fa-clock-rotate-left text-[11px]" />
-                    Recent Searches
+                    {tr('Recent Searches', 'Mga Huling Hinanap')}
                   </h2>
                   <button type="button" onClick={forgetAll} className="text-[11.5px] font-medium" style={{ color: BRAND }}>
-                    Clear all
+                    {tr('Clear all', 'I-clear lahat')}
                   </button>
                 </div>
                 <ul>
@@ -324,7 +368,7 @@ export default function SearchClient() {
                       <button
                         type="button"
                         onClick={() => forgetOne(term)}
-                        aria-label={`Remove ${term} from recent searches`}
+                        aria-label={tr(`Remove ${term} from recent searches`, `Alisin ang ${term} sa mga huling hinanap`)}
                         className="flex h-8 w-8 shrink-0 items-center justify-center text-gray-300"
                       >
                         <i className="fa-solid fa-xmark text-[12px]" />
@@ -334,7 +378,7 @@ export default function SearchClient() {
                 </ul>
                 {!persistent && (
                   <p className="mt-1 text-[10.5px] leading-relaxed text-gray-400">
-                    Kept for this session only. Getmeds does not store what you search.
+                    {tr('Kept for this session only. Getmeds does not store what you search.', 'Para lang sa session na ito. Hindi sine-save ng Getmeds ang mga hinahanap mo.')}
                   </p>
                 )}
               </section>
@@ -343,7 +387,7 @@ export default function SearchClient() {
             <section className={recents.length > 0 ? '' : 'pt-2'}>
               <h2 className="mb-3 flex items-center gap-2 text-[12.5px] font-medium text-gray-400">
                 <i className="fa-solid fa-arrow-trend-up text-[11px]" />
-                Featured Categories
+                {tr('Featured Categories', 'Mga Tampok na Kategorya')}
               </h2>
               {loading && categories.length === 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -366,6 +410,32 @@ export default function SearchClient() {
                 </div>
               )}
             </section>
+
+            {(loading || featured.length > 0) && (
+              <section className="mt-6">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="flex items-center gap-2 text-[12.5px] font-medium text-gray-400">
+                    <i className="fa-solid fa-star text-[11px]" />
+                    {tr('Featured Products', 'Mga Tampok na Produkto')}
+                  </h2>
+                  <a href="/product-range" className="text-[11.5px] font-medium" style={{ color: BRAND }}>
+                    {tr('View all', 'Tingnan lahat')}
+                  </a>
+                </div>
+                {/* Bleeds to the screen edge so the next card peeks in and says "swipe". */}
+                <div className="gm-hscroll -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-1">
+                  {featured.length === 0
+                    ? Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="w-[124px] shrink-0">
+                          <div className="h-[124px] animate-pulse rounded-[14px]" style={{ background: FIELD }} />
+                          <div className="mt-2 h-3 w-4/5 animate-pulse rounded" style={{ background: FIELD }} />
+                          <div className="mt-1.5 h-2.5 w-1/2 animate-pulse rounded" style={{ background: FIELD }} />
+                        </div>
+                      ))
+                    : featured.map((p, i) => <FeaturedCard key={p._id || i} p={p} />)}
+                </div>
+              </section>
+            )}
           </>
         )}
 
@@ -389,7 +459,7 @@ export default function SearchClient() {
                     <button
                       type="button"
                       onClick={() => { setQuery(term); inputRef.current?.focus(); }}
-                      aria-label={`Put ${term} in the search box`}
+                      aria-label={tr(`Put ${term} in the search box`, `Ilagay ang ${term} sa search box`)}
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-300"
                     >
                       <i className="fa-solid fa-arrow-up-long -rotate-45 text-[12px]" />
@@ -401,7 +471,7 @@ export default function SearchClient() {
 
             {preview.length > 0 && (
               <section>
-                <h2 className="mb-2 text-[13px] font-semibold text-gray-900">Products</h2>
+                <h2 className="mb-2 text-[13px] font-semibold text-gray-900">{tr('Products', 'Mga Produkto')}</h2>
                 <div className="space-y-2.5">
                   {preview.map((p, i) => <ProductRow key={p._id || i} p={p} highlight={query.trim()} />)}
                 </div>
@@ -411,7 +481,7 @@ export default function SearchClient() {
                   className="mt-3 w-full rounded-full bg-white py-3 text-[12.5px] font-semibold"
                   style={{ boxShadow: CARD_SHADOW, color: BRAND }}
                 >
-                  See all results for &ldquo;{query.trim()}&rdquo;
+                  {tr('See all results for', 'Tingnan lahat ng resulta para sa')} &ldquo;{query.trim()}&rdquo;
                 </button>
               </section>
             )}
@@ -425,7 +495,7 @@ export default function SearchClient() {
                   className="mx-auto mb-4 h-auto w-[170px] max-w-full"
                 />
                 <p className="text-[13px] text-gray-400">
-                  Nothing matches yet. Keep typing, or press search.
+                  {tr('Nothing matches yet. Keep typing, or press search.', 'Wala pang tugma. Ituloy ang pag-type, o pindutin ang search.')}
                 </p>
               </div>
             )}
@@ -437,9 +507,12 @@ export default function SearchClient() {
           <div className="pt-2">
             <p className="mb-3 text-[12.5px] text-gray-500">
               {results.length === 0
-                ? 'No results'
-                : `${results.length}${results.length === 60 ? '+' : ''} result${results.length === 1 ? '' : 's'}`}{' '}
-              for <span className="font-semibold text-gray-800">&ldquo;{submitted}&rdquo;</span>
+                ? tr('No results', 'Walang resulta')
+                : tr(
+                    `${results.length}${results.length === 60 ? '+' : ''} result${results.length === 1 ? '' : 's'}`,
+                    `${results.length}${results.length === 60 ? '+' : ''} resulta`,
+                  )}{' '}
+              {tr('for', 'para sa')} <span className="font-semibold text-gray-800">&ldquo;{submitted}&rdquo;</span>
             </p>
 
             {results.length > 0 ? (
@@ -451,17 +524,19 @@ export default function SearchClient() {
                 <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#F1F6FC]">
                   <i className="fa-solid fa-magnifying-glass text-[16px]" style={{ color: BRAND }} />
                 </span>
-                <p className="text-[14px] font-semibold text-gray-900">Nothing matched that</p>
+                <p className="text-[14px] font-semibold text-gray-900">{tr('Nothing matched that', 'Walang tumugma diyan')}</p>
                 <p className="mx-auto mt-1.5 max-w-[280px] text-[12px] leading-relaxed text-gray-500">
-                  Try the generic name instead of the brand, or check the spelling. If you
-                  have a prescription, send us a photo and we will look it up for you.
+                  {tr(
+                    'Try the generic name instead of the brand, or check the spelling. If you have a prescription, send us a photo and we will look it up for you.',
+                    'Subukan ang generic name sa halip na brand, o i-check ang spelling. Kung may reseta ka, ipadala ang litrato nito at hahanapin namin para sa iyo.',
+                  )}
                 </p>
                 <a
                   href="/order-medicines/patients"
                   className="mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-semibold text-white"
                   style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
                 >
-                  <i className="fa-solid fa-camera text-[11px]" /> Send a prescription
+                  <i className="fa-solid fa-camera text-[11px]" /> {tr('Send a prescription', 'Magpadala ng reseta')}
                 </a>
               </div>
             )}
@@ -469,15 +544,15 @@ export default function SearchClient() {
         )}
 
         {loading && !submitted && !showSuggest && categories.length === 0 && (
-          <p className="py-10 text-center text-[12px] text-gray-400">Loading the catalogue…</p>
+          <p className="py-10 text-center text-[12px] text-gray-400">{tr('Loading the catalogue…', 'Nilo-load ang catalogue…')}</p>
         )}
 
         {/* The catalogue could not be fetched at all: say so, instead of an empty screen. */}
         {!loading && catalogueError && categories.length === 0 && (
           <div className="py-10 text-center">
-            <p className="text-[13px] font-semibold text-gray-800">We couldn’t load the medicines</p>
+            <p className="text-[13px] font-semibold text-gray-800">{tr('We couldn’t load the medicines', 'Hindi namin ma-load ang mga gamot')}</p>
             <p className="mx-auto mt-1 max-w-[260px] text-[12px] leading-relaxed text-gray-500">
-              Check your connection, then try again.
+              {tr('Check your connection, then try again.', 'I-check ang iyong connection, saka subukan ulit.')}
             </p>
             <button
               type="button"
@@ -485,7 +560,7 @@ export default function SearchClient() {
               className="mt-4 rounded-full px-5 py-2.5 text-[12.5px] font-semibold text-white"
               style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
             >
-              Try again
+              {tr('Try again', 'Subukan ulit')}
             </button>
           </div>
         )}

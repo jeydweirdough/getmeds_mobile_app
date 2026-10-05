@@ -5,6 +5,7 @@ import { CatalogueRow } from '@/lib/catalogueItem';
 import { CategoryCard, useCatalogueCategories } from '@/lib/CategoryCard';
 import { goBack } from '@/platform/navigation';
 import { BackChevron } from '@/lib/ui/Screen';
+import { useLang } from '@/lib/i18n';
 
 /**
  * CategoriesClient.tsx
@@ -14,6 +15,7 @@ import { BackChevron } from '@/lib/ui/Screen';
  * home screen; each card goes to that folder's listing, as on the strip.
  */
 export default function CategoriesClient() {
+  const { tr } = useLang();
   const { data: raw } = useProducts();
   const categories = useCatalogueCategories((raw || []) as CatalogueRow[]);
 
@@ -28,20 +30,23 @@ export default function CategoriesClient() {
         <div className="relative mx-auto flex h-10 max-w-2xl items-center justify-center">
           <button
             type="button"
-            aria-label="Back"
+            aria-label={tr('Back', 'Bumalik')}
             onClick={() => goBack('/app-home')}
             className="absolute left-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-gray-900"
           >
             <BackChevron />
           </button>
-          <h1 className="text-[17px] font-semibold tracking-tight text-gray-900">Categories</h1>
+          <h1 className="text-[17px] font-semibold tracking-tight text-gray-900">{tr('Categories', 'Mga Kategorya')}</h1>
         </div>
       </header>
 
       <main className="mx-auto max-w-2xl px-1.5 pb-6">
         {categories.length > 0 && (
           <p className="mb-1.5 px-2 text-[12.5px] text-gray-500">
-            {categories.length} {categories.length === 1 ? 'category' : 'categories'}
+            {tr(
+              `${categories.length} ${categories.length === 1 ? 'category' : 'categories'}`,
+              `${categories.length} kategorya`,
+            )}
           </p>
         )}
         <div className="flex flex-col gap-1.5">

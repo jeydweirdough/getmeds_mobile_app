@@ -21,6 +21,7 @@ import { usePageReady } from '@/lib/handoff';
 import { goBack, goTo } from '@/platform/navigation';
 import { RatingLine, ReviewsSection, useReviews } from '@/lib/ProductReviews';
 import StrengthPicker from '@/lib/StrengthPicker';
+import { useLang } from '@/lib/i18n';
 import './ProductDetailClient.css';
 
 interface ProductWithCategory extends Omit<SanityProduct, 'category'> {
@@ -84,6 +85,7 @@ function toRelationshipOption(raw?: string): string {
 
 export default function ProductDetailClient(_props: { categorySlug?: string; productSlug?: string } = {}) {
   const { getImage } = useImageMapper('product-range');
+  const { tr } = useLang();
   const { data: productsDataRaw, loading: productsLoading } = useProducts();
   const productsData = productsDataRaw as ProductWithCategory[] | null;
   const { data: categoriesData } = useCategories();
@@ -237,6 +239,12 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
     doctor:   'Doctor / Healthcare Professional',
     pharmacy: 'Distributor / Pharmacy',
     hospital: 'Hospital / Institution',
+  };
+  const USER_TYPE_LABELS_TL: Record<string, string> = {
+    patient:  'Pasyente / Pamilya',
+    doctor:   'Doktor / Healthcare Professional',
+    pharmacy: 'Distributor / Botika',
+    hospital: 'Ospital / Institusyon',
   };
 
   useEffect(() => {
@@ -522,7 +530,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
         return;
       }
       await navigator.clipboard.writeText(url);
-      showAlert('Link copied to your clipboard.', 'Share');
+      showAlert(tr('Link copied to your clipboard.', 'Nakopya na ang link sa iyong clipboard.'), tr('Share', 'Ibahagi'));
     } catch {
       // Dismissing the share sheet rejects the promise. That is a choice, not
       // a failure, so there is nothing to tell anyone about.
@@ -574,7 +582,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const { valid, errors } = validateFiles(Array.from(e.target.files));
-      if (errors.length > 0) showAlert(errors, 'Invalid File');
+      if (errors.length > 0) showAlert(errors, tr('Invalid File', 'Hindi Valid na File'));
       setUploadedFiles(valid);
     }
   };
@@ -582,7 +590,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
   const handlePatientIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const { valid, errors } = validateFiles([e.target.files[0]]);
-      if (errors.length > 0) showAlert(errors, 'Invalid File');
+      if (errors.length > 0) showAlert(errors, tr('Invalid File', 'Hindi Valid na File'));
       if (valid.length > 0) setPatientIdFile(valid[0]);
       e.target.value = '';
     }
@@ -619,26 +627,26 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
         return;
       }
       if (!formData.name || !formData.email || !formData.phone || !formData.age || !formData.address) {
-        showAlert('Please fill in all required fields.');
+        showAlert(tr('Please fill in all required fields.', 'Pakisagutan ang lahat ng required na field.'));
         return;
       }
       if (!contactSameAsPatient && !formData.contactName) {
-        showAlert("Please provide the contact person's full name.");
+        showAlert(tr("Please provide the contact person's full name.", 'Pakilagay ang buong pangalan ng contact person.'));
         return;
       }
       if (!formData.terms) {
-        showAlert('Please confirm that all provided information is authentic.');
+        showAlert(tr('Please confirm that all provided information is authentic.', 'Pakikumpirma na totoo ang lahat ng impormasyong ibinigay.'));
         return;
       }
       if (!formData.privacyConsent) {
-        showAlert('Please consent to the Privacy Policy to proceed.');
+        showAlert(tr('Please consent to the Privacy Policy to proceed.', 'Pumayag muna sa Privacy Policy para makapagpatuloy.'));
         return;
       }
     }
 
     const phoneDigits = formData.phone.replace(/\D/g, '');
     if (formData.phone && (phoneDigits.length < 7 || phoneDigits.length > 15)) {
-      showAlert('Please enter a valid phone number.');
+      showAlert(tr('Please enter a valid phone number.', 'Pakilagay ang tamang phone number.'));
       return;
     }
 
@@ -771,7 +779,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
             <button
               type="button"
               onClick={() => goBack(backUrl)}
-              aria-label="Back"
+              aria-label={tr('Back', 'Bumalik')}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F3F6FB] text-gray-700"
             >
               <i className="fa-solid fa-arrow-left text-[14px]" />
@@ -781,7 +789,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
               <button
                 type="button"
                 onClick={shareProduct}
-                aria-label="Share this product"
+                aria-label={tr('Share this product', 'Ibahagi ang produktong ito')}
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F3F6FB] text-gray-700"
               >
                 <i className="fa-solid fa-share-nodes text-[14px]" />
@@ -790,48 +798,9 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
           </div>
         )}
 
-        {/* Breadcrumb Header */}
-        <div className={`bg-white px-6 py-3 items-center justify-between border-b border-gray-100 sticky top-0 z-10 product-detail-breadcrumb ${app ? 'hidden' : 'flex'}`}>
-          <nav aria-label="Breadcrumb">
-            <ol className="flex items-center gap-1.5 text-[12px] flex-wrap">
-              <li>
-                <a href="/" className="text-gray-400 hover:text-primary transition-colors font-medium">
-                  Home
-                </a>
-              </li>
-              {product && (() => {
-                // "Home > Category > Condition > Product" — precomputed in the
-                // sheet (Breadcrumb (auto)); only "Home" is replaced above since
-                // it should link to "/" instead of being plain text. The trail is
-                // built by getBreadcrumbTrail so this and the BreadcrumbList JSON-LD
-                // always render the same crumbs.
-                const trail = getBreadcrumbTrail(product);
-                return trail.map(({ name, url }, idx) => {
-                  const isLast = idx === trail.length - 1;
-                  return (
-                    <React.Fragment key={idx}>
-                      <li className="text-gray-300"><i className="fa-solid fa-chevron-right text-[9px]" /></li>
-                      <li className={isLast ? 'font-semibold text-gray-700' : ''}>
-                        {url ? (
-                          <a href={url} className="text-gray-400 hover:text-primary transition-colors font-medium">
-                            {name}
-                          </a>
-                        ) : (
-                          name
-                        )}
-                      </li>
-                    </React.Fragment>
-                  );
-                });
-              })()}
-              {!product && (
-                <>
-                  <li className="text-gray-300"><i className="fa-solid fa-chevron-right text-[9px]" /></li>
-                  <li className="font-semibold text-gray-700">Product Details</li>
-                </>
-              )}
-            </ol>
-          </nav>
+        {/* Help bar (browser only). It used to carry the breadcrumb trail too,
+            which this app no longer shows. */}
+        <div className={`bg-white px-6 py-3 items-center justify-end border-b border-gray-100 sticky top-0 z-10 product-detail-breadcrumb ${app ? 'hidden' : 'hidden sm:flex'}`}>
           <button
             className="hidden sm:flex items-center text-gray-500 hover:text-primary transition text-sm space-x-1.5"
             onClick={() => {
@@ -843,7 +812,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
             }}
           >
             <i className="fa-regular fa-circle-question" />
-            <span>Do you need help?</span>
+            <span>{tr('Do you need help?', 'Kailangan mo ba ng tulong?')}</span>
           </button>
         </div>
 
@@ -872,9 +841,9 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
         {!productsLoading && notFound && (
           <div className="flex flex-col items-center justify-center py-32 text-center px-4">
             <i className="fa-regular fa-circle-xmark text-5xl text-gray-300 mb-4" />
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Product Not Found</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">{tr('Product Not Found', 'Hindi Nahanap ang Produkto')}</h2>
             <p className="text-sm text-gray-500 mb-6">
-              The product you're looking for doesn't exist or may have been removed.
+              {tr("The product you're looking for doesn't exist or may have been removed.", 'Wala ang produktong hinahanap mo o maaaring tinanggal na ito.')}
             </p>
             <a
               href="/cancer-medicines"
@@ -882,7 +851,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
               style={{ background: 'linear-gradient(to right, #61A644, #0D99FF)' }}
             >
               <i className="fa-solid fa-arrow-left text-xs" />
-              Browse All Products
+              {tr('Browse All Products', 'Tingnan ang Lahat ng Produkto')}
             </a>
           </div>
         )}
@@ -920,7 +889,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                           ) : (
                             <>
                               <i className="fa-regular fa-image mb-3 text-4xl text-gray-300" />
-                              <span className="text-xs font-medium uppercase tracking-wider text-gray-400">No Image</span>
+                              <span className="text-xs font-medium uppercase tracking-wider text-gray-400">{tr('No Image', 'Walang Larawan')}</span>
                             </>
                           )}
                         </div>
@@ -947,12 +916,12 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       {product.availability !== false && (
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700">
-                          <i className="fa-solid fa-check text-[9px]" /> In stock
+                          <i className="fa-solid fa-check text-[9px]" /> {tr('In stock', 'In stock')}
                         </span>
                       )}
                       {product.prescription?.toUpperCase() === 'RX' && (
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600">
-                          <i className="fa-solid fa-file-prescription text-[9px]" /> Prescription required
+                          <i className="fa-solid fa-file-prescription text-[9px]" /> {tr('Prescription required', 'Kailangan ng reseta')}
                         </span>
                       )}
                       {product.form && (
@@ -976,11 +945,13 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                         empty space, and it sets the expectation the inquiry
                         form below then meets. */}
                     <div className="mt-4 rounded-[16px] bg-[#F6F8FC] p-4">
-                      <p className="text-[10.5px] font-bold uppercase tracking-wider text-gray-400">Price</p>
-                      <p className="mt-0.5 text-[15px] font-bold text-gray-900">Quoted on request</p>
+                      <p className="text-[10.5px] font-bold uppercase tracking-wider text-gray-400">{tr('Price', 'Presyo')}</p>
+                      <p className="mt-0.5 text-[15px] font-bold text-gray-900">{tr('Quoted on request', 'May quote kapag nag-request')}</p>
                       <p className="mt-1 text-[11.5px] leading-relaxed text-gray-500">
-                        Add this to your list, or send an inquiry below, and our team will come
-                        back to you with availability and a formal quote.
+                        {tr(
+                          'Add this to your list, or send an inquiry below, and our team will come back to you with availability and a formal quote.',
+                          'Idagdag ito sa iyong list, o magpadala ng inquiry sa ibaba, at babalikan ka ng aming team tungkol sa availability at formal na quote.',
+                        )}
                       </p>
                     </div>
                   </div>
@@ -989,7 +960,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                   <div className="w-full md:w-1/2 flex flex-col justify-center">
                     <div className="flex flex-wrap items-start gap-x-3 gap-y-1 mb-3 text-sm text-gray-600">
                       <span className="flex items-center font-medium whitespace-nowrap" style={{ color: '#61A644' }}>
-                        <i className="fa-solid fa-check mr-1.5" /> In stock
+                        <i className="fa-solid fa-check mr-1.5" /> {tr('In stock', 'In stock')}
                       </span>
                       <span className="text-gray-300 whitespace-nowrap">|</span>
                       <span className="capitalize font-medium leading-snug" style={{ color: '#0D99FF' }}>
@@ -999,7 +970,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                         <>
                           <span className="text-gray-300 whitespace-nowrap">|</span>
                           <span className="font-medium whitespace-nowrap text-red-600">
-                            Rx — Prescription Required
+                            {tr('Rx — Prescription Required', 'Rx — Kailangan ng Reseta')}
                           </span>
                         </>
                       )}
@@ -1010,13 +981,13 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                     <div className="flex flex-wrap gap-x-6 gap-y-2">
                       {product.strength && (
                         <div>
-                          <span className="block text-[11px] text-gray-400 font-semibold">Strength</span>
+                          <span className="block text-[11px] text-gray-400 font-semibold">{tr('Strength', 'Lakas')}</span>
                           <span className="text-gray-800 font-medium text-[13px]">{formatFieldWithLineBreaks(product.strength)}</span>
                         </div>
                       )}
                       {product.form && (
                         <div>
-                          <span className="block text-[11px] text-gray-400 font-semibold">Form</span>
+                          <span className="block text-[11px] text-gray-400 font-semibold">{tr('Form', 'Anyo')}</span>
                           <span className="text-gray-800 font-medium text-[13px]">{formatFieldWithLineBreaks(product.form)}</span>
                         </div>
                       )}
@@ -1058,14 +1029,14 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                               <div className="absolute inset-0 bg-black/5 opacity-0 group-hover/zoom:opacity-100 flex items-center justify-center transition-opacity duration-300">
                                 <div className="bg-white/95 backdrop-blur-sm text-gray-800 rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-sm text-xs font-semibold">
                                   <i className="fa-solid fa-magnifying-glass-plus text-primary" />
-                                  Click to Zoom
+                                  {tr('Click to Zoom', 'I-click para I-zoom')}
                                 </div>
                               </div>
                             </>
                           ) : (
                             <>
                               <i className="fa-regular fa-image text-4xl mb-3 text-gray-300" />
-                              <span className="text-xs font-medium uppercase tracking-wider text-gray-400">No Image</span>
+                              <span className="text-xs font-medium uppercase tracking-wider text-gray-400">{tr('No Image', 'Walang Larawan')}</span>
                             </>
                           )}
                         </div>
@@ -1086,7 +1057,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                         ? { color: '#0D99FF', borderBottom: '2px solid #0D99FF' }
                         : { color: '#9CA3AF', borderBottom: '2px solid transparent' }}
                     >
-                      Description
+                      {tr('Description', 'Paglalarawan')}
                     </button>
                     {product.prescription?.toUpperCase() === 'RX' && (
                       <button
@@ -1097,7 +1068,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                           ? { color: '#DC2626', borderBottom: '2px solid #DC2626' }
                           : { color: '#9CA3AF', borderBottom: '2px solid transparent' }}
                       >
-                        Prescription Requirement
+                        {tr('Prescription Requirement', 'Kailangan sa Reseta')}
                       </button>
                     )}
                   </div>
@@ -1111,7 +1082,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                         )}
                         {(product.indications || (product as any).indication) && (
                           <div>
-                            <span className="block text-[13px] font-semibold mb-1 text-gray-400">Indications</span>
+                            <span className="block text-[13px] font-semibold mb-1 text-gray-400">{tr('Indications', 'Mga Indikasyon')}</span>
                             <div className="text-[14px] text-gray-600 leading-relaxed">
                               {renderRichContent(product.indications || (product as any).indication)}
                             </div>
@@ -1119,25 +1090,25 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                         )}
                         {(product.dosageAdministration || (product as any).dosageAndAdministration) && (
                           <div>
-                            <span className="block text-[13px] font-semibold mb-1 text-gray-400">Dosage & Administration</span>
+                            <span className="block text-[13px] font-semibold mb-1 text-gray-400">{tr('Dosage & Administration', 'Dosage at Paggamit')}</span>
                             <div className="text-[14px] text-gray-600 leading-relaxed">
                               {renderRichContent(product.dosageAdministration || (product as any).dosageAndAdministration)}
                             </div>
                           </div>
                         )}
                         {!product.description && !product.indications && !(product as any).indication && !product.dosageAdministration && !(product as any).dosageAndAdministration && (
-                          <p>Detailed therapeutic description is not available.</p>
+                          <p>{tr('Detailed therapeutic description is not available.', 'Wala pang detalyadong paglalarawan ng gamot na ito.')}</p>
                         )}
                         <div className="mt-4 border-t border-gray-100 pt-4 grid grid-cols-2 gap-4">
                           {product.packaging && (
                             <div>
-                              <span className="block text-[11px] text-gray-400 uppercase font-semibold">Packaging</span>
+                              <span className="block text-[11px] text-gray-400 uppercase font-semibold">{tr('Packaging', 'Packaging')}</span>
                               <span className="text-gray-800 font-medium text-[13px]">{product.packaging}</span>
                             </div>
                           )}
                           {product.innovator && (
                             <div>
-                              <span className="block text-[11px] text-gray-400 uppercase font-semibold">Innovator</span>
+                              <span className="block text-[11px] text-gray-400 uppercase font-semibold">{tr('Innovator', 'Innovator')}</span>
                               <span className="text-gray-800 font-medium text-[13px]">{product.innovator}</span>
                             </div>
                           )}
@@ -1146,9 +1117,10 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                     </div>
                   ) : (
                     <div className="text-[14px] text-gray-600 leading-relaxed">
-                      This medicine is prescription-only (Rx). A valid prescription from a licensed
-                      healthcare professional is required for purchase and dispensing, as regulated by
-                      FDA Philippines under RA 9711.
+                      {tr(
+                        'This medicine is prescription-only (Rx). A valid prescription from a licensed healthcare professional is required for purchase and dispensing, as regulated by FDA Philippines under RA 9711.',
+                        'Ang gamot na ito ay mabibili lamang nang may reseta (Rx). Kailangan ng valid na reseta mula sa lisensyadong healthcare professional para mabili at maibigay ito, ayon sa regulasyon ng FDA Philippines sa ilalim ng RA 9711.',
+                      )}
                     </div>
                   )}
                 </div>
@@ -1162,7 +1134,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                   if (otherSubcats.length === 0) return null;
                   return (
                     <div className="mt-4 px-5 pb-5">
-                      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Also used for</p>
+                      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">{tr('Also used for', 'Ginagamit din para sa')}</p>
                       <div className="flex flex-wrap gap-2">
                         {otherSubcats.map((sub, idx) => {
                           // Resolve the condition slug: prefer the precomputed slug from the sheet,
@@ -1195,7 +1167,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                 const form = (
               <div
                 id="gm-inquiry"
-                {...(app ? { role: 'dialog', 'aria-modal': true, 'aria-label': 'Send inquiry', 'data-history-backed': '' } : {})}
+                {...(app ? { role: 'dialog', 'aria-modal': true, 'aria-label': tr('Send inquiry', 'Magpadala ng inquiry'), 'data-history-backed': '' } : {})}
                 className={
                   app
                     ? inquiryOpen
@@ -1211,7 +1183,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                     <button
                       type="button"
                       onClick={closeInquiry}
-                      aria-label="Close"
+                      aria-label={tr('Close', 'Isara')}
                       className="absolute right-4 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500"
                     >
                       <i className="fa-solid fa-xmark text-[13px]" />
@@ -1219,8 +1191,8 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                   </div>
                 )}
                 <div className="mb-6">
-                  <h4 className="text-lg font-bold text-gray-900">Send Inquiry</h4>
-                  <p className="text-xs text-gray-500 mt-1">Submit your details to get a formal quote for this product.</p>
+                  <h4 className="text-lg font-bold text-gray-900">{tr('Send Inquiry', 'Magpadala ng Inquiry')}</h4>
+                  <p className="text-xs text-gray-500 mt-1">{tr('Submit your details to get a formal quote for this product.', 'Ilagay ang iyong detalye para makakuha ng formal na quote para sa produktong ito.')}</p>
                   {userTypeConfirmed && userType && USER_TYPE_LABELS[userType] && (
                     <div className="relative inline-block mt-2" ref={userTypeMenuRef}>
                       <button
@@ -1229,7 +1201,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                         className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-primary border border-blue-100 hover:bg-blue-100 transition"
                       >
                         <i className="fa-solid fa-user-tag text-[9px]" />
-                        {USER_TYPE_LABELS[userType]}
+                        {tr(USER_TYPE_LABELS[userType], USER_TYPE_LABELS_TL[userType] ?? USER_TYPE_LABELS[userType])}
                         <i className={`fa-solid fa-chevron-down text-[8px] transition-transform ${userTypeMenuOpen ? 'rotate-180' : ''}`} />
                       </button>
                       {userTypeMenuOpen && (
@@ -1241,7 +1213,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                               onClick={() => { setUserType(value); setUserTypeMenuOpen(false); }}
                               className={`w-full text-left px-3 py-2 text-[12px] font-medium transition ${userType === value ? 'bg-blue-50 text-primary font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
                             >
-                              {label}
+                              {tr(label, USER_TYPE_LABELS_TL[value] ?? label)}
                             </button>
                           ))}
                         </div>
@@ -1251,7 +1223,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                 </div>
                 {!userTypeConfirmed ? (
                   <div>
-                    <p className="text-[13px] font-medium text-gray-500 mb-3">Inquiry Type:</p>
+                    <p className="text-[13px] font-medium text-gray-500 mb-3">{tr('Inquiry Type:', 'Uri ng Inquiry:')}</p>
                     <div className="space-y-2 mb-6">
                       {Object.entries(USER_TYPE_LABELS).map(([value, label]) => (
                         <button
@@ -1261,7 +1233,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                           className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-xl border text-left text-[13px] font-semibold transition ${userType === value ? 'border-primary bg-blue-50 text-primary' : 'border-gray-200 text-gray-700 hover:border-gray-300'}`}
                         >
                           <i className="fa-solid fa-user-tag text-[11px]" />
-                          {label}
+                          {tr(label, USER_TYPE_LABELS_TL[value] ?? label)}
                         </button>
                       ))}
                     </div>
@@ -1272,13 +1244,13 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                       className="w-full text-white font-bold py-3 rounded-xl transition-all duration-300 text-[13px] disabled:opacity-40 disabled:cursor-not-allowed"
                       style={{ background: 'linear-gradient(to right, #61A644, #0D99FF)' }}
                     >
-                      Continue
+                      {tr('Continue', 'Magpatuloy')}
                     </button>
                   </div>
                 ) : userType === 'patient' ? (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-500 mb-2">Target Product</label>
+                    <label className="block text-[13px] font-medium text-gray-500 mb-2">{tr('Target Product', 'Produkto')}</label>
                     <input
                       type="text"
                       readOnly
@@ -1290,11 +1262,11 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
 
                   {/* Patient full name + Upload valid ID — mirrors order-medicines.tsx Customer Information */}
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-500 mb-2">Patient Full Name</label>
+                    <label className="block text-[13px] font-medium text-gray-500 mb-2">{tr('Patient Full Name', 'Buong Pangalan ng Pasyente')}</label>
                     <input
                       type="text"
                       required
-                      placeholder="Full name as shown on the prescription"
+                      placeholder={tr('Full name as shown on the prescription', 'Buong pangalan ayon sa reseta')}
                       value={formData.name}
                       onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
                       className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] text-gray-700 outline-none focus:border-primary transition"
@@ -1302,9 +1274,12 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                   </div>
 
                   <div className="space-y-2">
-                    <label className="block text-[13px] font-medium text-gray-500">Upload valid ID of the patient</label>
+                    <label className="block text-[13px] font-medium text-gray-500">{tr('Upload valid ID of the patient', 'I-upload ang valid ID ng pasyente')}</label>
                     <p className="text-[11px] text-gray-400 leading-relaxed">
-                      A valid government-issued ID of the patient helps us process your order faster and ensures the prescription is dispensed to the right person.
+                      {tr(
+                        'A valid government-issued ID of the patient helps us process your order faster and ensures the prescription is dispensed to the right person.',
+                        'Ang valid na government ID ng pasyente ay tumutulong sa amin na mapabilis ang iyong order at masigurong maibibigay ang gamot sa tamang tao.',
+                      )}
                     </p>
                     <div className="flex items-center gap-3 flex-wrap pt-1">
                       {!patientIdFile ? (
@@ -1312,7 +1287,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                           style={{ background: 'linear-gradient(to right,#61A644,#1D9FDA)' }}>
                           <input type="file" accept={ALLOWED_FILE_TYPES_ACCEPT} className="hidden" onChange={handlePatientIdChange} />
                           <i className="fa-solid fa-upload text-[11px]"></i>
-                          Upload File
+                          {tr('Upload File', 'Mag-upload ng File')}
                         </label>
                       ) : (
                         <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl pl-1.5 pr-3 py-1.5">
@@ -1337,40 +1312,40 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
 
                   {/* Contact Person */}
                   <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/40 space-y-3">
-                    <h3 className="text-[13px] font-semibold text-gray-800">Contact Person</h3>
+                    <h3 className="text-[13px] font-semibold text-gray-800">{tr('Contact Person', 'Contact Person')}</h3>
                     <label className="flex items-start gap-2.5 cursor-pointer">
                       <input type="checkbox"
                         checked={contactSameAsPatient}
                         onChange={e => setContactSameAsPatient(e.target.checked)}
                         className="w-4 h-4 mt-0.5 rounded-md border-gray-200 text-success focus:ring-success cursor-pointer" />
                       <span>
-                        <span className="block text-[12px] font-semibold text-gray-700">Same as patient details</span>
-                        <span className="block text-[11px] text-gray-400 mt-0.5">Check this if the patient is the one placing the inquiry.</span>
+                        <span className="block text-[12px] font-semibold text-gray-700">{tr('Same as patient details', 'Kapareho ng detalye ng pasyente')}</span>
+                        <span className="block text-[11px] text-gray-400 mt-0.5">{tr('Check this if the patient is the one placing the inquiry.', 'I-check ito kung ang pasyente mismo ang nagpapadala ng inquiry.')}</span>
                       </span>
                     </label>
 
                     {!contactSameAsPatient && (
                       <div className="grid grid-cols-1 gap-3 pt-1">
                         <div className="space-y-1.5">
-                          <label className="block text-[12px] font-medium text-gray-500">Contact Person's Full Name</label>
-                          <input type="text" placeholder="Person we should contact"
+                          <label className="block text-[12px] font-medium text-gray-500">{tr("Contact Person's Full Name", 'Buong Pangalan ng Contact Person')}</label>
+                          <input type="text" placeholder={tr('Person we should contact', 'Taong dapat naming kontakin')}
                             required={!contactSameAsPatient}
                             value={formData.contactName}
                             onChange={e => setFormData(f => ({ ...f, contactName: e.target.value }))}
                             className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] text-gray-700 outline-none focus:border-primary transition" />
                         </div>
                         <div className="space-y-1.5">
-                          <label className="block text-[12px] font-medium text-gray-500">Relationship to Patient</label>
+                          <label className="block text-[12px] font-medium text-gray-500">{tr('Relationship to Patient', 'Kaugnayan sa Pasyente')}</label>
                           <select
                             value={formData.contactRelationship}
                             onChange={e => setFormData(f => ({ ...f, contactRelationship: e.target.value }))}
                             className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] text-gray-700 outline-none focus:border-primary transition">
-                            <option value="">Select relationship (optional)</option>
-                            <option value="Family member">Family member</option>
-                            <option value="Caregiver">Caregiver</option>
-                            <option value="Guardian">Guardian</option>
-                            <option value="Healthcare professional">Healthcare professional</option>
-                            <option value="Other">Other</option>
+                            <option value="">{tr('Select relationship (optional)', 'Pumili ng kaugnayan (opsyonal)')}</option>
+                            <option value="Family member">{tr('Family member', 'Kapamilya')}</option>
+                            <option value="Caregiver">{tr('Caregiver', 'Caregiver')}</option>
+                            <option value="Guardian">{tr('Guardian', 'Guardian')}</option>
+                            <option value="Healthcare professional">{tr('Healthcare professional', 'Healthcare professional')}</option>
+                            <option value="Other">{tr('Other', 'Iba pa')}</option>
                           </select>
                         </div>
                       </div>
@@ -1378,7 +1353,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-500 mb-2">Email Address</label>
+                    <label className="block text-[13px] font-medium text-gray-500 mb-2">{tr('Email Address', 'Email Address')}</label>
                     <input
                       type="email"
                       required
@@ -1390,7 +1365,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                   </div>
                   <div className="flex gap-3 items-end">
                     <div className="flex-1 min-w-0">
-                      <label className="block text-[13px] font-medium text-gray-500 mb-2">Phone Number</label>
+                      <label className="block text-[13px] font-medium text-gray-500 mb-2">{tr('Phone Number', 'Phone Number')}</label>
                       <input
                         type="tel"
                         required
@@ -1402,14 +1377,14 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                       />
                     </div>
                     <div className="w-[90px] shrink-0" ref={ageDropdownRef}>
-                      <label className="block text-[13px] font-medium text-gray-500 mb-2">Age</label>
+                      <label className="block text-[13px] font-medium text-gray-500 mb-2">{tr('Age', 'Edad')}</label>
                       <div className="relative">
                         <button
                           type="button"
                           onClick={() => setAgeDropdownOpen(o => !o)}
                           className="w-full flex items-center justify-between bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] text-gray-700 outline-none focus:border-primary transition cursor-pointer"
                         >
-                          <span className={formData.age ? 'text-gray-700' : 'text-gray-400'}>{formData.age || 'Age'}</span>
+                          <span className={formData.age ? 'text-gray-700' : 'text-gray-400'}>{formData.age || tr('Age', 'Edad')}</span>
                           <i className="fa-solid fa-chevron-down text-[10px] text-gray-400" />
                         </button>
                         {ageDropdownOpen && (
@@ -1433,8 +1408,8 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-500 mb-2">Delivery Address</label>
-                    <input type="text" placeholder="Complete address for courier delivery"
+                    <label className="block text-[13px] font-medium text-gray-500 mb-2">{tr('Delivery Address', 'Delivery Address')}</label>
+                    <input type="text" placeholder={tr('Complete address for courier delivery', 'Kumpletong address para sa delivery')}
                       required
                       value={formData.address}
                       onChange={e => setFormData(f => ({ ...f, address: e.target.value }))}
@@ -1442,7 +1417,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-500 mb-2">Upload Prescription (Required)</label>
+                    <label className="block text-[13px] font-medium text-gray-500 mb-2">{tr('Upload Prescription (Required)', 'I-upload ang Reseta (Required)')}</label>
                     <input
                       type="file"
                       multiple
@@ -1464,20 +1439,23 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
 
                   <div className="flex items-start gap-2 text-[11px] text-gray-400 pt-1">
                     <i className="fa-solid fa-circle-info mt-0.5 flex-shrink-0"></i>
-                    <span>Our pharmacists will contact you on the mobile number provided.</span>
+                    <span>{tr('Our pharmacists will contact you on the mobile number provided.', 'Kokontakin ka ng aming mga pharmacist sa ibinigay mong mobile number.')}</span>
                   </div>
 
                   <hr className="border-gray-100" />
 
                   <div className="space-y-2.5">
-                    <h3 className="text-[13px] font-semibold text-gray-800">Declarations and Consent</h3>
+                    <h3 className="text-[13px] font-semibold text-gray-800">{tr('Declarations and Consent', 'Mga Deklarasyon at Pahintulot')}</h3>
                     <div className="flex items-start gap-2.5">
                       <input type="checkbox" id="pd-terms"
                         checked={formData.terms}
                         onChange={e => setFormData(f => ({ ...f, terms: e.target.checked }))}
                         className="w-4 h-4 mt-0.5 rounded-md border-gray-200 text-success focus:ring-success cursor-pointer" />
                       <label htmlFor="pd-terms" className="text-[11px] text-gray-500 cursor-pointer">
-                        I confirm that the information provided is accurate and that the prescription submitted is valid.
+                        {tr(
+                          'I confirm that the information provided is accurate and that the prescription submitted is valid.',
+                          'Kinukumpirma ko na tama ang impormasyong ibinigay at valid ang resetang isinumite.',
+                        )}
                       </label>
                     </div>
                     <div className="flex items-start gap-2.5">
@@ -1486,7 +1464,10 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                         onChange={e => setFormData(f => ({ ...f, privacyConsent: e.target.checked }))}
                         className="w-4 h-4 mt-0.5 rounded-md border-gray-200 text-success focus:ring-success cursor-pointer" />
                       <label htmlFor="pd-privacyConsent" className="text-[11px] text-gray-500 cursor-pointer">
-                        I have read and understood the Privacy Policy and consent to the collection, use, and processing of my personal and sensitive personal information for the purpose of verifying and processing this inquiry.
+                        {tr(
+                          'I have read and understood the Privacy Policy and consent to the collection, use, and processing of my personal and sensitive personal information for the purpose of verifying and processing this inquiry.',
+                          'Nabasa at naintindihan ko ang Privacy Policy at pumapayag ako sa pagkolekta, paggamit, at pagproseso ng aking personal at sensitibong personal na impormasyon para ma-verify at maproseso ang inquiry na ito.',
+                        )}
                       </label>
                     </div>
                   </div>
@@ -1502,20 +1483,23 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                       : { background: 'linear-gradient(to right, #61A644, #0D99FF)' }}
                   >
                     {submitState === 'sending'
-                      ? 'Sending...'
+                      ? tr('Sending...', 'Ipinapadala...')
                       : submitState === 'sent'
-                        ? '✓ Inquiry Sent Successfully!'
+                        ? tr('✓ Inquiry Sent Successfully!', '✓ Naipadala na ang Inquiry!')
                         : submitState === 'error'
-                          ? 'Failed to submit. Try again.'
-                          : 'Submit Inquiry Request'}
+                          ? tr('Failed to submit. Try again.', 'Hindi naipadala. Subukan ulit.')
+                          : tr('Submit Inquiry Request', 'Ipadala ang Inquiry')}
                   </button>
 
                   {/* Medical Disclaimer */}
                   <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl flex items-start gap-2.5 mb-4">
                     <i className="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5 flex-shrink-0 text-sm"></i>
                     <p className="text-[10.5px] text-amber-800 leading-relaxed">
-                      <span className="font-bold">Medical Disclaimer: </span>
-                      Getmeds dispenses prescription medicines only upon receipt of a valid prescription from a licensed physician. This service does not replace professional medical advice, diagnosis, or treatment.
+                      <span className="font-bold">{tr('Medical Disclaimer: ', 'Paalala Medikal: ')}</span>
+                      {tr(
+                        'Getmeds dispenses prescription medicines only upon receipt of a valid prescription from a licensed physician. This service does not replace professional medical advice, diagnosis, or treatment.',
+                        'Nagbibigay lamang ang Getmeds ng mga gamot na nangangailangan ng reseta kapag may valid na reseta mula sa lisensyadong doktor. Hindi pumapalit ang serbisyong ito sa propesyonal na payo, diagnosis, o gamutan ng doktor.',
+                      )}
                     </p>
                   </div>
                   <div className="h-4" />
@@ -1523,7 +1507,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                 ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-500 mb-2">Target Product</label>
+                    <label className="block text-[13px] font-medium text-gray-500 mb-2">{tr('Target Product', 'Produkto')}</label>
                     <input
                       type="text"
                       readOnly
@@ -1533,7 +1517,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                     />
                   </div>
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-500 mb-2">Full Name</label>
+                    <label className="block text-[13px] font-medium text-gray-500 mb-2">{tr('Full Name', 'Buong Pangalan')}</label>
                     <input
                       type="text"
                       required
@@ -1545,7 +1529,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                   </div>
                   <div className="flex gap-3 items-end">
                     <div className="flex-1 min-w-0">
-                      <label className="block text-[13px] font-medium text-gray-500 mb-2">Phone Number</label>
+                      <label className="block text-[13px] font-medium text-gray-500 mb-2">{tr('Phone Number', 'Phone Number')}</label>
                       <input
                         type="tel"
                         required
@@ -1557,14 +1541,14 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                       />
                     </div>
                     <div className="w-[90px] shrink-0" ref={ageDropdownRef}>
-                      <label className="block text-[13px] font-medium text-gray-500 mb-2">Age</label>
+                      <label className="block text-[13px] font-medium text-gray-500 mb-2">{tr('Age', 'Edad')}</label>
                       <div className="relative">
                         <button
                           type="button"
                           onClick={() => setAgeDropdownOpen(o => !o)}
                           className="w-full flex items-center justify-between bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] text-gray-700 outline-none focus:border-primary transition cursor-pointer"
                         >
-                          <span className={formData.age ? 'text-gray-700' : 'text-gray-400'}>{formData.age || 'Age'}</span>
+                          <span className={formData.age ? 'text-gray-700' : 'text-gray-400'}>{formData.age || tr('Age', 'Edad')}</span>
                           <i className="fa-solid fa-chevron-down text-[10px] text-gray-400" />
                         </button>
                         {ageDropdownOpen && (
@@ -1587,7 +1571,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-500 mb-2">Email Address</label>
+                    <label className="block text-[13px] font-medium text-gray-500 mb-2">{tr('Email Address', 'Email Address')}</label>
                     <input
                       type="email"
                       required
@@ -1598,10 +1582,10 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                     />
                   </div>
                   <div>
-                    <label className="block text-[13px] font-medium text-gray-500 mb-2">Message</label>
+                    <label className="block text-[13px] font-medium text-gray-500 mb-2">{tr('Message', 'Mensahe')}</label>
                     <textarea
                       rows={3}
-                      placeholder="Tell us more about your requirements..."
+                      placeholder={tr('Tell us more about your requirements...', 'Sabihin sa amin ang iyong kailangan...')}
                       value={formData.message}
                       onChange={e => setFormData(f => ({ ...f, message: e.target.value }))}
                       className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-[13px] text-gray-700 outline-none focus:border-primary transition resize-none"
@@ -1618,12 +1602,12 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                       : { background: 'linear-gradient(to right, #61A644, #0D99FF)' }}
                   >
                     {submitState === 'sending'
-                      ? 'Sending...'
+                      ? tr('Sending...', 'Ipinapadala...')
                       : submitState === 'sent'
-                        ? '✓ Inquiry Sent Successfully!'
+                        ? tr('✓ Inquiry Sent Successfully!', '✓ Naipadala na ang Inquiry!')
                         : submitState === 'error'
-                          ? 'Failed to submit. Try again.'
-                          : 'Submit Inquiry Request'}
+                          ? tr('Failed to submit. Try again.', 'Hindi naipadala. Subukan ulit.')
+                          : tr('Submit Inquiry Request', 'Ipadala ang Inquiry')}
                   </button>
                   <div className="h-8" />
                 </form>
@@ -1639,7 +1623,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                     {inquiryOpen && (
                       <button
                         type="button"
-                        aria-label="Close inquiry"
+                        aria-label={tr('Close inquiry', 'Isara ang inquiry')}
                         onClick={closeInquiry}
                         className="fixed inset-0 z-[10055] bg-[rgba(15,23,42,.45)]"
                       />
@@ -1670,8 +1654,8 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                  cards carry a border rather than a shadow. */
               <section className="border-t border-[#EEF1F5] bg-white px-4 pb-8 pt-6">
                 <div className="mb-3 flex items-baseline justify-between">
-                  <h2 className="text-[16px] font-medium tracking-tight text-gray-900">Similar products</h2>
-                  <a href={backUrl} className="text-[12px] font-semibold" style={{ color: '#0D99FF' }}>See all</a>
+                  <h2 className="text-[16px] font-medium tracking-tight text-gray-900">{tr('Similar products', 'Mga katulad na produkto')}</h2>
+                  <a href={backUrl} className="text-[12px] font-semibold" style={{ color: '#0D99FF' }}>{tr('See all', 'Tingnan lahat')}</a>
                 </div>
                 <div className="space-y-2.5">
                   {similar.map((s) => {
@@ -1701,7 +1685,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                             {getProductDisplayName(s)}
                           </h3>
                           <p className="mt-0.5 line-clamp-1 text-[11.5px] text-gray-400">
-                            {[s.strength, s.form].filter(Boolean).join(' · ') || s.subCategory || 'Details on request'}
+                            {[s.strength, s.form].filter(Boolean).join(' · ') || s.subCategory || tr('Details on request', 'Detalye kapag nag-request')}
                           </p>
                         </div>
                         {s.prescription?.toUpperCase() === 'RX' && (
@@ -1762,7 +1746,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
             className="flex-1 rounded-full py-3 text-[13px] font-semibold text-white"
             style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
           >
-            Send inquiry
+            {tr('Send inquiry', 'Magpadala ng inquiry')}
           </button>
         </div>
         </>
@@ -1778,9 +1762,12 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
             >
               <i className="fa-solid fa-check text-white text-2xl animate-bounce" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Inquiry Sent!</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">{tr('Inquiry Sent!', 'Naipadala na ang Inquiry!')}</h3>
             <p className="text-sm text-gray-500 mb-6">
-              Thank you for your inquiry. Our team will get back to you shortly with a formal quote.
+              {tr(
+                'Thank you for your inquiry. Our team will get back to you shortly with a formal quote.',
+                'Salamat sa iyong inquiry. Babalikan ka agad ng aming team na may formal na quote.',
+              )}
             </p>
             <div className="border-t border-gray-100 pt-4 text-center">
               <button
@@ -1788,7 +1775,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                 className="text-[13px] font-semibold hover:underline"
                 style={{ background: 'linear-gradient(to right,#61A644,#1D9FDA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
               >
-                Close
+                {tr('Close', 'Isara')}
               </button>
             </div>
           </div>
@@ -1825,14 +1812,15 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                     <i className="fa-solid fa-file-medical text-white text-xl"></i>
                   </div>
                 </div>
-                <h2 className="text-[19px] font-semibold text-gray-900 mb-2 leading-snug">Prescription Required</h2>
+                <h2 className="text-[19px] font-semibold text-gray-900 mb-2 leading-snug">{tr('Prescription Required', 'Kailangan ng Reseta')}</h2>
                 <p className="text-[13px] text-red-600 font-medium mb-3 leading-relaxed">
-                  A valid prescription is required before your inquiry can be submitted.
+                  {tr('A valid prescription is required before your inquiry can be submitted.', 'Kailangan ng valid na reseta bago maipadala ang iyong inquiry.')}
                 </p>
                 <p className="text-[13px] text-gray-500 leading-relaxed">
-                  As a Patient / Caregiver, please attach your doctor-issued prescription (JPG, PNG, or PDF)
-                  to ensure your medicine request complies with Philippine FDA regulations and can be
-                  processed safely by our team.
+                  {tr(
+                    'As a Patient / Caregiver, please attach your doctor-issued prescription (JPG, PNG, or PDF) to ensure your medicine request complies with Philippine FDA regulations and can be processed safely by our team.',
+                    'Bilang Pasyente / Caregiver, ilakip ang resetang galing sa iyong doktor (JPG, PNG, o PDF) para sumunod ang iyong request sa regulasyon ng Philippine FDA at maproseso ito nang ligtas ng aming team.',
+                  )}
                 </p>
               </div>
 
@@ -1844,7 +1832,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                   className="text-[13px] font-semibold hover:underline"
                   style={{ background: 'linear-gradient(to right,#61A644,#1D9FDA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
                 >
-                  I Understand, Upload Now
+                  {tr('I Understand, Upload Now', 'Naiintindihan Ko, Mag-upload Na')}
                 </button>
               </div>
             </div>
@@ -1880,13 +1868,15 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                     <i className="fa-solid fa-id-card text-white text-xl"></i>
                   </div>
                 </div>
-                <h2 className="text-[19px] font-semibold text-gray-900 mb-2 leading-snug">Valid ID Required</h2>
+                <h2 className="text-[19px] font-semibold text-gray-900 mb-2 leading-snug">{tr('Valid ID Required', 'Kailangan ng Valid ID')}</h2>
                 <p className="text-[13px] text-red-600 font-medium mb-3 leading-relaxed">
-                  A valid ID of the patient is required before your inquiry can be submitted.
+                  {tr('A valid ID of the patient is required before your inquiry can be submitted.', 'Kailangan ng valid ID ng pasyente bago maipadala ang iyong inquiry.')}
                 </p>
                 <p className="text-[13px] text-gray-500 leading-relaxed">
-                  Please upload a valid government-issued ID (JPG, PNG, or PDF) so we can confirm the
-                  prescription is being dispensed to the right person.
+                  {tr(
+                    'Please upload a valid government-issued ID (JPG, PNG, or PDF) so we can confirm the prescription is being dispensed to the right person.',
+                    'Mag-upload ng valid na government ID (JPG, PNG, o PDF) para makumpirma naming maibibigay ang gamot sa tamang tao.',
+                  )}
                 </p>
               </div>
 
@@ -1897,7 +1887,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                   className="text-[13px] font-semibold hover:underline"
                   style={{ background: 'linear-gradient(to right,#61A644,#1D9FDA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
                 >
-                  I Understand, Upload Now
+                  {tr('I Understand, Upload Now', 'Naiintindihan Ko, Mag-upload Na')}
                 </button>
               </div>
             </div>
@@ -1924,7 +1914,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
             <img
               src={viewingFileUrl}
               className="max-w-full max-h-[80vh] object-contain"
-              alt="Uploaded ID"
+              alt={tr('Uploaded ID', 'Na-upload na ID')}
             />
           </div>
         </div>

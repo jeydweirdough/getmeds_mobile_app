@@ -8,6 +8,7 @@ import PointsCard, { usePoints } from '../PointsCard';
 import { SignInSheet } from '../ProfileCard';
 import { getBlogListingImageUrl } from '../sanity';
 import { goTo } from '@/platform/navigation';
+import { translate, useLang } from '../i18n';
 
 /**
  * GuidesScreen.tsx
@@ -29,6 +30,19 @@ import { goTo } from '@/platform/navigation';
 
 const CONDITIONS = ['Cancer', 'Anemia', 'Diabetes', 'Heart health', 'Kidney health', 'Bone health', 'Pain', 'Allergies', 'Infections'];
 
+/** What each condition chip reads in Tagalog. The English stays the search term, since the blog is written in English. */
+const CONDITION_TL: Record<string, string> = {
+  Cancer: 'Cancer',
+  Anemia: 'Anemia',
+  Diabetes: 'Diabetes',
+  'Heart health': 'Kalusugan ng puso',
+  'Kidney health': 'Kalusugan ng bato',
+  'Bone health': 'Kalusugan ng buto',
+  Pain: 'Pananakit',
+  Allergies: 'Allergy',
+  Infections: 'Impeksyon',
+};
+
 /** The server keeps at most this many saved articles. */
 const MAX_SAVED = 100;
 
@@ -47,12 +61,13 @@ type Loaded = { state: 'loading' } | { state: 'error'; message: string } | { sta
 const imageOf = (image: Article['image']) => (typeof image === 'string' ? image : image?.url || '');
 
 /** "5 min read", whether the API sends 5, "5" or "5 min read". */
-const readTimeText = (t: Article['readTime']) => {
+const readTimeText = (t: Article['readTime'], tr: (en: string, tl: string) => string) => {
   if (t === undefined || t === null || t === '') return '';
-  return /^\d+$/.test(String(t)) ? `${t} min read` : String(t);
+  return /^\d+$/.test(String(t)) ? tr(`${t} min read`, `${t} min basahin`) : String(t);
 };
 
 export default function GuidesScreen({ onClose }: { onClose: () => void }) {
+  const { tr } = useLang();
   const points = usePoints();
   const signedIn = points.signedIn;
   // Guest tapped a bookmark (or Saved's button): the sign-in sheet is open,
@@ -77,7 +92,7 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
       .then((body) => setResults((r) => ({ ...r, [term]: { state: 'done', items: (body.items || []).filter((a) => a.slug) } })))
       .catch((e) => {
         fetched.current.delete(term);
-        setResults((r) => ({ ...r, [term]: { state: 'error', message: (e as Error)?.message || 'Could not load guides.' } }));
+        setResults((r) => ({ ...r, [term]: { state: 'error', message: (e as Error)?.message || translate('Could not load guides.', 'Hindi ma-load ang mga guide.') } }));
       });
   };
 
@@ -96,13 +111,18 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
       return;
     }
     if (!data) {
-      setNote('Your account is still loading. Try again in a moment.');
+      setNote(tr('Your account is still loading. Try again in a moment.', 'Naglo-load pa ang account mo. Subukan ulit maya-maya.'));
       return;
     }
     setNote('');
     const was = isSaved(a.slug);
     if (!was && saved.length >= MAX_SAVED) {
-      setNote(`You have ${MAX_SAVED} saved guides, the most we keep. Remove one to save another.`);
+      setNote(
+        tr(
+          `You have ${MAX_SAVED} saved guides, the most we keep. Remove one to save another.`,
+          `May ${MAX_SAVED} ka nang naka-save na guide, ang pinakamarami na puwede. Mag-alis ng isa para makapag-save ng bago.`
+        )
+      );
       return;
     }
     const next: SavedArticle[] = was
@@ -110,9 +130,14 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
       : [{ _key: newKey(), slug: a.slug, title: a.title, image: a.image || '' }, ...saved];
     try {
       await saveList('savedArticles', next);
-      showToast(was ? 'Removed from saved' : 'Saved');
+      showToast(was ? tr('Removed from saved', 'Inalis sa mga naka-save') : tr('Saved', 'Na-save'));
     } catch (e) {
-      setNote(`${(e as Error)?.message || 'Could not save.'} Check your connection and try again.`);
+      setNote(
+        tr(
+          `${(e as Error)?.message || 'Could not save.'} Check your connection and try again.`,
+          `${(e as Error)?.message || 'Hindi ma-save.'} Tingnan ang iyong connection at subukan ulit.`
+        )
+      );
     }
   };
 
@@ -132,10 +157,16 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
   const current = results[condition];
 
   return (
-    <Screen title="Health guides" subtitle="Plain answers about your condition" onClose={onClose} ground="#FFFFFF" backIcon="chevron">
+    <Screen
+      title={tr('Health guides', 'Mga health guide')}
+      subtitle={tr('Plain answers about your condition', 'Malinaw na sagot tungkol sa iyong kondisyon')}
+      onClose={onClose}
+      ground="#FFFFFF"
+      backIcon="chevron"
+    >
       {/* Browse / Saved */}
       {/* Tinted track: the page is white, so a white one would vanish. */}
-      <div className="grid grid-cols-2 gap-1 rounded-full p-1" style={{ background: GROUND }} role="tablist" aria-label="Health guides">
+      <div className="grid grid-cols-2 gap-1 rounded-full p-1" style={{ background: GROUND }} role="tablist" aria-label={tr('Health guides', 'Mga health guide')}>
         {(['browse', 'saved'] as const).map((t) => (
           <button
             key={t}
@@ -147,7 +178,9 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
             className={`rounded-full py-2 text-[13px] font-semibold ${tab === t ? 'text-white' : 'text-gray-500'}`}
             style={tab === t ? { background: BRAND } : undefined}
           >
-            {t === 'browse' ? 'Browse' : `Saved${signedIn && saved.length ? ` (${saved.length})` : ''}`}
+            {t === 'browse'
+              ? tr('Browse', 'Mag-browse')
+              : `${tr('Saved', 'Naka-save')}${signedIn && saved.length ? ` (${saved.length})` : ''}`}
           </button>
         ))}
       </div>
@@ -156,7 +189,7 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
         <p className="flex gap-2 rounded-2xl bg-[#F1F8FE] px-3.5 py-3 text-[12.5px] leading-snug text-gray-600" role="status">
           <i className="fa-solid fa-circle-info mt-[3px] text-[11px]" style={{ color: BRAND }} />
           <span className="flex-1">{note}</span>
-          <button type="button" aria-label="Dismiss" onClick={() => setNote('')} className="text-gray-400">
+          <button type="button" aria-label={tr('Dismiss', 'Isara')} onClick={() => setNote('')} className="text-gray-400">
             <i className="fa-solid fa-xmark text-[11px]" />
           </button>
         </p>
@@ -165,7 +198,7 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
       {tab === 'browse' ? (
         <>
           {/* Conditions scroll sideways; the -mx/px pair lets them run to the edge. */}
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="radiogroup" aria-label="Condition">
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="radiogroup" aria-label={tr('Condition', 'Kondisyon')}>
             {CONDITIONS.map((c) => {
               const on = c === condition;
               return (
@@ -179,7 +212,7 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
                   className={`shrink-0 rounded-full border px-3.5 py-1.5 text-[12.5px] font-medium ${on ? 'border-transparent text-white' : 'border-[#E7ECF2] bg-white text-gray-600'}`}
                   style={on ? { background: BRAND } : undefined}
                 >
-                  {c}
+                  {tr(c, CONDITION_TL[c] ?? c)}
                 </button>
               );
             })}
@@ -200,15 +233,26 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
             </div>
           ) : current.state === 'error' ? (
             <div className="space-y-3">
-              <ErrorNote text={`${current.message} Tap Try again to reload the guides.`} />
-              <SmallButton onClick={() => load(condition, true)}>Try again</SmallButton>
+              <ErrorNote
+                text={tr(
+                  `${current.message} Tap Try again to reload the guides.`,
+                  `${current.message} I-tap ang Subukan ulit para i-reload ang mga guide.`
+                )}
+              />
+              <SmallButton onClick={() => load(condition, true)}>{tr('Try again', 'Subukan ulit')}</SmallButton>
             </div>
           ) : current.items.length === 0 ? (
             <Empty
               icon="fa-book-medical"
-              title={`No guides on ${condition.toLowerCase()} yet`}
-              text="Try another condition, or browse every article on the blog."
-              action={<SmallButton onClick={() => { goTo('/blog'); }}>Open the blog</SmallButton>}
+              title={tr(
+                `No guides on ${condition.toLowerCase()} yet`,
+                `Wala pang guide tungkol sa ${(CONDITION_TL[condition] ?? condition).toLowerCase()}`
+              )}
+              text={tr(
+                'Try another condition, or browse every article on the blog.',
+                'Sumubok ng ibang kondisyon, o i-browse ang lahat ng article sa blog.'
+              )}
+              action={<SmallButton onClick={() => { goTo('/blog'); }}>{tr('Open the blog', 'Buksan ang blog')}</SmallButton>}
             />
           ) : (
             <div className="space-y-2.5">
@@ -220,7 +264,7 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
                     slug={a.slug}
                     title={a.title}
                     image={image}
-                    meta={readTimeText(a.readTime)}
+                    meta={readTimeText(a.readTime, tr)}
                     saved={signedIn && isSaved(a.slug)}
                     onToggle={() => toggle({ slug: a.slug, title: a.title, image })}
                   />
@@ -232,16 +276,19 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
       ) : !signedIn ? (
         <Empty
           icon="fa-bookmark"
-          title="Log in to save guides"
-          text="Create a free account or log in to bookmark guides and find them again on any phone."
-          action={<SmallButton onClick={() => setAskSignIn(true)}>Log in or create account</SmallButton>}
+          title={tr('Log in to save guides', 'Mag-log in para mag-save ng guide')}
+          text={tr(
+            'Create a free account or log in to bookmark guides and find them again on any phone.',
+            'Gumawa ng libreng account o mag-log in para i-bookmark ang mga guide at makita ulit sa kahit anong phone.'
+          )}
+          action={<SmallButton onClick={() => setAskSignIn(true)}>{tr('Log in or create account', 'Mag-log in o gumawa ng account')}</SmallButton>}
         />
       ) : saved.length === 0 ? (
         <Empty
           icon="fa-bookmark"
-          title="No saved guides yet"
-          text="Tap the bookmark on any guide to keep it here."
-          action={<SmallButton onClick={() => setTab('browse')}>Browse guides</SmallButton>}
+          title={tr('No saved guides yet', 'Wala pang naka-save na guide')}
+          text={tr('Tap the bookmark on any guide to keep it here.', 'I-tap ang bookmark sa kahit anong guide para itabi ito rito.')}
+          action={<SmallButton onClick={() => setTab('browse')}>{tr('Browse guides', 'Mag-browse ng guide')}</SmallButton>}
         />
       ) : (
         <div className="space-y-2.5">
@@ -263,7 +310,10 @@ export default function GuidesScreen({ onClose }: { onClose: () => void }) {
           points={points}
           bare
           initialMode="signup"
-          intro="Saving guides needs a free account, so you can read them later on any phone."
+          intro={tr(
+            'Saving guides needs a free account, so you can read them later on any phone.',
+            'Kailangan ng libreng account para mag-save ng guide, para mabasa mo ito ulit sa kahit anong phone.'
+          )}
         />
       </SignInSheet>
     </Screen>
@@ -286,6 +336,7 @@ function ArticleCard({
   saved: boolean;
   onToggle: () => void;
 }) {
+  const { tr } = useLang();
   const [broken, setBroken] = useState(false);
   return (
     <div className="flex items-start gap-1 rounded-[20px] border border-[#EEF1F5] bg-white p-3">
@@ -318,7 +369,7 @@ function ArticleCard({
         type="button"
         onClick={onToggle}
         aria-pressed={saved}
-        aria-label={saved ? `Remove ${title} from saved` : `Save ${title}`}
+        aria-label={saved ? tr(`Remove ${title} from saved`, `Alisin ang ${title} sa mga naka-save`) : tr(`Save ${title}`, `I-save ang ${title}`)}
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
       >
         <i className={`${saved ? 'fa-solid' : 'fa-regular'} fa-bookmark text-[15px]`} style={{ color: saved ? BRAND : '#9CA3AF' }} />

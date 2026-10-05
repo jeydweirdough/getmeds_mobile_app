@@ -12,6 +12,7 @@
  */
 import { useEffect, useState } from 'react';
 import { REWARDS_CHANGED_EVENT, authedCall, isSignedIn } from './rewards';
+import { translate } from './i18n';
 
 export interface Profile {
   name?: string;
@@ -91,7 +92,7 @@ export function loadAccountData(force = false): Promise<AccountData | null> {
       return d;
     })
     .catch((e) => {
-      lastError = e?.message || 'Could not load your account.';
+      lastError = e?.message || translate('Could not load your account.', 'Hindi ma-load ang account mo.');
       return data;
     })
     .finally(() => {

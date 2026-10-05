@@ -8,6 +8,7 @@ import { ACCOUNT_CHANGED_EVENT, loadDetails, type SavedDetails } from '@/lib/acc
 import { usePoints } from '@/lib/PointsCard';
 import { CategoryCard, useCatalogueCategories } from '@/lib/CategoryCard';
 import { typeByValue } from '@/lib/audienceTypes';
+import { useLang } from '@/lib/i18n';
 import {
   CatalogueRow,
   cartItemFor,
@@ -150,8 +151,11 @@ function AvatarRing({ pct, avatar, initial }: { pct: number; avatar?: string; in
 type PromoSlide = {
   href: string;
   title: string;
+  titleTl: string;
   sub: string;
+  subTl: string;
   cta: string;
+  ctaTl: string;
   background: string;
   icon?: string;
   image?: string;
@@ -162,6 +166,9 @@ const PROMO_SLIDES: PromoSlide[] = [
   {
     href: '/order-medicines/patients',
     title: 'Have a prescription?',
+    titleTl: 'May reseta ka ba?',
+    subTl: 'Ipadala ang litrato nito at babalikan ka namin kung available ito.',
+    ctaTl: 'I-upload na',
     sub: 'Send us a photo and we\u2019ll come back to you with availability.',
     cta: 'Upload now',
     background: 'linear-gradient(118deg,#1D9FDA 0%,#2F8FD6 52%,#61A644 165%)',
@@ -172,8 +179,11 @@ const PROMO_SLIDES: PromoSlide[] = [
   {
     href: '/patient-assistance-program',
     title: 'Patient Assistance Program',
+    titleTl: 'Patient Assistance Program',
     sub: 'Libreng chemotherapy at gamot sa cancer sa tulong ng DSWD at PCSO.',
+    subTl: 'Libreng chemotherapy at gamot sa cancer sa tulong ng DSWD at PCSO.',
     cta: 'Alamin dito',
+    ctaTl: 'Alamin dito',
     background: 'linear-gradient(118deg,#0A2A43 0%,#14507A 60%,#1D9FDA 160%)',
     icon: 'fa-hand-holding-medical',
     image: '/assets/app-promo-careers.webp',
@@ -182,8 +192,11 @@ const PROMO_SLIDES: PromoSlide[] = [
   {
     href: '/product-range',
     title: 'Looking for a medicine?',
+    titleTl: 'May hinahanap na gamot?',
     sub: 'Browse specialty medicines from oncology to cardiology, all in one catalogue.',
+    subTl: 'Tingnan ang mga specialty na gamot, mula oncology hanggang cardiology, sa iisang catalogue.',
     cta: 'Browse catalogue',
+    ctaTl: 'Tingnan ang catalogue',
     background: 'linear-gradient(118deg,#61A644 0%,#4E9C4A 55%,#1D9FDA 165%)',
     icon: 'fa-pills',
     image: '/assets/app-promo-services.webp',
@@ -205,6 +218,7 @@ const PROMO_INTERVAL_MS = 5000;
  */
 
 function ProductCard({ p }: { p: CatalogueRow }) {
+  const { tr } = useLang();
   const needsRx = rxRequired(p);
   const inStock = p.availability !== false;
   return (
@@ -237,7 +251,7 @@ function ProductCard({ p }: { p: CatalogueRow }) {
               <span className="rounded-full bg-[#E8F5FC] px-2 py-[2px] text-[9.5px] font-semibold text-[#1D9FDA]">Rx</span>
             )}
             {inStock && (
-              <span className="rounded-full bg-[#EEF6EA] px-2 py-[2px] text-[9.5px] font-semibold text-[#4E8F35]">In stock</span>
+              <span className="rounded-full bg-[#EEF6EA] px-2 py-[2px] text-[9.5px] font-semibold text-[#4E8F35]">{tr('In stock', 'May stock')}</span>
             )}
           </div>
         )}
@@ -258,7 +272,7 @@ function ProductCard({ p }: { p: CatalogueRow }) {
               boxShadow: '0 6px 16px rgba(29,159,218,.28), inset 0 1px 0 rgba(255,255,255,.35)',
             }}
           >
-            Inquire
+            {tr('Inquire', 'Magtanong')}
             <i className="fa-solid fa-arrow-right text-[11px]" />
           </span>
           <AddToCart item={cartItemFor(p)} variant="glass" />
@@ -268,16 +282,18 @@ function ProductCard({ p }: { p: CatalogueRow }) {
   );
 }
 
-function SectionHeading({ title, href, cta = 'See all' }: { title: string; href: string; cta?: string }) {
+function SectionHeading({ title, href, cta }: { title: string; href: string; cta?: string }) {
+  const { tr } = useLang();
   return (
     <div className="mb-3 flex items-baseline justify-between">
       <h2 className="text-[17px] font-semibold tracking-tight text-gray-900">{title}</h2>
-      <a href={href} className="text-[12px] font-semibold" style={{ color: BRAND }}>{cta}</a>
+      <a href={href} className="text-[12px] font-semibold" style={{ color: BRAND }}>{cta ?? tr('See all', 'Tingnan lahat')}</a>
     </div>
   );
 }
 
 function AppHome() {
+  const { tr } = useLang();
   const { data: raw } = useProducts();
   const products = (raw || []) as CatalogueRow[];
   const [cartCount, setCartCount] = useState(0);
@@ -355,14 +371,14 @@ function AppHome() {
           what stays. */}
       <header className="px-4 pt-4" style={{ background: '#FFFFFF' }}>
         <div className="mx-auto flex max-w-2xl items-center justify-between">
-          <a href="/app-home" aria-label="Getmeds home" className="shrink-0">
+          <a href="/app-home" aria-label={tr('Getmeds home', 'Home ng Getmeds')} className="shrink-0">
             <img src="/assets/getmeds-logo-sm.png" alt="Getmeds" className="h-[38px] w-auto" />
           </a>
 
           <div className="flex items-center gap-2.5">
             <a
               href="/cart"
-              aria-label={`Request list, ${cartCount} item${cartCount === 1 ? '' : 's'}`}
+              aria-label={tr(`Request list, ${cartCount} item${cartCount === 1 ? '' : 's'}`, `Request list, ${cartCount} item`)}
               className="relative flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full"
               style={{ background: GROUND }}
             >
@@ -379,7 +395,10 @@ function AppHome() {
 
             <a
               href="/profile"
-              aria-label={`${fullName ? `My account, ${fullName}` : 'My account'}. Details ${completeness}% complete`}
+              aria-label={tr(
+                `${fullName ? `My account, ${fullName}` : 'My account'}. Details ${completeness}% complete`,
+                `${fullName ? `Aking account, ${fullName}` : 'Aking account'}. ${completeness}% kumpleto ang detalye`,
+              )}
               className="shrink-0"
             >
               <AvatarRing pct={completeness} avatar={greeted.avatar} initial={firstName.charAt(0).toUpperCase()} />
@@ -389,10 +408,12 @@ function AppHome() {
 
         <div className="mx-auto mt-4 max-w-2xl">
           <p className="text-[12.5px] text-gray-500">
-            {firstName ? `Welcome to Getmeds, ${firstName}` : 'Welcome to Getmeds'}
+            {firstName
+              ? tr(`Welcome to Getmeds, ${firstName}`, `Welcome sa Getmeds, ${firstName}`)
+              : tr('Welcome to Getmeds', 'Welcome sa Getmeds')}
           </p>
           <h1 className="mt-0.5 text-[21px] font-semibold leading-tight text-gray-900">
-            What medicine are you looking for today?
+            {tr('What medicine are you looking for today?', 'Anong gamot ang hinahanap mo ngayon?')}
           </h1>
         </div>
       </header>
@@ -410,7 +431,7 @@ function AppHome() {
             className="flex h-[46px] w-full items-center rounded-full pl-11 pr-12 text-[13.5px] text-gray-400"
             style={{ background: GROUND }}
           >
-            Search medicine
+            {tr('Search medicine', 'Maghanap ng gamot')}
           </a>
           <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-gray-400" />
           {/* A visual-search shortcut in spirit: there is no image search to
@@ -418,8 +439,8 @@ function AppHome() {
               prescription and let a person read it. */}
           <a
             href="/order-medicines/patients"
-            aria-label="Send a photo of your prescription"
-            title="Send a photo of your prescription"
+            aria-label={tr('Send a photo of your prescription', 'Magpadala ng litrato ng reseta mo')}
+            title={tr('Send a photo of your prescription', 'Magpadala ng litrato ng reseta mo')}
             className="absolute right-1.5 top-1/2 flex h-[36px] w-[36px] -translate-y-1/2 items-center justify-center rounded-full bg-white"
           >
             <i className="fa-solid fa-camera text-[13px]" style={{ color: BRAND }} />
@@ -446,7 +467,7 @@ function AppHome() {
                 href={slide.href}
                 className="relative block min-h-[156px] w-full shrink-0 snap-start overflow-hidden rounded-[20px] p-5 text-white"
                 style={{ background: slide.background }}
-                aria-label={`${slide.title} ${slide.sub}`}
+                aria-label={`${tr(slide.title, slide.titleTl)} ${tr(slide.sub, slide.subTl)}`}
               >
                 {slide.image ? (
                   <>
@@ -481,27 +502,30 @@ function AppHome() {
                   </>
                 )}
                 <div className="relative max-w-[64%]">
-                  <p className="text-[16.5px] font-medium leading-tight">{slide.title}</p>
-                  <p className="mt-1 text-[11.5px] leading-snug text-white/85">{slide.sub}</p>
+                  <p className="text-[16.5px] font-medium leading-tight">{tr(slide.title, slide.titleTl)}</p>
+                  <p className="mt-1 text-[11.5px] leading-snug text-white/85">{tr(slide.sub, slide.subTl)}</p>
                   <span
                     className="mt-3 inline-flex items-center rounded-full px-3.5 py-1.5 text-[11px] font-medium text-white"
                     style={{ background: BRAND }}
                   >
-                    {slide.cta}
+                    {tr(slide.cta, slide.ctaTl)}
                   </span>
                 </div>
               </a>
             ))}
           </div>
 
-          <div className="mt-2.5 flex justify-center gap-1.5" role="tablist" aria-label="Slides">
+          <div className="mt-2.5 flex justify-center gap-1.5" role="tablist" aria-label={tr('Slides', 'Mga slide')}>
             {PROMO_SLIDES.map((slide, i) => (
               <button
                 key={slide.href}
                 type="button"
                 role="tab"
                 aria-selected={i === promoIndex}
-                aria-label={`Slide ${i + 1} of ${PROMO_SLIDES.length}: ${slide.title}`}
+                aria-label={tr(
+                  `Slide ${i + 1} of ${PROMO_SLIDES.length}: ${slide.title}`,
+                  `Slide ${i + 1} sa ${PROMO_SLIDES.length}: ${slide.titleTl}`,
+                )}
                 onClick={() => goToPromo(i)}
                 className="h-1.5 rounded-full transition-all duration-300"
                 style={{ width: i === promoIndex ? 18 : 6, background: i === promoIndex ? BRAND : '#C9D3E0' }}
@@ -511,7 +535,7 @@ function AppHome() {
         </div>
 
         <section className="mb-6">
-          <SectionHeading title="Categories" href="/categories" />
+          <SectionHeading title={tr('Categories', 'Mga Kategorya')} href="/categories" />
           {categories.length === 0 ? (
             <div className="gm-hscroll -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
               {Array.from({ length: 2 }).map((_, i) => (
@@ -532,7 +556,7 @@ function AppHome() {
         </section>
 
         <section className="mb-6">
-          <SectionHeading title="Featured products" href="/product-range" cta="Browse all" />
+          <SectionHeading title={tr('Featured products', 'Mga tampok na produkto')} href="/product-range" cta={tr('Browse all', 'Tingnan lahat')} />
           {featured.length === 0 ? (
             <div className="flex flex-col gap-4">
               {Array.from({ length: 2 }).map((_, i) => (
@@ -569,14 +593,16 @@ function AppHome() {
             className="h-[46px] w-auto shrink-0"
           />
           <span className="min-w-0 flex-1 text-[11.5px] leading-snug text-gray-500">
-            Support programmes for long-course treatment
+            {tr('Support programmes for long-course treatment', 'Tulong para sa pangmatagalang gamutan')}
           </span>
           <i className="fa-solid fa-chevron-right shrink-0 text-[12px] text-gray-300" />
         </a>
 
         <p className="mb-2 text-center text-[11px] leading-relaxed text-gray-400">
-          Prescription medicines are dispensed only against a valid prescription
-          from a licensed physician.
+          {tr(
+            'Prescription medicines are dispensed only against a valid prescription from a licensed physician.',
+            'Ang mga gamot na may reseta ay ibinibigay lamang kapag may valid na reseta mula sa lisensyadong doktor.',
+          )}
         </p>
       </main>
 

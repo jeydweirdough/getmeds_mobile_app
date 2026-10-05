@@ -12,6 +12,7 @@ import {
   CART_CHANGED_EVENT,
   type CartItem,
 } from './cart';
+import { useLang } from './i18n';
 
 /**
  * AddToCart.tsx
@@ -36,6 +37,7 @@ function ConsentSheet({
 }: {
   onDecide: (granted: boolean) => void;
 }) {
+  const { tr } = useLang();
   return createPortal(
     <div
       className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/50 p-0"
@@ -52,28 +54,40 @@ function ConsentSheet({
     >
       <div className="w-full max-w-lg rounded-t-3xl bg-white p-6" style={{ paddingBottom: 'calc(32px + var(--gm-safe-bottom))' }}>
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-gray-200" />
-        <h2 id="consent-title" className="text-[17px] font-semibold text-gray-900">Save your list on this phone?</h2>
+        <h2 id="consent-title" className="text-[17px] font-semibold text-gray-900">{tr('Save your list on this phone?', 'I-save ang list mo sa phone na ito?')}</h2>
         <p className="mt-2 text-[13.5px] leading-relaxed text-gray-600">
-          To keep a request list, Getmeds needs to store the products you choose on this device.
+          {tr(
+            'To keep a request list, Getmeds needs to store the products you choose on this device.',
+            'Para magkaroon ka ng request list, kailangang i-save ng Getmeds sa device na ito ang mga produktong pinili mo.',
+          )}
         </p>
 
         <ul className="mt-4 space-y-2.5 text-[13px] text-gray-600">
           <li className="flex gap-2.5">
             <i className="fa-solid fa-mobile-screen mt-0.5 text-[12px]" style={{ color: '#1D9FDA' }} />
-            <span>It stays on this phone. It is not sent to us and will not appear on your other devices.</span>
+            <span>{tr(
+              'It stays on this phone. It is not sent to us and will not appear on your other devices.',
+              'Mananatili ito sa phone na ito. Hindi ito ipinapadala sa amin at hindi lalabas sa iba mong device.',
+            )}</span>
           </li>
           <li className="flex gap-2.5">
             <i className="fa-solid fa-paper-plane mt-0.5 text-[12px]" style={{ color: '#1D9FDA' }} />
-            <span>Nothing reaches Getmeds until you choose to request a quote.</span>
+            <span>{tr(
+              'Nothing reaches Getmeds until you choose to request a quote.',
+              "Walang makakarating sa Getmeds hangga't hindi ka humihingi ng quote.",
+            )}</span>
           </li>
           <li className="flex gap-2.5">
             <i className="fa-solid fa-trash-can mt-0.5 text-[12px]" style={{ color: '#1D9FDA' }} />
-            <span>You can clear it any time under <strong>More → Clear saved data</strong>.</span>
+            <span>{tr('You can clear it any time under ', 'Puwede mo itong burahin anumang oras sa ')}<strong>{tr('More → Clear saved data', 'Iba pa → Burahin ang naka-save na data')}</strong>.</span>
           </li>
         </ul>
 
         <p className="mt-4 text-[11.5px] leading-relaxed text-gray-400">
-          Processed in accordance with the Data Privacy Act of 2012. See our{' '}
+          {tr(
+            'Processed in accordance with the Data Privacy Act of 2012. See our',
+            'Pinoproseso alinsunod sa Data Privacy Act of 2012. Tingnan ang aming',
+          )}{' '}
           <a href="/privacy-policy" className="underline">Privacy Policy</a>.
         </p>
 
@@ -83,14 +97,14 @@ function ConsentSheet({
           className="mt-5 w-full rounded-full py-3.5 text-[14px] font-semibold text-white"
           style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
         >
-          Allow and save
+          {tr('Allow and save', 'Payagan at i-save')}
         </button>
         <button
           type="button"
           onClick={() => onDecide(false)}
           className="mt-2 w-full rounded-full py-3 text-[13px] font-semibold text-gray-500"
         >
-          Not now
+          {tr('Not now', 'Hindi muna')}
         </button>
       </div>
     </div>,
@@ -106,6 +120,7 @@ export function AddToCart({
   /** 'glass' is the frosted pill on the home screen's featured cards. */
   variant?: 'icon' | 'full' | 'glass';
 }) {
+  const { tr } = useLang();
   const [app, setApp] = useState(false);
   const [saved, setSaved] = useState(false);
   const [asking, setAsking] = useState(false);
@@ -145,14 +160,20 @@ export function AddToCart({
     if (result === 'failed' || !stored) {
       setNotice(
         result === 'failed'
-          ? 'This phone is not letting Getmeds save your list. Check that site data is allowed for getmeds.ph, then try again.'
-          : 'Added for now. This phone did not keep your choice, so we may ask again next time.'
+          ? tr(
+              'This phone is not letting Getmeds save your list. Check that site data is allowed for getmeds.ph, then try again.',
+              'Hindi pinapayagan ng phone na ito na i-save ng Getmeds ang list mo. Siguraduhing allowed ang site data para sa getmeds.ph, saka subukan ulit.',
+            )
+          : tr(
+              'Added for now. This phone did not keep your choice, so we may ask again next time.',
+              'Naidagdag na muna. Hindi na-save ng phone na ito ang pinili mo, kaya baka magtanong ulit kami sa susunod.',
+            )
       );
       window.setTimeout(() => setNotice(''), 6000);
     }
   };
 
-  const label = saved ? 'Remove from list' : 'Add to request list';
+  const label = saved ? tr('Remove from list', 'Alisin sa list') : tr('Add to request list', 'Idagdag sa request list');
 
   return (
     <>
@@ -169,7 +190,7 @@ export function AddToCart({
           }
         >
           <i className={`fa-solid ${saved ? 'fa-check' : 'fa-cart-plus'} text-[12px]`} />
-          {saved ? 'In list' : 'Add to list'}
+          {saved ? tr('In list', 'Nasa list') : tr('Add to list', 'Idagdag')}
         </button>
       ) : variant === 'full' ? (
         <button
@@ -184,7 +205,7 @@ export function AddToCart({
           }
         >
           <i className={`fa-solid ${saved ? 'fa-check' : 'fa-cart-plus'} text-[13px]`} />
-          {saved ? 'In your list' : 'Add to list'}
+          {saved ? tr('In your list', 'Nasa list mo') : tr('Add to list', 'Idagdag sa list')}
         </button>
       ) : (
         <button

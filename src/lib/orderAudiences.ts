@@ -32,17 +32,22 @@ export interface OrderAudience {
   type: OrderAudienceType;
   /** Short label — navbar dropdown, mobile accordion, form badge. */
   label: string;
+  labelTl?: string;
   /** Hub card heading. */
   cardTitle: string;
+  cardTitleTl?: string;
   /** Hub card body. */
   cardBody: string;
+  cardBodyTl?: string;
   /** Hub card call to action. */
   cardCta: string;
+  cardCtaTl?: string;
   icon: string;
   /** Photo band at the top of the hub card. See public/assets/order-medicines/CREDITS.md. */
   image: string;
   /** Describes the photo for a screen reader; never repeats the card heading. */
   imageAlt: string;
+  imageAltTl?: string;
   /** Baked into the static HTML for this URL by the prerender step. */
   meta: { title: string; description: string };
 }
@@ -52,12 +57,17 @@ export const ORDER_AUDIENCES: OrderAudience[] = [
     slug: 'patients',
     type: 'patient',
     label: 'Patient / Caregiver',
+    labelTl: 'Pasyente / Tagapag-alaga',
     cardTitle: 'Patients & Families',
+    cardTitleTl: 'Mga Pasyente at Pamilya',
     cardBody: 'Upload a prescription and we deliver to your door.',
+    cardBodyTl: 'Mag-upload ng reseta at ide-deliver namin sa inyong pinto.',
     cardCta: 'Order with a prescription',
+    cardCtaTl: 'Mag-order gamit ang reseta',
     icon: 'fa-house-medical',
     image: '/assets/order-medicines/ordermedicinepatient.jpg',
     imageAlt: 'A mother and her young daughter holding each other on a hospital bed',
+    imageAltTl: 'Isang ina at ang kanyang batang anak na magkayakap sa kama ng ospital',
     meta: {
       title: 'Order Prescription Medicine Online for Patients',
       description:
@@ -68,12 +78,17 @@ export const ORDER_AUDIENCES: OrderAudience[] = [
     slug: 'doctors',
     type: 'doctor',
     label: 'Doctor / Healthcare Professional',
+    labelTl: 'Doktor / Healthcare Professional',
     cardTitle: 'Doctors & Healthcare Professionals',
+    cardTitleTl: 'Mga Doktor at Healthcare Professional',
     cardBody: 'Product orders, pricing and Compassionate Special Permits.',
+    cardBodyTl: 'Product orders, presyo at Compassionate Special Permits.',
     cardCta: 'Send an inquiry',
+    cardCtaTl: 'Magpadala ng inquiry',
     icon: 'fa-user-doctor',
     image: '/assets/order-medicines/ordermedicinedoctor.jpg',
     imageAlt: 'A line of doctors and nurses in white coats and scrubs, clipboards in hand',
+    imageAltTl: 'Hanay ng mga doktor at nurse na naka-white coat at scrubs, may hawak na clipboard',
     meta: {
       title: 'Medicine Orders for Doctors and Healthcare Professionals',
       description:
@@ -84,12 +99,17 @@ export const ORDER_AUDIENCES: OrderAudience[] = [
     slug: 'distributors',
     type: 'pharmacy',
     label: 'Pharmacy Owner / Retail Pharmacy',
+    labelTl: 'May-ari ng Botika / Retail Pharmacy',
     cardTitle: 'Distributors & Pharmacies',
+    cardTitleTl: 'Mga Distributor at Botika',
     cardBody: 'Wholesale supply, credit terms and a distributor account.',
+    cardBodyTl: 'Wholesale supply, credit terms at distributor account.',
     cardCta: 'Become a distributor partner',
+    cardCtaTl: 'Maging distributor partner',
     icon: 'fa-shop',
     image: '/assets/order-medicines/ordermedicinedistributor.jpg',
     imageAlt: 'Two Getmeds staff checking a medicine box against a stock list in a pharmacy office',
+    imageAltTl: 'Dalawang staff ng Getmeds na nagche-check ng kahon ng gamot laban sa stock list sa opisina ng botika',
     meta: {
       title: 'Pharmaceutical Distributor and Wholesale Pharmacy Supply',
       description:
@@ -100,12 +120,17 @@ export const ORDER_AUDIENCES: OrderAudience[] = [
     slug: 'hospitals',
     type: 'hospital',
     label: 'Hospital / Institution',
+    labelTl: 'Ospital / Institusyon',
     cardTitle: 'Hospitals & Institutions',
+    cardTitleTl: 'Mga Ospital at Institusyon',
     cardBody: 'Quotations, emergency purchases and hospital procurement.',
+    cardBodyTl: 'Quotation, emergency na pagbili at hospital procurement.',
     cardCta: 'Request a quotation',
+    cardCtaTl: 'Humingi ng quotation',
     icon: 'fa-hospital',
     image: '/assets/order-medicines/ordermedicinehospitals.jpg',
     imageAlt: 'The entrance canopy of a modern multi-storey hospital',
+    imageAltTl: 'Ang canopy sa pasukan ng isang modernong ospital na maraming palapag',
     meta: {
       title: 'Hospital Medicine Procurement and Quotations',
       description:

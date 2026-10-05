@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import PointsCard, { usePoints } from '@/lib/PointsCard';
 import { SignInSheet } from '@/lib/ProfileCard';
+import { useLang } from '@/lib/i18n';
 
 /**
  * Onboarding.tsx
@@ -87,9 +88,9 @@ function HeroVisual() {
 }
 
 const COLLAGE: string[][] = [
-  [`${IMG}/collage-1.webp`, `${IMG}/collage-2.webp`, `${IMG}/collage-3.webp`],
-  [`${IMG}/collage-4.webp`, `${IMG}/collage-5.webp`, `${IMG}/collage-6.webp`],
-  [`${IMG}/collage-7.webp`, `${IMG}/collage-8.webp`, `${IMG}/collage-2.webp`],
+  [`${IMG}/collage-1.webp`, `${IMG}/image3.webp`, `${IMG}/collage-3.webp`],
+  [`${IMG}/collage-4.webp`, `${IMG}/image1.webp`, `${IMG}/image2.webp`],
+  [`${IMG}/collage-7.webp`, `${IMG}/image4.webp`, `${IMG}/image3.webp`],
 ];
 
 function CollageVisual() {
@@ -132,17 +133,23 @@ const SLIDES = [
   {
     Visual: HeroVisual,
     title: ['Your Compassionate', 'Health Ally'],
+    titleTl: ['Ang Iyong Maalagang', 'Kasama sa Kalusugan'],
     body: 'Specialty medicines for cancer, heart, blood disorders and more, all in one app.',
+    bodyTl: 'Mga specialty na gamot para sa cancer, puso, sakit sa dugo at iba pa, sa iisang app.',
   },
   {
     Visual: CollageVisual,
     title: ['Care That Reaches', 'Every Patient'],
+    titleTl: ['Kalingang Umaabot', 'sa Bawat Pasyente'],
     body: 'Join the patients and families who get their medicines through Getmeds and our Patient Assistance Program.',
+    bodyTl: 'Sumama sa mga pasyente at pamilyang kumukuha ng gamot sa Getmeds at sa aming Patient Assistance Program.',
   },
   {
     Visual: PatientsVisual,
     title: ['Request With', 'Just a Photo'],
+    titleTl: ['Mag-request Gamit', 'ang Isang Litrato'],
     body: 'Send a photo of your prescription and our team will come back to you with availability.',
+    bodyTl: 'Ipadala ang litrato ng reseta mo at babalikan ka ng aming team kung available ito.',
   },
 ];
 
@@ -155,6 +162,7 @@ const SLIDES = [
  * every launch.
  */
 function AuthStep({ onDone }: { onDone: () => void }) {
+  const { tr } = useLang();
   const points = usePoints();
   const [mode, setMode] = useState<'signup' | 'login' | null>(null);
 
@@ -174,9 +182,12 @@ function AuthStep({ onDone }: { onDone: () => void }) {
             <i className="fa-solid fa-user text-[24px]" style={{ color: BRAND }} />
           </span>
         </span>
-        <h1 className="text-[26px] font-medium leading-[1.18] text-white">Welcome to Getmeds</h1>
+        <h1 className="text-[26px] font-medium leading-[1.18] text-white">{tr('Welcome to Getmeds', 'Welcome sa Getmeds')}</h1>
         <p className="mx-auto mt-3 max-w-[300px] text-[13px] leading-relaxed text-white/85">
-          Create an account with your email or mobile number to earn points on every request.
+          {tr(
+            'Create an account with your email or mobile number to earn points on every request.',
+            'Gumawa ng account gamit ang email o mobile number mo para makakuha ng points sa bawat request.',
+          )}
         </p>
       </div>
 
@@ -185,19 +196,19 @@ function AuthStep({ onDone }: { onDone: () => void }) {
           type="button"
           onClick={() => setMode('signup')}
           className="h-[54px] w-full rounded-full bg-white text-[15px] font-semibold"
-          style={{ color: BRAND, boxShadow: '0 10px 24px rgba(10,42,67,.18)' }}
+          style={{ color: BRAND }}
         >
-          Sign up
+          {tr('Sign up', 'Mag-sign up')}
         </button>
         <button
           type="button"
           onClick={() => setMode('login')}
           className="h-[54px] w-full rounded-full border-[1.5px] border-white/70 text-[15px] font-semibold text-white"
         >
-          Log in
+          {tr('Log in', 'Mag-log in')}
         </button>
         <button type="button" onClick={onDone} className="w-full py-2 text-[13px] font-medium text-white/85">
-          Continue as guest
+          {tr('Continue as guest', 'Magpatuloy bilang guest')}
         </button>
       </div>
 
@@ -212,6 +223,7 @@ function AuthStep({ onDone }: { onDone: () => void }) {
 /* ── Screen ────────────────────────────────────────────────────────────── */
 
 export default function Onboarding() {
+  const { tr } = useLang();
   const [open, setOpen] = useState(() => !hasSeen());
   const [leaving, setLeaving] = useState(false);
   const [index, setIndex] = useState(0);
@@ -249,7 +261,7 @@ export default function Onboarding() {
       style={{ opacity: leaving ? 0 : 1, background: GROUND }}
       role="dialog"
       aria-modal="true"
-      aria-label="Welcome to Getmeds"
+      aria-label={tr('Welcome to Getmeds', 'Welcome sa Getmeds')}
     >
       {/* The regular logo turned white with a filter (it is a transparent PNG),
           so there is no second file to keep in step with it. */}
@@ -268,7 +280,7 @@ export default function Onboarding() {
         className="absolute right-4 z-20 rounded-full px-3 py-1.5 text-[13px] font-medium text-white"
         style={{ top: 'calc(10px + var(--gm-safe-top))', background: 'rgba(10,42,67,.35)', backdropFilter: 'blur(8px)' }}
       >
-        Skip
+        {tr('Skip', 'Laktawan')}
       </button>
       )}
 
@@ -282,12 +294,12 @@ export default function Onboarding() {
         onScroll={(e) => setIndex(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}
         className="gm-hscroll flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto"
       >
-        {SLIDES.map(({ Visual, title, body }, i) => (
+        {SLIDES.map(({ Visual, title, titleTl, body, bodyTl }, i) => (
           <section
             key={i}
             className="flex w-full shrink-0 snap-start flex-col"
             aria-roledescription="slide"
-            aria-label={`${i + 1} of ${SLIDES.length}`}
+            aria-label={tr(`${i + 1} of ${SLIDES.length}`, `${i + 1} sa ${SLIDES.length}`)}
           >
             <div className="relative min-h-0 flex-1">
               <Visual />
@@ -296,25 +308,25 @@ export default function Onboarding() {
               <Sparkle className="left-6 top-0" color="#FFFFFF" size={16} />
               <Sparkle className="right-7 top-14" color={BRAND_GREEN} size={13} />
               <h1 className="text-[26px] font-medium leading-[1.18] text-white">
-                {title[0]}
+                {tr(title[0], titleTl[0])}
                 <br />
-                {title[1]}
+                {tr(title[1], titleTl[1])}
               </h1>
-              <p className="mx-auto mt-3 max-w-[300px] text-[13px] leading-relaxed text-white/85">{body}</p>
+              <p className="mx-auto mt-3 max-w-[300px] text-[13px] leading-relaxed text-white/85">{tr(body, bodyTl)}</p>
             </div>
           </section>
         ))}
       </div>
 
       <div className="px-6 pt-4" style={{ paddingBottom: 'calc(22px + var(--gm-safe-bottom))' }}>
-        <div className="mb-6 flex justify-center gap-1.5" role="tablist" aria-label="Slides">
+        <div className="mb-6 flex justify-center gap-1.5" role="tablist" aria-label={tr('Slides', 'Mga slide')}>
           {SLIDES.map((_, i) => (
             <button
               key={i}
               type="button"
               role="tab"
               aria-selected={i === index}
-              aria-label={`Slide ${i + 1}`}
+              aria-label={tr(`Slide ${i + 1}`, `Slide ${i + 1}`)}
               onClick={() => goTo(i)}
               className="h-1.5 rounded-full transition-all duration-300"
               style={{ width: i === index ? 20 : 6, background: i === index ? '#FFFFFF' : 'rgba(255,255,255,.4)' }}
@@ -327,15 +339,15 @@ export default function Onboarding() {
             type="button"
             onClick={toAuth}
             className="h-[54px] flex-1 rounded-full bg-white text-[15px] font-semibold"
-            style={{ color: BRAND, boxShadow: '0 10px 24px rgba(10,42,67,.18)' }}
+            style={{ color: BRAND }}
           >
-            {last ? 'Get started' : 'Let’s explore'}
+            {last ? tr('Get started', 'Magsimula na') : tr('Let’s explore', 'Tara, tingnan natin')}
           </button>
           <span className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-full" style={{ border: '1.5px solid rgba(255,255,255,.45)' }}>
             <button
               type="button"
               onClick={next}
-              aria-label={last ? 'Finish' : 'Next slide'}
+              aria-label={last ? tr('Finish', 'Tapusin') : tr('Next slide', 'Susunod na slide')}
               className="flex h-[50px] w-[50px] items-center justify-center rounded-full bg-white"
               style={{ color: BRAND }}
             >

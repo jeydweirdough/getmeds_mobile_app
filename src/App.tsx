@@ -17,17 +17,18 @@ import { resolveRoute, type Route } from '@/platform/routes';
 import { leaveUnknownScreen, openOnWebsite } from '@/platform/navigation';
 import { navigate, useLocation } from '@/platform/router';
 import PageSkeleton from '@/components/PageSkeleton';
+import { useLang } from '@/lib/i18n';
 import '@/app/app-home/app-home.css';
 import '@/app/chat/chat.css';
 
-const TITLES: Partial<Record<Route['screen'], string>> = {
-  home: 'Getmeds',
-  search: 'Search | Getmeds',
-  categories: 'Categories | Getmeds',
-  cart: 'Your Request List | Getmeds',
-  account: 'My Account | Getmeds',
-  chat: 'Chat with Getmeds | Getmeds',
-  order: 'Order Medicines | Getmeds',
+const TITLES: Partial<Record<Route['screen'], { en: string; tl: string }>> = {
+  home: { en: 'Getmeds', tl: 'Getmeds' },
+  search: { en: 'Search | Getmeds', tl: 'Maghanap | Getmeds' },
+  categories: { en: 'Categories | Getmeds', tl: 'Mga Kategorya | Getmeds' },
+  cart: { en: 'Your Request List | Getmeds', tl: 'Ang Iyong Request List | Getmeds' },
+  account: { en: 'My Account | Getmeds', tl: 'Aking Account | Getmeds' },
+  chat: { en: 'Chat with Getmeds | Getmeds', tl: 'Mag-chat sa Getmeds | Getmeds' },
+  order: { en: 'Order Medicines | Getmeds', tl: 'Mag-order ng Gamot | Getmeds' },
 };
 
 const slugify = (value: string) => String(value || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -99,6 +100,7 @@ function Screen({ route }: { route: Route }) {
 
 export default function App() {
   const location = useLocation();
+  const { tr, lang } = useLang();
   // Keyed by the router's screen key, not the full address: a same-path change
   // (search's ?q=, an account sub-screen) is the mounted screen's own business.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -106,9 +108,13 @@ export default function App() {
 
   useEffect(() => {
     if (route.screen === 'redirect') navigate(route.to, { replace: true });
-    const title = TITLES[route.screen];
-    if (title) document.title = title;
   }, [route]);
+
+  useEffect(() => {
+    const title = TITLES[route.screen];
+    if (title) document.title = tr(title.en, title.tl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route, lang]);
 
   return (
     <>

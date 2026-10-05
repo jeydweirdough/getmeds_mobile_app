@@ -12,11 +12,14 @@
  * the app's code has loaded; keep the two roughly alike.
  */
 
+import { useLang } from '@/lib/i18n';
+
 const Bone = ({ className }: { className: string }) => <div className={`animate-pulse rounded-xl bg-[#EEF1F5] ${className}`} />;
 
 export default function PageSkeleton({ variant = 'list' }: { variant?: 'list' | 'detail' }) {
+  const { tr } = useLang();
   return (
-    <div className="mx-auto min-h-screen max-w-2xl bg-white px-4 pt-4" aria-busy="true" aria-label="Loading">
+    <div className="mx-auto min-h-screen max-w-2xl bg-white px-4 pt-4" aria-busy="true" aria-label={tr('Loading', 'Naglo-load')}>
       {variant === 'detail' ? (
         <>
           <div className="mb-4 flex items-center gap-3">

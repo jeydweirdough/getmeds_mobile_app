@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { CatalogueRow, prettyFolder, productImage } from '@/lib/catalogueItem';
+import { useLang } from '@/lib/i18n';
 
 /**
  * CategoryCard.tsx
@@ -77,6 +78,7 @@ export function CategoryCard({
   index: number;
   className?: string;
 }) {
+  const { tr } = useLang();
   const name = prettyFolder(folder).replace(' Medicines', '');
   const extra = info.count - info.images.length;
   const bg = CATEGORY_CARD_COLORS[index % CATEGORY_CARD_COLORS.length];
@@ -85,7 +87,10 @@ export function CategoryCard({
       href={`/${folder}`}
       className={`relative flex h-[178px] flex-col overflow-hidden rounded-[22px] p-4 text-white transition active:scale-[0.98] ${className}`}
       style={{ background: bg }}
-      aria-label={`${name}, ${info.count} ${info.count === 1 ? 'medicine' : 'medicines'}. View`}
+      aria-label={tr(
+        `${name}, ${info.count} ${info.count === 1 ? 'medicine' : 'medicines'}. View`,
+        `${name}, ${info.count} gamot. Tingnan`,
+      )}
     >
       {/* Soft rings in the top-right corner, as in the slider. */}
       <span aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full border border-white/15" />
@@ -102,7 +107,7 @@ export function CategoryCard({
           <p className="line-clamp-2 text-[19px] font-semibold leading-[1.15]">{name}</p>
           <p className="mt-1 flex items-center gap-1.5 text-[11.5px] text-white/85">
             <i className="fa-solid fa-capsules text-[10px]" />
-            {info.count} {info.count === 1 ? 'medicine' : 'medicines'}
+            {tr(`${info.count} ${info.count === 1 ? 'medicine' : 'medicines'}`, `${info.count} gamot`)}
           </p>
         </div>
         {info.images.length > 0 && (
@@ -139,13 +144,13 @@ export function CategoryCard({
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
             <i className="fa-solid fa-file-prescription text-[10px]" />
           </span>
-          <span className="truncate">Request with your Rx</span>
+          <span className="truncate">{tr('Request with your Rx', 'Mag-request gamit ang Rx mo')}</span>
         </span>
         <span
           className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[12px] font-semibold"
           style={{ color: '#172B4D' }}
         >
-          View
+          {tr('View', 'Tingnan')}
           <i className="fa-solid fa-angles-right text-[10px]" style={{ color: BRAND }} />
         </span>
       </div>

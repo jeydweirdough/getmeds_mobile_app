@@ -5,34 +5,43 @@ import {
   Truck, Snowflake, MapPinned, Clock, HandHeart,
 } from 'lucide-react';
 import { ORDER_AUDIENCES, audiencePath } from './orderAudiences';
+import { useLang } from './i18n';
 
 const TRUST_BADGES = [
-  'FDA Philippines licensed',
-  'DSWD & PCSO accredited',
-  '20% Senior & PWD discount',
-  'Cold-chain handling',
+  { en: 'FDA Philippines licensed', tl: 'Lisensyado ng FDA Philippines' },
+  { en: 'DSWD & PCSO accredited', tl: 'Accredited ng DSWD at PCSO' },
+  { en: '20% Senior & PWD discount', tl: '20% discount sa Senior at PWD' },
+  { en: 'Cold-chain handling', tl: 'Cold-chain handling' },
 ];
 
 const DELIVERY = [
   {
     Icon: Clock,
     title: 'Same-day Metro Manila',
+    titleTl: 'Same-day sa Metro Manila',
     desc: 'Orders confirmed before 3:00 PM are delivered the same day.',
+    descTl: 'Ang mga order na makumpirma bago mag-3:00 PM ay ide-deliver sa parehong araw.',
   },
   {
     Icon: MapPinned,
     title: 'Luzon, Visayas and Mindanao',
+    titleTl: 'Luzon, Visayas at Mindanao',
     desc: 'We deliver across the Philippines, not only Metro Manila.',
+    descTl: 'Nagde-deliver kami sa buong Pilipinas, hindi lang sa Metro Manila.',
   },
   {
     Icon: Snowflake,
     title: 'Cold-chain handling',
+    titleTl: 'Cold-chain handling',
     desc: 'Temperature-controlled from our warehouse to your door.',
+    descTl: 'Kontrolado ang temperatura mula sa aming warehouse hanggang sa inyong pinto.',
   },
   {
     Icon: Truck,
     title: 'GDP-compliant distribution',
+    titleTl: 'Distribution na sumusunod sa GDP',
     desc: 'Good Distribution Practice standards on every order.',
+    descTl: 'Pamantayan ng Good Distribution Practice sa bawat order.',
   },
 ];
 
@@ -40,41 +49,56 @@ const WHY_GETMEDS = [
   {
     Icon: BadgeCheck,
     title: 'Fully licensed pharmaceutical company',
+    titleTl: 'Kumpletong lisensyadong pharmaceutical company',
     desc: 'FDA Philippines-licensed wholesaler, importer, distributor and retail pharmacy. PDEA-licensed S1 to S5 for controlled substances.',
+    descTl: 'Wholesaler, importer, distributor at retail pharmacy na lisensyado ng FDA Philippines. May PDEA license S1 hanggang S5 para sa controlled substances.',
   },
   {
     Icon: Stethoscope,
     title: 'Pharmacist-verified dispensing',
+    titleTl: 'Dispensing na beripikado ng pharmacist',
     desc: 'Every order is reviewed and dispensed under PRC-licensed Filipino pharmacists, under the Philippine Pharmacy Act (RA 10918).',
+    descTl: 'Bawat order ay sinusuri at ibinibigay ng mga Pilipinong pharmacist na may PRC license, alinsunod sa Philippine Pharmacy Act (RA 10918).',
   },
   {
     Icon: FileCheck,
     title: 'Product documentation',
+    titleTl: 'Dokumentasyon ng produkto',
     desc: 'Certificate of Product Registration, Certificate of Analysis, product inserts and batch notifications.',
+    descTl: 'Certificate of Product Registration, Certificate of Analysis, product insert at batch notification.',
   },
   {
     Icon: Siren,
     title: 'Compassionate Special Permit coordination',
+    titleTl: 'Koordinasyon ng Compassionate Special Permit',
     desc: 'For medicines not registered in the Philippines, coordinated through our partner 2MG Inc. and subject to FDA approval.',
+    descTl: 'Para sa mga gamot na hindi rehistrado sa Pilipinas, sa tulong ng aming partner na 2MG Inc. at depende sa pag-apruba ng FDA.',
   },
   {
     Icon: Headset,
     title: '24/7 Customer Support',
+    titleTl: '24/7 na Customer Support',
     desc: 'Emergency requirements, delivery updates and order questions, at any hour including weekends and holidays.',
+    descTl: 'Emergency na pangangailangan, delivery update at tanong sa order, anumang oras kahit weekend at holiday.',
   },
   {
     Icon: HandHeart,
     title: 'Patient Assistance Program',
+    titleTl: 'Patient Assistance Program',
     desc: 'Accredited provider for cancer medicines and chemotherapy under DSWD, PCSO and other government medical assistance programs.',
+    descTl: 'Accredited provider ng mga gamot sa cancer at chemotherapy sa ilalim ng DSWD, PCSO at iba pang medical assistance program ng gobyerno.',
   },
   {
     Icon: ShieldCheck,
     title: 'Secure prescription storage',
+    titleTl: 'Ligtas na pag-iimbak ng reseta',
     desc: 'Uploads are encrypted and handled under the Data Privacy Act of 2012.',
+    descTl: 'Naka-encrypt ang mga upload at pinangangasiwaan alinsunod sa Data Privacy Act of 2012.',
   },
 ];
 
 export default function OrderMedicinesHub() {
+  const { tr } = useLang();
   return (
     <>
       {/* ── Hero ── */}
@@ -89,21 +113,23 @@ export default function OrderMedicinesHub() {
 
           <div className="relative z-10">
             <h1 className="ca-anim ca-up text-xl sm:text-2xl md:text-3xl font-semibold text-white tracking-tight leading-tight mb-2">
-              Order medicines online in the Philippines
+              {tr('Order medicines online in the Philippines', 'Mag-order ng gamot online sa Pilipinas')}
             </h1>
             <p className="ca-anim ca-up ca-d1 text-white/85 text-[12px] sm:text-[13px] font-medium max-w-3xl leading-relaxed">
-              Prescription medicine delivery for patients, doctors, pharmacies and hospitals — nationwide
-              across Luzon, Visayas and Mindanao.
+              {tr(
+                'Prescription medicine delivery for patients, doctors, pharmacies and hospitals — nationwide across Luzon, Visayas and Mindanao.',
+                'Delivery ng mga gamot na may reseta para sa mga pasyente, doktor, botika at ospital — sa buong Luzon, Visayas at Mindanao.',
+              )}
             </p>
 
             <ul className="ca-anim ca-up ca-d2 flex flex-wrap gap-2 mt-6">
               {TRUST_BADGES.map((badge) => (
                 <li
-                  key={badge}
+                  key={badge.en}
                   className="flex items-center gap-2 bg-white/15 border border-white/25 backdrop-blur-sm rounded-full px-3.5 py-1.5 text-white text-[11px] sm:text-[12px] font-semibold"
                 >
                   <i className="fa-solid fa-circle-check text-[10px]"></i>
-                  {badge}
+                  {tr(badge.en, badge.tl)}
                 </li>
               ))}
             </ul>
@@ -126,7 +152,7 @@ export default function OrderMedicinesHub() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={a.image}
-                    alt={a.imageAlt}
+                    alt={tr(a.imageAlt, a.imageAltTl ?? a.imageAlt)}
                     width={800}
                     height={450}
                     className="block w-full h-[132px] object-cover"
@@ -145,10 +171,10 @@ export default function OrderMedicinesHub() {
                 </div>
 
                 <div className="flex flex-col flex-1 px-5 pt-8 pb-5">
-                  <h2 className="text-[15px] font-semibold text-dark mb-1.5 leading-snug">{a.cardTitle}</h2>
-                  <p className="text-[12px] text-gray-500 leading-relaxed mb-5 flex-1">{a.cardBody}</p>
+                  <h2 className="text-[15px] font-semibold text-dark mb-1.5 leading-snug">{tr(a.cardTitle, a.cardTitleTl ?? a.cardTitle)}</h2>
+                  <p className="text-[12px] text-gray-500 leading-relaxed mb-5 flex-1">{tr(a.cardBody, a.cardBodyTl ?? a.cardBody)}</p>
                   <span className="inline-flex items-center gap-2 text-[12px] font-semibold text-primary">
-                    {a.cardCta}
+                    {tr(a.cardCta, a.cardCtaTl ?? a.cardCta)}
                     <i className="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
                   </span>
                 </div>
@@ -162,43 +188,45 @@ export default function OrderMedicinesHub() {
               Oncology · Hematology · Anesthesia · Essential medicines
             </h2>
             <p className="text-[14px] text-gray-600 leading-relaxed max-w-4xl">
-              Getmeds supplies cancer and chemotherapy medicines, treatments for blood disorders, anesthesia
-              and perioperative medicines, and essential hospital medicines to patients, doctors, pharmacies
-              and hospitals nationwide.
+              {tr(
+                'Getmeds supplies cancer and chemotherapy medicines, treatments for blood disorders, anesthesia and perioperative medicines, and essential hospital medicines to patients, doctors, pharmacies and hospitals nationwide.',
+                'Nagsu-supply ang Getmeds ng mga gamot sa cancer at chemotherapy, gamutan sa sakit sa dugo, anesthesia at perioperative na gamot, at mahahalagang gamot sa ospital para sa mga pasyente, doktor, botika at ospital sa buong bansa.',
+              )}
             </p>
           </div>
 
           {/* ── Senior Citizen and PWD discounts ── */}
           <div className="ca-anim ca-up grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2 border border-gray-100 rounded-[15px] p-6 flex flex-col justify-center">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Senior Citizen and PWD discounts</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">{tr('Senior Citizen and PWD discounts', 'Discount para sa Senior Citizen at PWD')}</h2>
               <p className="text-[14px] text-gray-600 leading-relaxed">
-                Getmeds complies with the Expanded Senior Citizens Act (RA 9994) and the Magna Carta for
-                Persons with Disabilities (RA 10754). Present a valid Senior Citizen or PWD ID with your
-                prescription.
+                {tr(
+                  'Getmeds complies with the Expanded Senior Citizens Act (RA 9994) and the Magna Carta for Persons with Disabilities (RA 10754). Present a valid Senior Citizen or PWD ID with your prescription.',
+                  'Sumusunod ang Getmeds sa Expanded Senior Citizens Act (RA 9994) at sa Magna Carta for Persons with Disabilities (RA 10754). Ipakita ang valid na Senior Citizen o PWD ID kasama ng inyong reseta.',
+                )}
               </p>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
               <div className="border border-gray-100 rounded-[15px] p-5 flex flex-col justify-center">
                 <div className="text-2xl font-semibold text-success leading-none mb-1.5">20% Discount</div>
-                <p className="text-[12px] text-gray-500 leading-relaxed">on eligible prescription medicines</p>
+                <p className="text-[12px] text-gray-500 leading-relaxed">{tr('on eligible prescription medicines', 'sa mga kwalipikadong gamot na may reseta')}</p>
               </div>
               <div className="border border-gray-100 rounded-[15px] p-5 flex flex-col justify-center">
-                <div className="text-2xl font-semibold text-primary leading-none mb-1.5">VAT Exempt</div>
-                <p className="text-[12px] text-gray-500 leading-relaxed">on the same eligible purchases</p>
+                <div className="text-2xl font-semibold text-primary leading-none mb-1.5">{tr('VAT Exempt', 'Walang VAT')}</div>
+                <p className="text-[12px] text-gray-500 leading-relaxed">{tr('on the same eligible purchases', 'sa parehong kwalipikadong pagbili')}</p>
               </div>
             </div>
           </div>
 
           {/* ── Nationwide delivery ── */}
           <div className="ca-anim ca-up">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Nationwide delivery</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">{tr('Nationwide delivery', 'Delivery sa buong bansa')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {DELIVERY.map(({ Icon, title, desc }) => (
+              {DELIVERY.map(({ Icon, title, titleTl, desc, descTl }) => (
                 <div key={title} className="border border-gray-100 rounded-[15px] p-5">
                   <Icon className="w-5 h-5 text-primary mb-3" strokeWidth={1.75} />
-                  <h3 className="text-[14px] font-semibold text-dark mb-1">{title}</h3>
-                  <p className="text-[12px] text-gray-500 leading-relaxed">{desc}</p>
+                  <h3 className="text-[14px] font-semibold text-dark mb-1">{tr(title, titleTl)}</h3>
+                  <p className="text-[12px] text-gray-500 leading-relaxed">{tr(desc, descTl)}</p>
                 </div>
               ))}
             </div>
@@ -206,14 +234,14 @@ export default function OrderMedicinesHub() {
 
           {/* ── Why order from Getmeds ── */}
           <div className="ca-anim ca-up">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Why order from Getmeds</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">{tr('Why order from Getmeds', 'Bakit sa Getmeds mag-order')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {WHY_GETMEDS.map(({ Icon, title, desc }) => (
+              {WHY_GETMEDS.map(({ Icon, title, titleTl, desc, descTl }) => (
                 <div key={title} className="border border-gray-100 rounded-[15px] p-5 flex gap-3.5">
                   <Icon className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" strokeWidth={1.75} />
                   <div>
-                    <h3 className="text-[14px] font-semibold text-dark mb-1">{title}</h3>
-                    <p className="text-[12px] text-gray-500 leading-relaxed">{desc}</p>
+                    <h3 className="text-[14px] font-semibold text-dark mb-1">{tr(title, titleTl)}</h3>
+                    <p className="text-[12px] text-gray-500 leading-relaxed">{tr(desc, descTl)}</p>
                   </div>
                 </div>
               ))}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { useLang } from '@/lib/i18n';
 
 /**
  * Screen.tsx
@@ -48,6 +49,7 @@ interface ScreenProps {
 }
 
 export function Screen({ title, subtitle, onClose, footer, headerAction, children, level = 0, ground = GROUND, backIcon = 'arrow' }: ScreenProps) {
+  const { tr } = useLang();
   const pushed = useRef(false);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
@@ -97,7 +99,7 @@ export function Screen({ title, subtitle, onClose, footer, headerAction, childre
         <button
           type="button"
           onClick={close}
-          aria-label="Back"
+          aria-label={tr('Back', 'Bumalik')}
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${backIcon === 'chevron' ? 'text-gray-900' : 'text-gray-700'}`}
         >
           {backIcon === 'chevron' ? <BackChevron /> : <i className="fa-solid fa-arrow-left text-[16px]" />}
@@ -152,11 +154,12 @@ export function Field({
   error?: string;
   children: React.ReactNode;
 }) {
+  const { tr } = useLang();
   return (
     <div className="border-t border-[#EEF1F5] px-4 py-3 first:border-t-0" data-field={id}>
       <label htmlFor={id} className="flex items-baseline justify-between text-[11.5px] font-medium text-gray-500">
         {label}
-        {optional && <span className="text-[10.5px] font-normal text-gray-400">Optional</span>}
+        {optional && <span className="text-[10.5px] font-normal text-gray-400">{tr('Optional', 'Opsyonal')}</span>}
       </label>
       {children}
       {error && (
@@ -293,9 +296,10 @@ export function ErrorNote({ text }: { text: string }) {
 
 /** A bottom sheet over a Screen, for an add/edit form. */
 export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  const { tr } = useLang();
   return (
     <div className="fixed inset-0 z-[10090] flex items-end" role="dialog" aria-modal="true" aria-label={title}>
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-[rgba(15,23,42,.45)]" />
+      <button type="button" aria-label={tr('Close', 'Isara')} onClick={onClose} className="absolute inset-0 bg-[rgba(15,23,42,.45)]" />
       <div
         className="relative max-h-[88vh] w-full overflow-y-auto rounded-t-[28px] px-4 pt-3"
         style={{ background: GROUND, paddingBottom: 'calc(20px + var(--gm-safe-bottom))' }}
@@ -303,7 +307,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300" />
         <div className="mb-4 flex items-center justify-between px-1">
           <p className="text-[16px] font-semibold text-gray-900">{title}</p>
-          <button type="button" onClick={onClose} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray-500">
+          <button type="button" onClick={onClose} aria-label={tr('Close', 'Isara')} className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray-500">
             <i className="fa-solid fa-xmark text-[13px]" />
           </button>
         </div>

@@ -28,6 +28,7 @@ const DB_VERSION = 1
 import { recordInquiry } from './accountStore'
 import { noteSubmitResult, pointsAuthHeader } from './rewards'
 import { loadAccountData } from './accountApi'
+import { translate } from './i18n'
 
 const QUEUE_STORE = 'inquiry-queue'
 const DRAFT_STORE = 'inquiry-drafts'
@@ -216,7 +217,7 @@ export async function submitInquiry(
         return { status: 'sent', body }
       }
 
-      let detail = 'Submission request failed.'
+      let detail = translate('Submission request failed.', 'Hindi naipadala ang request.')
       try {
         detail = (await response.json())?.detail || detail
       } catch {
@@ -249,7 +250,7 @@ export async function submitInquiry(
     await remember('queued')
     return { status: 'queued', hadAttachments }
   } catch {
-    return { status: 'failed', error: 'You appear to be offline, and this device could not save the inquiry.' }
+    return { status: 'failed', error: translate('You appear to be offline, and this device could not save the inquiry.', 'Mukhang offline ka, at hindi ma-save ng device na ito ang request.') }
   }
 }
 

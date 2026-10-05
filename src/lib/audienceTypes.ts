@@ -21,13 +21,14 @@ export type FieldKey = 'position' | 'prcLicense' | 'institution' | 'location' | 
 export interface TypeDef {
   value: string;
   label: string;
+  labelTl?: string;
   /** Decides the destination spreadsheet — see INQUIRY_SPREADSHEETS. */
   inquiryType: string;
   icon: string;
   /** Patients additionally need uploads, a contact person and two consents. */
   kind?: 'patient' | 'partner';
   /** Extra columns this audience's sheet has beyond name/email/phone/message. */
-  fields: Array<{ key: FieldKey; label: string; required?: boolean }>;
+  fields: Array<{ key: FieldKey; label: string; labelTl?: string; required?: boolean }>;
 }
 
 export const USER_TYPES: TypeDef[] = [
@@ -39,46 +40,50 @@ export const USER_TYPES: TypeDef[] = [
     // the app's patients somewhere else would split one funnel across two sheets.
     value: 'patient',
     label: 'Patient / Caregiver',
+    labelTl: 'Pasyente / Tagapag-alaga',
     inquiryType: 'Order Medicine',
     icon: 'fa-user',
     kind: 'patient',
     fields: [
-      { key: 'age', label: 'Age', required: true },
-      { key: 'address', label: 'Delivery address', required: true },
+      { key: 'age', label: 'Age', labelTl: 'Edad', required: true },
+      { key: 'address', label: 'Delivery address', labelTl: 'Address para sa delivery', required: true },
     ],
   },
   {
     value: 'doctor',
     label: 'Doctor / Healthcare Professional',
+    labelTl: 'Doktor / Healthcare Professional',
     inquiryType: 'Doctor Inquiry',
     icon: 'fa-user-doctor',
     fields: [
-      { key: 'position', label: 'Specialty / field of practice', required: true },
-      { key: 'prcLicense', label: 'PRC license number', required: true },
-      { key: 'institution', label: 'Hospital / clinic affiliation' },
-      { key: 'location', label: 'City' },
+      { key: 'position', label: 'Specialty / field of practice', labelTl: 'Specialty / larangan ng practice', required: true },
+      { key: 'prcLicense', label: 'PRC license number', labelTl: 'Numero ng PRC license', required: true },
+      { key: 'institution', label: 'Hospital / clinic affiliation', labelTl: 'Ospital / klinikang kaanib' },
+      { key: 'location', label: 'City', labelTl: 'Lungsod' },
     ],
   },
   {
     value: 'pharmacy',
     label: 'Pharmacy Owner / Retail Pharmacy',
+    labelTl: 'May-ari ng Botika / Retail Pharmacy',
     inquiryType: 'Pharmacy Inquiry',
     icon: 'fa-mortar-pestle',
     fields: [
-      { key: 'position', label: 'Position / role', required: true },
-      { key: 'institution', label: 'Pharmacy / business name', required: true },
-      { key: 'location', label: 'City' },
+      { key: 'position', label: 'Position / role', labelTl: 'Posisyon / tungkulin', required: true },
+      { key: 'institution', label: 'Pharmacy / business name', labelTl: 'Pangalan ng botika / negosyo', required: true },
+      { key: 'location', label: 'City', labelTl: 'Lungsod' },
     ],
   },
   {
     value: 'hospital',
     label: 'Hospital / Institution',
+    labelTl: 'Ospital / Institusyon',
     inquiryType: 'Hospital Inquiry',
     icon: 'fa-hospital',
     fields: [
-      { key: 'position', label: 'Position / role', required: true },
-      { key: 'institution', label: 'Hospital / institution name', required: true },
-      { key: 'location', label: 'City' },
+      { key: 'position', label: 'Position / role', labelTl: 'Posisyon / tungkulin', required: true },
+      { key: 'institution', label: 'Hospital / institution name', labelTl: 'Pangalan ng ospital / institusyon', required: true },
+      { key: 'location', label: 'City', labelTl: 'Lungsod' },
     ],
   },
 ];

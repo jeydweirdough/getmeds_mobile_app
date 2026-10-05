@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { addToCart, setConsent, type CartItem } from '../cart';
 import { accountData, newKey, saveList, slugOf, type SavedProduct } from '../accountApi';
 import { BRAND, GRADIENT, Sheet } from '../ui/Screen';
+import { translate, useLang } from '../i18n';
 
 /**
  * listActions.tsx
@@ -53,6 +54,7 @@ type AddResult = 'added' | 'failed' | 'declined';
  * phone has not given it. `consentSheet` must be rendered by the caller.
  */
 export function useAddToList() {
+  const { tr } = useLang();
   const [pending, setPending] = useState<{ items: Omit<CartItem, 'addedAt'>[]; done: (r: AddResult) => void } | null>(null);
 
   const addAll = async (items: Omit<CartItem, 'addedAt'>[]): Promise<AddResult | 'needs-consent'> => {
@@ -82,28 +84,49 @@ export function useAddToList() {
   };
 
   const consentSheet = pending ? (
-    <Sheet title="Save your list on this phone?" onClose={() => decide(false)}>
+    <Sheet title={tr('Save your list on this phone?', 'I-save ang list mo sa phone na ito?')} onClose={() => decide(false)}>
       <div className="rounded-[20px] border border-[#EEF1F5] bg-white p-4">
         <p className="text-[13px] leading-relaxed text-gray-600">
-          To keep a request list, Getmeds needs to store the products you choose on this device.
+          {tr(
+            'To keep a request list, Getmeds needs to store the products you choose on this device.',
+            'Para makapagtabi ng request list, kailangang i-store ng Getmeds sa device na ito ang mga produktong pipiliin mo.'
+          )}
         </p>
         <ul className="mt-3 space-y-2.5 text-[12.5px] leading-snug text-gray-600">
           <li className="flex gap-2.5">
             <i className="fa-solid fa-mobile-screen mt-0.5 text-[12px]" style={{ color: BRAND }} />
-            <span>It stays on this phone. It is not sent to us and will not appear on your other devices.</span>
+            <span>
+              {tr(
+                'It stays on this phone. It is not sent to us and will not appear on your other devices.',
+                'Mananatili ito sa phone na ito. Hindi ito ipinapadala sa amin at hindi lalabas sa iba mo pang device.'
+              )}
+            </span>
           </li>
           <li className="flex gap-2.5">
             <i className="fa-solid fa-paper-plane mt-0.5 text-[12px]" style={{ color: BRAND }} />
-            <span>Nothing reaches Getmeds until you choose to request a quote.</span>
+            <span>
+              {tr(
+                'Nothing reaches Getmeds until you choose to request a quote.',
+                'Walang makakarating sa Getmeds hangga\'t hindi ka humihingi ng quote.'
+              )}
+            </span>
           </li>
           <li className="flex gap-2.5">
             <i className="fa-solid fa-trash-can mt-0.5 text-[12px]" style={{ color: BRAND }} />
-            <span>You can clear it any time under More, Clear saved data.</span>
+            <span>
+              {tr(
+                'You can clear it any time under More, Clear saved data.',
+                'Puwede mo itong burahin anumang oras sa Iba pa, Burahin ang naka-save na data.'
+              )}
+            </span>
           </li>
         </ul>
         <p className="mt-3 text-[11px] leading-relaxed text-gray-400">
-          Processed in accordance with the Data Privacy Act of 2012. See our{' '}
-          <a href="/policy" className="underline">Privacy Policy</a>.
+          {tr(
+            'Processed in accordance with the Data Privacy Act of 2012. See our',
+            'Pinoproseso alinsunod sa Data Privacy Act of 2012. Tingnan ang aming'
+          )}{' '}
+          <a href="/policy" className="underline">{tr('Privacy Policy', 'Privacy Policy')}</a>.
         </p>
       </div>
       <button
@@ -112,10 +135,10 @@ export function useAddToList() {
         className="w-full rounded-full py-3.5 text-[14px] font-semibold text-white"
         style={{ background: GRADIENT }}
       >
-        Allow and save
+        {tr('Allow and save', 'Payagan at i-save')}
       </button>
       <button type="button" onClick={() => decide(false)} className="w-full rounded-full py-2 text-[13px] font-semibold text-gray-500">
-        Not now
+        {tr('Not now', 'Hindi muna')}
       </button>
     </Sheet>
   ) : null;
@@ -126,9 +149,15 @@ export function useAddToList() {
 /** What to tell someone when adding did not work. Empty when it did. */
 export const addResultMessage = (r: AddResult) =>
   r === 'failed'
-    ? 'This phone did not let Getmeds save your list. Check that site data is allowed for getmeds.ph, then try again.'
+    ? translate(
+        'This phone did not let Getmeds save your list. Check that site data is allowed for getmeds.ph, then try again.',
+        'Hindi pinayagan ng phone na ito ang Getmeds na i-save ang list mo. Siguraduhing allowed ang site data para sa getmeds.ph, saka subukan ulit.'
+      )
     : r === 'declined'
-      ? 'Allow saving the list on this phone to add medicines to it.'
+      ? translate(
+          'Allow saving the list on this phone to add medicines to it.',
+          'Payagan ang pag-save ng list sa phone na ito para makapagdagdag ng gamot.'
+        )
       : '';
 
 // ── Saved medicines ─────────────────────────────────────────────────────────
@@ -145,7 +174,7 @@ export const findSaved = (url?: string): SavedProduct | undefined => {
  */
 function loadedList(): SavedProduct[] {
   const d = accountData();
-  if (!d) throw new Error('Your account is still loading. Try again in a moment.');
+  if (!d) throw new Error(translate('Your account is still loading. Try again in a moment.', 'Naglo-load pa ang account mo. Subukan ulit maya-maya.'));
   return d.savedProducts;
 }
 
@@ -155,7 +184,12 @@ function loadedList(): SavedProduct[] {
  */
 export async function saveProduct(p: ProductRef, watchStock?: boolean): Promise<void> {
   const list = loadedList();
-  if (!p.url?.startsWith('/')) throw new Error('This medicine cannot be saved. Open it from search and try again.');
+  if (!p.url?.startsWith('/')) throw new Error(
+      translate(
+        'This medicine cannot be saved. Open it from search and try again.',
+        'Hindi ma-save ang gamot na ito. Buksan ito mula sa search at subukan ulit.'
+      )
+    );
   const slug = slugOf(p.url);
   const existing = list.find((s) => slugOf(s.url) === slug);
   if (existing) {
@@ -163,7 +197,12 @@ export async function saveProduct(p: ProductRef, watchStock?: boolean): Promise<
     await saveList('savedProducts', list.map((s) => (s === existing ? { ...s, watchStock } : s)));
     return;
   }
-  if (list.length >= 100) throw new Error('You have 100 saved medicines, the most we keep. Remove one to save another.');
+  if (list.length >= 100) throw new Error(
+      translate(
+        'You have 100 saved medicines, the most we keep. Remove one to save another.',
+        'May 100 ka nang naka-save na gamot, ang pinakamarami na puwede. Mag-alis ng isa para makapag-save ng bago.'
+      )
+    );
   const item: SavedProduct = {
     _key: newKey(),
     name: p.name,

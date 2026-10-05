@@ -4,6 +4,8 @@
 // happens here too — and again on the backend, since client-side checks can always
 // be skipped entirely by calling the API directly.
 
+import { translate } from './i18n';
+
 export const ALLOWED_FILE_EXTENSIONS = ['.pdf', '.docx', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'];
 export const ALLOWED_FILE_TYPES_ACCEPT = ALLOWED_FILE_EXTENSIONS.join(',');
 export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB per file
@@ -44,15 +46,21 @@ export function validateFiles(files: File[]): FileValidationResult {
 
   for (const file of files) {
     if (!isFileTypeAllowed(file)) {
-      errors.push(`"${file.name}" isn't an allowed file type. Allowed: PDF, DOCX, PNG, JPG, JPEG, GIF, WEBP, BMP.`);
+      errors.push(translate(
+        `"${file.name}" isn't an allowed file type. Allowed: PDF, DOCX, PNG, JPG, JPEG, GIF, WEBP, BMP.`,
+        `Hindi pwede ang file type ng "${file.name}". Pwede lang ang: PDF, DOCX, PNG, JPG, JPEG, GIF, WEBP, BMP.`
+      ));
       continue;
     }
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      errors.push(`"${file.name}" is larger than the ${MAX_FILE_SIZE_LABEL} limit.`);
+      errors.push(translate(
+        `"${file.name}" is larger than the ${MAX_FILE_SIZE_LABEL} limit.`,
+        `Lampas sa ${MAX_FILE_SIZE_LABEL} na limit ang "${file.name}".`
+      ));
       continue;
     }
     if (file.size === 0) {
-      errors.push(`"${file.name}" is empty.`);
+      errors.push(translate(`"${file.name}" is empty.`, `Walang laman ang "${file.name}".`));
       continue;
     }
     valid.push(file);

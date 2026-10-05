@@ -1,6 +1,7 @@
 import React from 'react';
 import { urlFor } from './sanity';
 import { AddToCart } from './AddToCart';
+import { translate, useLang } from './i18n';
 
 /**
  * catalogueItem.tsx
@@ -49,7 +50,7 @@ export const productImage = (p: CatalogueRow, size = 260) => {
 export const displayName = (p: CatalogueRow) =>
   p.brandName && p.genericName && p.brandName !== p.genericName
     ? `${p.brandName} (${p.genericName})`
-    : p.name || p.brandName || p.genericName || 'Unnamed product';
+    : p.name || p.brandName || p.genericName || translate('Unnamed product', 'Produktong walang pangalan');
 
 /** Mirrors the products page: the sheet's own URL wins, else folder + slug. */
 export const productUrl = (p: CatalogueRow) => {
@@ -70,7 +71,7 @@ export const rxRequired = (p: CatalogueRow) => {
 
 /** The subtitle under a product name — the honest occupant of the price slot. */
 export const specLine = (p: CatalogueRow) =>
-  [p.strength, p.form].filter(Boolean).join(' · ') || p.subCategory || 'Details on request';
+  [p.strength, p.form].filter(Boolean).join(' · ') || p.subCategory || translate('Details on request', 'Detalye kapag hiniling');
 
 export const cartItemFor = (p: CatalogueRow) => ({
   id: String(p._id || productUrl(p)),
@@ -93,6 +94,7 @@ export const cartItemFor = (p: CatalogueRow) => ({
  * instead of re-reading twelve near-identical oncology names.
  */
 export function ProductRow({ p, highlight }: { p: CatalogueRow; highlight?: string }) {
+  const { tr } = useLang();
   const needsRx = rxRequired(p);
   const title = displayName(p);
 
@@ -122,7 +124,7 @@ export function ProductRow({ p, highlight }: { p: CatalogueRow; highlight?: stri
             <span className="rounded-full bg-[#E8F5FC] px-2 py-[2px] text-[9.5px] font-semibold text-[#1D9FDA]">Rx</span>
           )}
           {p.availability !== false && (
-            <span className="rounded-full bg-[#EEF6EA] px-2 py-[2px] text-[9.5px] font-semibold text-[#4E8F35]">In stock</span>
+            <span className="rounded-full bg-[#EEF6EA] px-2 py-[2px] text-[9.5px] font-semibold text-[#4E8F35]">{tr('In stock', 'May stock')}</span>
           )}
         </div>
       </div>

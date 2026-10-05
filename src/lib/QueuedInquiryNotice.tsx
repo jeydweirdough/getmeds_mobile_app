@@ -3,9 +3,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getApiUrl } from './api';
+import { useLang } from './i18n';
 import { flushQueue, deleteQueued, INQUIRY_QUEUED_EVENT, type QueuedInquiry } from './offlineInquiry';
 
 export function QueuedInquiryNotice() {
+  const { tr } = useLang();
   const [sent, setSent] = useState(0);
   const [pending, setPending] = useState<QueuedInquiry[]>([]);
   const [waiting, setWaiting] = useState<QueuedInquiry[]>([]);
@@ -43,27 +45,37 @@ export function QueuedInquiryNotice() {
       <div className="max-w-lg mx-auto pointer-events-auto rounded-2xl bg-white shadow-[0_4px_24px_rgba(0,0,0,0.14)] border border-gray-100 p-4">
         {sent > 0 && (
           <p className="text-sm text-gray-700">
-            <span className="font-semibold" style={{ color: '#61A644' }}>Sent.</span>{' '}
-            {sent === 1 ? 'An inquiry you' : `${sent} inquiries you`} submitted while offline{' '}
-            {sent === 1 ? 'has' : 'have'} now reached us.
+            <span className="font-semibold" style={{ color: '#61A644' }}>{tr('Sent.', 'Naipadala na.')}</span>{' '}
+            {tr(
+              `${sent === 1 ? 'An inquiry you' : `${sent} inquiries you`} submitted while offline ${sent === 1 ? 'has' : 'have'} now reached us.`,
+              `${sent === 1 ? 'Natanggap na namin ang inquiry' : `Natanggap na namin ang ${sent} inquiry`} na ipinadala mo habang offline.`,
+            )}
           </p>
         )}
 
         {waiting.length > 0 && (
           <p className={`text-sm text-gray-700 ${sent > 0 ? 'mt-3 pt-3 border-t border-gray-100' : ''}`}>
-            <span className="font-semibold" style={{ color: '#1D9FDA' }}>Saved on this device.</span>{' '}
-            {waiting.length === 1 ? 'Your inquiry' : `${waiting.length} inquiries`} will be sent automatically as soon
-            as you're back online — you can close the page.
+            <span className="font-semibold" style={{ color: '#1D9FDA' }}>{tr('Saved on this device.', 'Naka-save sa device na ito.')}</span>{' '}
+            {tr(
+              `${waiting.length === 1 ? 'Your inquiry' : `${waiting.length} inquiries`} will be sent automatically as soon as you're back online — you can close the page.`,
+              `Kusang maipapadala ${waiting.length === 1 ? 'ang inquiry mo' : `ang ${waiting.length} inquiry`} pagbalik mo online — puwede mo nang isara ang page.`,
+            )}
           </p>
         )}
 
         {pending.map((item, i) => (
           <div key={item.id} className={sent > 0 || waiting.length > 0 || i > 0 ? 'mt-3 pt-3 border-t border-gray-100' : ''}>
             <p className="text-sm text-gray-700">
-              An inquiry saved on this device still needs you
+              {tr('An inquiry saved on this device still needs you', 'May inquiry na naka-save sa device na ito na kailangan pa ng aksyon mo')}
               {item.hadAttachments
-                ? ' — your file was not kept on the device for privacy, so please attach it again.'
-                : ' — the security check expired while you were offline.'}
+                ? tr(
+                    ' — your file was not kept on the device for privacy, so please attach it again.',
+                    ' — hindi itinago ang file mo sa device para sa privacy, kaya pakilakip ulit ito.',
+                  )
+                : tr(
+                    ' — the security check expired while you were offline.',
+                    ' — nag-expire ang security check habang offline ka.',
+                  )}
             </p>
             <div className="mt-2.5 flex items-center gap-3">
               <Link
@@ -71,14 +83,14 @@ export function QueuedInquiryNotice() {
                 className="text-white text-xs font-semibold rounded-full px-4 py-2"
                 style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
               >
-                Finish it
+                {tr('Finish it', 'Tapusin')}
               </Link>
               <button
                 type="button"
                 onClick={() => discard(item.id)}
                 className="text-xs text-gray-400 hover:text-gray-600"
               >
-                Discard
+                {tr('Discard', 'Itapon')}
               </button>
             </div>
           </div>
@@ -89,7 +101,7 @@ export function QueuedInquiryNotice() {
           onClick={() => setDismissed(true)}
           className="mt-3 text-xs text-gray-400 hover:text-gray-600"
         >
-          Dismiss
+          {tr('Dismiss', 'Isara')}
         </button>
       </div>
     </div>

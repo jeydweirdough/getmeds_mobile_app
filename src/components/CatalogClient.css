@@ -39,11 +39,6 @@ body:has(.catalog-root):not(:has([data-handoff-pending])) { overflow: hidden; }
 .catalog-root .no-scrollbar::-webkit-scrollbar { display: none; }
 .catalog-root .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-@keyframes breadcrumbSlideRight { from { transform: translateX(18px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-@keyframes breadcrumbSlideLeft { from { transform: translateX(-18px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-.catalog-root .breadcrumb-forward { animation: breadcrumbSlideRight 0.28s cubic-bezier(.22,1,.36,1) forwards; }
-.catalog-root .breadcrumb-backward { animation: breadcrumbSlideLeft 0.28s cubic-bezier(.22,1,.36,1) forwards; }
-
 /* Success modal (inline <style> in the original) */
 @keyframes checkBounce{0%{transform:scale(0);opacity:0}55%{transform:scale(1.06);opacity:1}75%{transform:scale(0.97)}100%{transform:scale(1);opacity:1}}
 .catalog-root .check-bounce{animation:checkBounce 0.8s ease-out forwards}

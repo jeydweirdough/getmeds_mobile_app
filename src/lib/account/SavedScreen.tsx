@@ -5,6 +5,7 @@ import { saveList, shortDate, useAccountData, type SavedProduct } from '../accou
 import { Empty, ErrorNote, PrimaryButton, Screen, SmallButton, Toast, useToast } from '../ui/Screen';
 import { addResultMessage, cartItemFor, detailOf, errorText, Switch, Thumb, unsaveProduct, useAddToList } from './listActions';
 import { goTo } from '@/platform/navigation';
+import { useLang } from '../i18n';
 
 /**
  * SavedScreen.tsx
@@ -16,6 +17,7 @@ import { goTo } from '@/platform/navigation';
  */
 
 export default function SavedScreen({ onClose }: { onClose: () => void }) {
+  const { tr } = useLang();
   const { data, error: loadError, reload } = useAccountData();
   const [error, setError] = useState('');
   const [toast, showToast] = useToast();
@@ -26,9 +28,17 @@ export default function SavedScreen({ onClose }: { onClose: () => void }) {
     setError('');
     try {
       await saveList('savedProducts', saved.map((s) => (s._key === item._key ? { ...s, watchStock } : s)));
-      showToast(watchStock ? "We'll text you when it's back in stock." : 'Stock alert turned off.');
+      showToast(watchStock ? tr("We'll text you when it's back in stock.", 'Ite-text ka namin kapag may stock na ulit.') : tr('Stock alert turned off.', 'Naka-off na ang stock alert.'));
     } catch (e) {
-      setError(errorText(e, 'Could not change the stock alert. Check your connection and try again.'));
+      setError(
+        errorText(
+          e,
+          tr(
+            'Could not change the stock alert. Check your connection and try again.',
+            'Hindi mapalitan ang stock alert. Tingnan ang iyong connection at subukan ulit.'
+          )
+        )
+      );
     }
   };
 
@@ -36,21 +46,27 @@ export default function SavedScreen({ onClose }: { onClose: () => void }) {
     setError('');
     try {
       await unsaveProduct(item.url);
-      showToast(`Removed ${item.name}.`);
+      showToast(tr(`Removed ${item.name}.`, `Inalis ang ${item.name}.`));
     } catch (e) {
-      setError(errorText(e, 'Could not remove it. Check your connection and try again.'));
+      setError(
+        errorText(e, tr('Could not remove it. Check your connection and try again.', 'Hindi ito maalis. Tingnan ang iyong connection at subukan ulit.'))
+      );
     }
   };
 
   const addToList = async (item: SavedProduct) => {
     setError('');
     const r = await add([cartItemFor(item)]);
-    if (r === 'added') showToast('Added to your request list.');
+    if (r === 'added') showToast(tr('Added to your request list.', 'Naidagdag sa iyong request list.'));
     else setError(addResultMessage(r));
   };
 
   return (
-    <Screen title="Saved medicines" subtitle="Kept with your account" onClose={onClose}>
+    <Screen
+      title={tr('Saved medicines', 'Mga naka-save na gamot')}
+      subtitle={tr('Kept with your account', 'Nakatabi sa iyong account')}
+      onClose={onClose}
+    >
       <ErrorNote text={error} />
 
       {!data && !loadError && (
@@ -63,19 +79,22 @@ export default function SavedScreen({ onClose }: { onClose: () => void }) {
 
       {!data && loadError && (
         <>
-          <ErrorNote text={`${loadError} Check your connection and try again.`} />
-          <PrimaryButton onClick={() => reload()}>Try again</PrimaryButton>
+          <ErrorNote text={tr(`${loadError} Check your connection and try again.`, `${loadError} Tingnan ang iyong connection at subukan ulit.`)} />
+          <PrimaryButton onClick={() => reload()}>{tr('Try again', 'Subukan ulit')}</PrimaryButton>
         </>
       )}
 
       {data && saved.length === 0 && (
         <Empty
           icon="fa-bookmark"
-          title="No saved medicines yet"
-          text="Tap the bookmark on a medicine's page to keep it here. You can also ask us to text you when it's back in stock."
+          title={tr('No saved medicines yet', 'Wala pang naka-save na gamot')}
+          text={tr(
+            "Tap the bookmark on a medicine's page to keep it here. You can also ask us to text you when it's back in stock.",
+            'I-tap ang bookmark sa page ng gamot para itabi ito rito. Puwede mo ring hilinging i-text ka namin kapag may stock na ulit.'
+          )}
           action={
             <SmallButton onClick={() => { goTo('/search'); }}>
-              Find a medicine
+              {tr('Find a medicine', 'Maghanap ng gamot')}
             </SmallButton>
           }
         />
@@ -99,7 +118,7 @@ export default function SavedScreen({ onClose }: { onClose: () => void }) {
                   <button
                     type="button"
                     onClick={() => remove(item)}
-                    aria-label={`Remove ${item.name}`}
+                    aria-label={tr(`Remove ${item.name}`, `Alisin ang ${item.name}`)}
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400"
                   >
                     <i className="fa-regular fa-trash-can text-[13px]" />
@@ -108,14 +127,17 @@ export default function SavedScreen({ onClose }: { onClose: () => void }) {
 
                 <div className="flex items-center gap-3 border-t border-[#EEF1F5] px-4 py-3">
                   <label htmlFor={watchId} className="min-w-0 flex-1">
-                    <span className="block text-[13px] text-gray-800">Text me when back in stock</span>
+                    <span className="block text-[13px] text-gray-800">{tr('Text me when back in stock', 'I-text ako kapag may stock na')}</span>
                     {/* The daily job texts once and stamps notifiedAt; switching
                         off and on again clears it, so say how to hear again. */}
                     {item.watchStock && (
                       <span className="block text-[11.5px] text-gray-500">
                         {item.notifiedAt
-                          ? `We texted you on ${shortDate(item.notifiedAt)}. Turn this off and on to hear next time.`
-                          : 'We text you once when it comes back.'}
+                          ? tr(
+                              `We texted you on ${shortDate(item.notifiedAt)}. Turn this off and on to hear next time.`,
+                              `Na-text ka namin noong ${shortDate(item.notifiedAt)}. I-off at i-on ulit ito para ma-text ka sa susunod.`
+                            )
+                          : tr('We text you once when it comes back.', 'Ite-text ka namin nang isang beses kapag bumalik ang stock.')}
                       </span>
                     )}
                   </label>
@@ -123,14 +145,14 @@ export default function SavedScreen({ onClose }: { onClose: () => void }) {
                     id={watchId}
                     on={Boolean(item.watchStock)}
                     onChange={(on) => setWatch(item, on)}
-                    label={`Text me when ${item.name} is back in stock`}
+                    label={tr(`Text me when ${item.name} is back in stock`, `I-text ako kapag may stock na ang ${item.name}`)}
                   />
                 </div>
 
                 <div className="border-t border-[#EEF1F5] px-4 py-3">
                   <SmallButton onClick={() => addToList(item)}>
                     <i className="fa-solid fa-cart-plus mr-1.5 text-[11px]" />
-                    Add to request list
+                    {tr('Add to request list', 'Idagdag sa request list')}
                   </SmallButton>
                 </div>
               </li>

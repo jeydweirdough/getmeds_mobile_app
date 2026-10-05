@@ -5,6 +5,7 @@ import { BRAND, PrimaryButton, Sheet, Toast, useToast } from './ui/Screen';
 import { REWARDS_CHANGED_EVENT, RewardsError, authedCall, call, isSignedIn } from './rewards';
 import PointsCard, { usePoints } from './PointsCard';
 import { SignInSheet } from './ProfileCard';
+import { useLang, translate } from './i18n';
 
 /**
  * ProductReviews.tsx
@@ -41,7 +42,7 @@ export interface ReviewsData {
   me: { review: { rating: number; text: string; status: 'pending' | 'approved' | 'rejected'; createdAt?: string } | null; canReview: boolean } | null;
 }
 
-const message = (e: unknown) => (e instanceof RewardsError ? e.message : 'Something went wrong. Please try again.');
+const message = (e: unknown) => (e instanceof RewardsError ? e.message : translate('Something went wrong. Please try again.', 'May nangyaring mali. Pakisubukan ulit.'));
 const when = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString('en-PH', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
@@ -68,8 +69,9 @@ export function useReviews(slug: string | undefined): { data: ReviewsData | null
 }
 
 export function Stars({ value, size = 12 }: { value: number; size?: number }) {
+  const { tr } = useLang();
   return (
-    <span className="inline-flex items-center gap-[2px]" aria-label={`${value} out of 5 stars`}>
+    <span className="inline-flex items-center gap-[2px]" aria-label={tr(`${value} out of 5 stars`, `${value} sa 5 na bituin`)}>
       {[1, 2, 3, 4, 5].map((n) => {
         const icon = value >= n ? 'fa-solid fa-star' : value >= n - 0.5 ? 'fa-solid fa-star-half-stroke' : 'fa-regular fa-star';
         return <i key={n} className={icon} style={{ color: STAR, fontSize: size }} />;
@@ -80,6 +82,7 @@ export function Stars({ value, size = 12 }: { value: number; size?: number }) {
 
 /** "★ 4.6 · 12 reviews" under the product name; taps through to the reviews. */
 export function RatingLine({ data }: { data: ReviewsData | null }) {
+  const { tr } = useLang();
   if (!data) return <div className="mt-2 h-4 w-32 animate-pulse rounded bg-gray-100" />;
   return (
     <button
@@ -93,13 +96,13 @@ export function RatingLine({ data }: { data: ReviewsData | null }) {
           <span className="font-semibold text-gray-900">{data.average.toFixed(1)}</span>
           <span className="h-3 w-px bg-gray-300" />
           <span>
-            {data.count} {data.count === 1 ? 'review' : 'reviews'}
+            {data.count} {data.count === 1 ? tr('review', 'review') : tr('reviews', 'na review')}
           </span>
         </>
       ) : (
         <>
           <i className="fa-regular fa-star text-[12px]" style={{ color: STAR }} />
-          <span>No reviews yet</span>
+          <span>{tr('No reviews yet', 'Wala pang review')}</span>
         </>
       )}
     </button>
@@ -123,12 +126,20 @@ function WriteReviewSheet({
   const [text, setText] = useState(existing?.text || '');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const labels = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
+  const { tr } = useLang();
+  const labels = [
+    '',
+    tr('Poor', 'Hindi maganda'),
+    tr('Fair', 'Pwede na'),
+    tr('Good', 'Maganda'),
+    tr('Very good', 'Napakaganda'),
+    tr('Excellent', 'Sobrang ganda'),
+  ];
 
   const save = async () => {
     setError('');
-    if (!rating) return setError('Tap the stars to rate it.');
-    if (text.trim().length < MIN_TEXT) return setError(`Tell others a little more (at least ${MIN_TEXT} characters).`);
+    if (!rating) return setError(tr('Tap the stars to rate it.', 'I-tap ang mga bituin para mag-rate.'));
+    if (text.trim().length < MIN_TEXT) return setError(tr(`Tell others a little more (at least ${MIN_TEXT} characters).`, `Magkuwento pa nang kaunti (hindi bababa sa ${MIN_TEXT} na character).`));
     setBusy(true);
     try {
       await authedCall(`/reviews/${encodeURIComponent(slug)}`, {
@@ -143,17 +154,17 @@ function WriteReviewSheet({
   };
 
   return (
-    <Sheet title={existing ? 'Edit your review' : 'Write a review'} onClose={onClose}>
+    <Sheet title={existing ? tr('Edit your review', 'I-edit ang iyong review') : tr('Write a review', 'Sumulat ng review')} onClose={onClose}>
       <p className="px-1 text-[12.5px] leading-relaxed text-gray-500">{productName}</p>
       <div className="flex flex-col items-center gap-1.5 rounded-2xl bg-white py-4">
-        <div className="flex gap-2" role="radiogroup" aria-label="Your rating">
+        <div className="flex gap-2" role="radiogroup" aria-label={tr('Your rating', 'Ang iyong rating')}>
           {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
               type="button"
               role="radio"
               aria-checked={rating === n}
-              aria-label={`${n} star${n === 1 ? '' : 's'}`}
+              aria-label={tr(`${n} star${n === 1 ? '' : 's'}`, `${n} bituin`)}
               onClick={() => setRating(n)}
               className="p-1"
             >
@@ -165,12 +176,12 @@ function WriteReviewSheet({
       </div>
       <div className="rounded-2xl bg-white p-3">
         <textarea
-          aria-label="Your review"
+          aria-label={tr('Your review', 'Ang iyong review')}
           rows={5}
           maxLength={MAX_TEXT}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="How was getting this medicine through Getmeds? Availability, delivery, how the team helped…"
+          placeholder={tr('How was getting this medicine through Getmeds? Availability, delivery, how the team helped…', 'Kumusta ang pagkuha mo ng gamot na ito sa Getmeds? Availability, delivery, paano tumulong ang team…')}
           className="w-full resize-none text-[13.5px] text-gray-800 outline-none"
         />
         <p className="text-right text-[11px] text-gray-400">
@@ -178,12 +189,14 @@ function WriteReviewSheet({
         </p>
       </div>
       <p className="px-1 text-[11.5px] leading-relaxed text-gray-500">
-        Please don&rsquo;t give medical advice or share personal health details. Reviews are checked by our team before
-        they appear. For side effects, contact your doctor and message us so we can report it.
+        {tr(
+          'Please don’t give medical advice or share personal health details. Reviews are checked by our team before they appear. For side effects, contact your doctor and message us so we can report it.',
+          'Huwag magbigay ng medical advice o magbahagi ng personal na detalye tungkol sa kalusugan. Sinusuri ng aming team ang mga review bago ito lumabas. Kung may side effect, kumonsulta sa iyong doktor at i-message kami para mai-report namin ito.',
+        )}
       </p>
       {error && <p className="px-1 text-[12px] text-red-500">{error}</p>}
       <PrimaryButton onClick={save} disabled={busy}>
-        {busy ? 'Sending…' : existing ? 'Update review' : 'Submit review'}
+        {busy ? tr('Sending…', 'Ipinapadala…') : existing ? tr('Update review', 'I-update ang review') : tr('Submit review', 'Ipadala ang review')}
       </PrimaryButton>
     </Sheet>
   );
@@ -206,6 +219,7 @@ export function ReviewsSection({
   const [askSignIn, setAskSignIn] = useState(false);
   const [note, setNote] = useState('');
   const [toast, showToast] = useToast();
+  const { tr } = useLang();
 
   // Signed in from the sheet this section opened: carry on to writing if allowed.
   useEffect(() => {
@@ -222,7 +236,7 @@ export function ReviewsSection({
     }
     if (!data?.me) return; // still loading the signed-in view
     if (!data.me.canReview) {
-      setNote('You can review a medicine after you’ve requested it through the Getmeds app.');
+      setNote(tr('You can review a medicine after you’ve requested it through the Getmeds app.', 'Puwede kang mag-review ng gamot kapag na-request mo na ito sa Getmeds app.'));
       return;
     }
     setWriting(true);
@@ -231,11 +245,11 @@ export function ReviewsSection({
   const max = Math.max(1, ...Object.values(data?.distribution || {}));
 
   return (
-    <section id="reviews" className="scroll-mt-20 border-t border-[#EEF1F5] bg-white px-4 pb-6 pt-6" aria-label="Ratings and reviews">
+    <section id="reviews" className="scroll-mt-20 border-t border-[#EEF1F5] bg-white px-4 pb-6 pt-6" aria-label={tr('Ratings and reviews', 'Mga rating at review')}>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-[16px] font-medium tracking-tight text-gray-900">Ratings &amp; reviews</h2>
+        <h2 className="text-[16px] font-medium tracking-tight text-gray-900">{tr('Ratings & reviews', 'Mga rating at review')}</h2>
         <button type="button" onClick={onWrite} className="text-[12.5px] font-semibold" style={{ color: BRAND }}>
-          {mine ? 'Edit your review' : 'Write a review'}
+          {mine ? tr('Edit your review', 'I-edit ang iyong review') : tr('Write a review', 'Sumulat ng review')}
         </button>
       </div>
 
@@ -251,7 +265,7 @@ export function ReviewsSection({
                 <Stars value={data.average} size={11} />
               </div>
               <p className="mt-1 text-[11px] text-gray-500">
-                {data.count} {data.count === 1 ? 'review' : 'reviews'}
+                {data.count} {data.count === 1 ? tr('review', 'review') : tr('reviews', 'na review')}
               </p>
             </div>
             <div className="flex-1 space-y-1">
@@ -275,8 +289,8 @@ export function ReviewsSection({
               <i className="fa-solid fa-hourglass-half mt-[3px] text-[11px]" />
               <span>
                 {mine.status === 'pending'
-                  ? 'Thanks! Your review is waiting for approval and will appear once our team has checked it.'
-                  : 'Your review wasn’t published. You can edit it and send it again.'}
+                  ? tr('Thanks! Your review is waiting for approval and will appear once our team has checked it.', 'Salamat! Naghihintay pa ng approval ang iyong review at lalabas ito kapag nasuri na ng aming team.')
+                  : tr('Your review wasn’t published. You can edit it and send it again.', 'Hindi na-publish ang iyong review. Puwede mo itong i-edit at ipadala ulit.')}
               </span>
             </p>
           )}
@@ -289,7 +303,10 @@ export function ReviewsSection({
 
           {data.reviews.length === 0 ? (
             <p className="mt-4 text-center text-[12.5px] text-gray-500">
-              No reviews yet. Requested this medicine through Getmeds? Be the first to review it.
+              {tr(
+                'No reviews yet. Requested this medicine through Getmeds? Be the first to review it.',
+                'Wala pang review. Na-request mo ba ang gamot na ito sa Getmeds? Ikaw ang maunang mag-review.',
+              )}
             </p>
           ) : (
             <ul className="mt-2 divide-y divide-[#EEF1F5]">
@@ -305,7 +322,7 @@ export function ReviewsSection({
                         {r.verified && (
                           <p className="text-[10.5px] font-medium text-[#357A3F]">
                             <i className="fa-solid fa-circle-check mr-1" />
-                            Requested via Getmeds
+                            {tr('Requested via Getmeds', 'Na-request sa Getmeds')}
                           </p>
                         )}
                       </div>
@@ -331,7 +348,7 @@ export function ReviewsSection({
           onClose={() => setWriting(false)}
           onSaved={() => {
             setWriting(false);
-            showToast('Thanks! Your review will appear once approved.');
+            showToast(tr('Thanks! Your review will appear once approved.', 'Salamat! Lalabas ang iyong review kapag na-approve na.'));
             reload();
           }}
         />
@@ -341,7 +358,7 @@ export function ReviewsSection({
           points={points}
           bare
           initialMode="login"
-          intro="Log in to review medicines you've requested through Getmeds."
+          intro={tr("Log in to review medicines you've requested through Getmeds.", 'Mag-log in para i-review ang mga gamot na na-request mo sa Getmeds.')}
         />
       </SignInSheet>
       <Toast text={toast} />

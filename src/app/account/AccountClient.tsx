@@ -19,7 +19,8 @@ import PointsCard, { usePoints } from '@/lib/PointsCard';
 import ProfileCard, { GuestCard, GuestList, SignInSheet } from '@/lib/ProfileCard';
 import DetailsScreen from '@/lib/DetailsScreen';
 import { saveProfile, useAccountData, manilaToday, addDays, type Profile } from '@/lib/accountApi';
-import { Card, ListRow, Toast, useToast } from '@/lib/ui/Screen';
+import { Card, ListRow, Sheet, Toast, useToast } from '@/lib/ui/Screen';
+import { LANGUAGES, translate, useLang } from '@/lib/i18n';
 import PatientsScreen from '@/lib/account/PatientsScreen';
 import AddressesScreen from '@/lib/account/AddressesScreen';
 import RxWalletScreen from '@/lib/account/RxWalletScreen';
@@ -95,25 +96,30 @@ const when = (ms: number) =>
  * "quoted" state would need the server to tell us, and /api/inquiry/submit is
  * submit-only. Inventing those states is how the page got into trouble before.
  */
-const STATUS: Record<InquiryRecord['status'], { label: string; note: string; bg: string; fg: string }> = {
+const STATUS: Record<InquiryRecord['status'], { label: string; labelTl: string; note: string; noteTl: string; bg: string; fg: string }> = {
   sent: {
     label: 'Sent',
+    labelTl: 'Naipadala',
     note: 'Our team replies with availability and a quote.',
+    noteTl: 'Sasagot ang team namin tungkol sa availability at quote.',
     bg: '#ECFAF0',
     fg: '#357A3F',
   },
   queued: {
     label: 'Waiting to send',
+    labelTl: 'Naghihintay maipadala',
     note: 'Saved on this device. It goes automatically once you are back online.',
+    noteTl: 'Naka-save sa device na ito. Kusa itong maipapadala kapag online ka na ulit.',
     bg: '#FFF6E6',
     fg: '#9A6412',
   },
 };
 
 function Segmented({ tab, setTab, counts }: { tab: Tab; setTab: (t: Tab) => void; counts: Record<Tab, number> }) {
+  const { tr } = useLang();
   const items: Array<{ id: Tab; label: string }> = [
-    { id: 'inquiries', label: 'Inquiries' },
-    { id: 'details', label: 'Details' },
+    { id: 'inquiries', label: tr('Inquiries', 'Mga inquiry') },
+    { id: 'details', label: tr('Details', 'Mga detalye') },
   ];
   return (
     <div className="mb-5 flex gap-1 rounded-full p-1" style={{ background: GROUND }}>
@@ -161,6 +167,8 @@ function Account() {
   const [alert, setAlert] = useState<{ title?: string; message: string | string[] } | null>(null);
   const points = usePoints();
   const [signInOpen, setSignInOpen] = useState(false);
+  const { lang, setLang, tr } = useLang();
+  const [langOpen, setLangOpen] = useState(false);
   // Which form the sign-in sheet opens on; screens that need an account open it on Sign up.
   const [signInMode, setSignInMode] = useState<'signup' | 'login'>('signup');
   // Why the sheet opened, when a feature needing an account sent the guest there.
@@ -207,7 +215,7 @@ function Account() {
   }, []);
 
   useEffect(() => {
-    document.title = 'My Account | Getmeds';
+    document.title = translate('My Account | Getmeds', 'Aking Account | Getmeds');
     if (app) document.body.style.background = '#FFFFFF';
     setUser(readUser());
     // /edit-profile redirects here with #details, so the old "Edit Profile"
@@ -288,8 +296,11 @@ function Account() {
     setBusy(false);
     if (!ok) {
       setAlert({
-        title: 'Not saved',
-        message: 'Getmeds needs your permission to keep these details on this device.',
+        title: tr('Not saved', 'Hindi na-save'),
+        message: tr(
+          'Getmeds needs your permission to keep these details on this device.',
+          'Kailangan ng Getmeds ang pahintulot mo para i-save ang mga detalyeng ito sa device na ito.',
+        ),
       });
       return false;
     }
@@ -331,7 +342,7 @@ function Account() {
     e.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setAlert({ title: 'Not an image', message: 'Choose a PNG or JPG for your picture.' });
+      setAlert({ title: tr('Not an image', 'Hindi ito larawan'), message: tr('Choose a PNG or JPG for your picture.', 'Pumili ng PNG o JPG para sa picture mo.') });
       return;
     }
     setBusy(true);
@@ -340,7 +351,7 @@ function Account() {
       const b64 = await fileToBase64(small);
       setDetails((d) => ({ ...d, avatar: `data:${small.type || 'image/jpeg'};base64,${b64}` }));
     } catch {
-      setAlert({ title: 'Could not read that image', message: 'Try a different photo.' });
+      setAlert({ title: tr('Could not read that image', 'Hindi mabasa ang larawang iyon'), message: tr('Try a different photo.', 'Sumubok ng ibang photo.') });
     }
     setBusy(false);
   };
@@ -364,6 +375,7 @@ function Account() {
   const initial = (displayName || 'U').charAt(0).toUpperCase();
   /** Decides which extra fields the form below even asks for. */
   const audience = typeByValue(details.userType);
+  const audienceLabel = audience ? tr(audience.label, audience.labelTl ?? audience.label) : undefined;
 
   /**
    * How much of the details form is filled in, for the ring on the profile
@@ -412,13 +424,19 @@ function Account() {
       scrollTo('points');
       return;
     }
-    const text = `Get the Getmeds app and add my code ${code} under My account > Getmeds Points.`;
+    const text = tr(
+      `Get the Getmeds app and add my code ${code} under My account > Getmeds Points.`,
+      `I-download ang Getmeds app at ilagay ang code kong ${code} sa My account > Getmeds Points.`,
+    );
     try {
       if (navigator.share) {
         await navigator.share({ title: 'Getmeds', text, url: inviteLink(code) });
       } else {
         await navigator.clipboard.writeText(`${text} ${inviteLink(code)}`);
-        setAlert({ title: 'Invite copied', message: 'Paste it into a chat to send it to a friend.' });
+        setAlert({
+          title: tr('Invite copied', 'Nakopya ang imbitasyon'),
+          message: tr('Paste it into a chat to send it to a friend.', 'I-paste ito sa chat para maipadala sa kaibigan.'),
+        });
       }
     } catch {
       /* share sheet closed */
@@ -430,8 +448,11 @@ function Account() {
   // who just signed in "Guest".
   const profileName = displayName || pointsAccount?.name || '';
   const profileSubtitle = profileName
-    ? [audience?.label ?? 'Getmeds member', pointsAccount?.mobile].filter(Boolean).join(' · ')
-    : `${audience?.label ?? 'Getmeds member'} · Add your name in Edit profile`;
+    ? [audienceLabel ?? tr('Getmeds member', 'Getmeds member'), pointsAccount?.mobile].filter(Boolean).join(' · ')
+    : tr(
+        `${audienceLabel ?? 'Getmeds member'} · Add your name in Edit profile`,
+        `${audienceLabel ?? 'Getmeds member'} · Ilagay ang pangalan mo sa Edit profile`,
+      );
 
   return (
     <>
@@ -453,18 +474,30 @@ function Account() {
                 // so they follow the customer to any phone.
                 {
                   icon: 'fa-file-lines',
-                  label: 'My requests',
-                  hint: 'Log in',
-                  onClick: () => askToSignIn('Log in or create a free account to see your requests and earn points on every one.'),
+                  label: tr('My requests', 'Mga request ko'),
+                  hint: tr('Log in', 'Mag-log in'),
+                  onClick: () =>
+                    askToSignIn(
+                      tr(
+                        'Log in or create a free account to see your requests and earn points on every one.',
+                        'Mag-log in o gumawa ng libreng account para makita ang mga request mo at kumita ng points sa bawat isa.',
+                      ),
+                    ),
                 },
                 {
                   icon: 'fa-id-card',
-                  label: 'My details',
-                  hint: 'Log in',
-                  onClick: () => askToSignIn('Log in or create a free account to keep your details and fill in request forms faster.'),
+                  label: tr('My details', 'Mga detalye ko'),
+                  hint: tr('Log in', 'Mag-log in'),
+                  onClick: () =>
+                    askToSignIn(
+                      tr(
+                        'Log in or create a free account to keep your details and fill in request forms faster.',
+                        'Mag-log in o gumawa ng libreng account para ma-save ang mga detalye mo at mas mabilis mapunan ang mga request form.',
+                      ),
+                    ),
                 },
-                { icon: 'fa-book-medical', label: 'Health guides', onClick: () => open('guides') },
-                { icon: 'fa-comments', label: 'Chat with us', onClick: () => { goTo('/chat'); } },
+                { icon: 'fa-book-medical', label: tr('Health guides', 'Mga gabay sa kalusugan'), onClick: () => open('guides') },
+                { icon: 'fa-comments', label: tr('Chat with us', 'Mag-chat sa amin'), onClick: () => { goTo('/chat'); } },
               ]}
             />
           </>
@@ -478,12 +511,12 @@ function Account() {
             onEdit={() => setDetailsOpen(true)}
             stats={[
               {
-                label: 'Points',
+                label: tr('Points', 'Points'),
                 value: pointsAccount ? pointsAccount.pointsBalance.toLocaleString('en-PH') : '—',
                 onClick: () => scrollTo('points'),
               },
               {
-                label: 'Requests',
+                label: tr('Requests', 'Mga request'),
                 value: String(points.signedIn ? serverRequests : inquiries?.length ?? 0),
                 onClick: () => {
                   setTab('inquiries');
@@ -491,7 +524,7 @@ function Account() {
                 },
               },
               {
-                label: 'Friends invited',
+                label: tr('Friends invited', 'Naimbitahan'),
                 value: points.signedIn ? String(points.summary?.referral?.friendsJoined ?? 0) : '—',
                 onClick: () => scrollTo('points'),
               },
@@ -501,13 +534,13 @@ function Account() {
             actions={
               points.signedIn
                 ? [
-                    { icon: 'fa-share-nodes', label: 'Invite a friend', onClick: invite },
-                    { icon: 'fa-headset', label: 'Contact us', onClick: () => { goTo('/contact-us'); } },
-                    { icon: 'fa-arrow-right-from-bracket', label: 'Log out', onClick: logout, tone: 'danger' },
+                    { icon: 'fa-share-nodes', label: tr('Invite a friend', 'Mag-imbita'), onClick: invite },
+                    { icon: 'fa-headset', label: tr('Contact us', 'Kontakin kami'), onClick: () => { goTo('/contact-us'); } },
+                    { icon: 'fa-arrow-right-from-bracket', label: tr('Log out', 'Mag-log out'), onClick: logout, tone: 'danger' },
                   ]
                 : [
-                    { icon: 'fa-right-to-bracket', label: 'Sign in', onClick: () => { scrollTo('points'); document.getElementById('points-mobile')?.focus({ preventScroll: true }); } },
-                    { icon: 'fa-headset', label: 'Contact us', onClick: () => { goTo('/contact-us'); } },
+                    { icon: 'fa-right-to-bracket', label: tr('Sign in', 'Mag-log in'), onClick: () => { scrollTo('points'); document.getElementById('points-mobile')?.focus({ preventScroll: true }); } },
+                    { icon: 'fa-headset', label: tr('Contact us', 'Kontakin kami'), onClick: () => { goTo('/contact-us'); } },
                   ]
             }
           />
@@ -521,7 +554,7 @@ function Account() {
             {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover" /> : initial}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[15px] font-bold text-gray-900">{displayName || 'Guest'}</p>
+            <p className="truncate text-[15px] font-bold text-gray-900">{displayName || tr('Guest', 'Bisita')}</p>
             {/* Goes to the form on this page rather than /edit-profile. That
                 page could only change a name, wrote to a different store than
                 everything else here, and did nothing at all when nobody was
@@ -533,7 +566,7 @@ function Account() {
               className="mt-0.5 inline-flex items-center gap-1.5 text-[12px] font-semibold"
               style={{ color: BRAND }}
             >
-              <i className="fa-solid fa-pen text-[9px]" /> Edit profile
+              <i className="fa-solid fa-pen text-[9px]" /> {tr('Edit profile', 'I-edit ang profile')}
             </button>
           </div>
           <button
@@ -545,7 +578,7 @@ function Account() {
             }}
             className="shrink-0 rounded-full px-3 py-2 text-[12px] font-semibold text-red-500"
           >
-            <i className="fa-solid fa-arrow-right-from-bracket mr-1.5 text-[11px]" />Logout
+            <i className="fa-solid fa-arrow-right-from-bracket mr-1.5 text-[11px]" />{tr('Logout', 'Mag-log out')}
           </button>
         </div>
         )}
@@ -555,26 +588,72 @@ function Account() {
         {app && !guest && <PointsCard points={points} />}
         {app && !guest && (
           <div className="mb-6 space-y-5">
-            <Card title="My account">
-              <ListRow icon="fa-id-card" title="My details" detail="Used to fill in your requests" hint={completeness >= 100 ? 'Complete' : `${Math.round(completeness)}%`} onClick={() => setDetailsOpen(true)} />
-              <ListRow icon="fa-user-group" title="Patients" detail="People you request medicines for" hint={acct?.patients.length || undefined} onClick={() => open('patients')} />
-              <ListRow icon="fa-location-dot" title="Delivery addresses" hint={acct?.addresses.length || undefined} onClick={() => open('addresses')} />
-              <ListRow icon="fa-file-prescription" title="Prescription wallet" detail="Upload once, attach to any request" hint={rxAttention ? <span className="font-semibold text-amber-600">{rxAttention} expiring</span> : acct?.rx.length || undefined} onClick={() => open('wallet')} />
+            <Card title={tr('My account', 'Account ko')}>
+              <ListRow icon="fa-id-card" title={tr('My details', 'Mga detalye ko')} detail={tr('Used to fill in your requests', 'Ginagamit para punan ang mga request mo')} hint={completeness >= 100 ? tr('Complete', 'Kumpleto') : `${Math.round(completeness)}%`} onClick={() => setDetailsOpen(true)} />
+              <ListRow icon="fa-user-group" title={tr('Patients', 'Mga pasyente')} detail={tr('People you request medicines for', 'Mga taong pinagre-request-an mo ng gamot')} hint={acct?.patients.length || undefined} onClick={() => open('patients')} />
+              <ListRow icon="fa-location-dot" title={tr('Delivery addresses', 'Mga delivery address')} hint={acct?.addresses.length || undefined} onClick={() => open('addresses')} />
+              <ListRow icon="fa-file-prescription" title={tr('Prescription wallet', 'Wallet ng reseta')} detail={tr('Upload once, attach to any request', 'Isang upload lang, magagamit sa kahit anong request')} hint={rxAttention ? <span className="font-semibold text-amber-600">{tr(`${rxAttention} expiring`, `${rxAttention} malapit nang mag-expire`)}</span> : acct?.rx.length || undefined} onClick={() => open('wallet')} />
             </Card>
-            <Card title="Medicines">
-              <ListRow icon="fa-bookmark" title="Saved medicines" detail="Get a text when one is back in stock" hint={acct?.savedProducts.length || undefined} onClick={() => open('saved')} />
-              <ListRow icon="fa-bell" title="Refill reminders" detail="We text you the day before" hint={remindersDue ? <span className="font-semibold text-[#1D9FDA]">{remindersDue} due</span> : acct?.refillReminders.length || undefined} onClick={() => open('reminders')} />
+            <Card title={tr('Medicines', 'Mga gamot')}>
+              <ListRow icon="fa-bookmark" title={tr('Saved medicines', 'Mga naka-save na gamot')} detail={tr('Get a text when one is back in stock', 'Ite-text ka namin kapag may stock na ulit')} hint={acct?.savedProducts.length || undefined} onClick={() => open('saved')} />
+              <ListRow icon="fa-bell" title={tr('Refill reminders', 'Mga paalala sa refill')} detail={tr('We text you the day before', 'Ite-text ka namin isang araw bago')} hint={remindersDue ? <span className="font-semibold text-[#1D9FDA]">{tr(`${remindersDue} due`, `${remindersDue} kailangan na`)}</span> : acct?.refillReminders.length || undefined} onClick={() => open('reminders')} />
             </Card>
-            <Card title="Rewards and support">
-              <ListRow icon="fa-gift" title="Rewards" detail="Use your points" hint={pointsAccount ? `${pointsAccount.pointsBalance.toLocaleString('en-PH')} pts` : undefined} onClick={() => open('rewards')} />
-              <ListRow icon="fa-hand-holding-heart" title="Patient Assistance" detail={papOpen ? 'Application in progress' : 'Support for long-course treatment'} onClick={() => open('pap')} />
-              <ListRow icon="fa-book-medical" title="Health guides" onClick={() => open('guides')} />
-              <ListRow icon="fa-comments" title="Chat with us" detail="Ask about a medicine or a request" onClick={() => { goTo('/chat'); }} />
+            <Card title={tr('Rewards and support', 'Rewards at suporta')}>
+              <ListRow icon="fa-gift" title={tr('Rewards', 'Rewards')} detail={tr('Use your points', 'Gamitin ang points mo')} hint={pointsAccount ? `${pointsAccount.pointsBalance.toLocaleString('en-PH')} pts` : undefined} onClick={() => open('rewards')} />
+              <ListRow icon="fa-hand-holding-heart" title={tr('Patient Assistance', 'Patient Assistance')} detail={papOpen ? tr('Application in progress', 'May application na pinoproseso') : tr('Support for long-course treatment', 'Suporta para sa pangmatagalang gamutan')} onClick={() => open('pap')} />
+              <ListRow icon="fa-book-medical" title={tr('Health guides', 'Mga gabay sa kalusugan')} onClick={() => open('guides')} />
+              <ListRow icon="fa-comments" title={tr('Chat with us', 'Mag-chat sa amin')} detail={tr('Ask about a medicine or a request', 'Magtanong tungkol sa gamot o request')} onClick={() => { goTo('/chat'); }} />
             </Card>
             <Card>
-              <ListRow icon="fa-shield-halved" title="Privacy and data" detail="Download or delete your account" onClick={() => open('privacy')} />
+              <ListRow icon="fa-shield-halved" title={tr('Privacy and data', 'Privacy at data')} detail={tr('Download or delete your account', 'I-download o i-delete ang account mo')} onClick={() => open('privacy')} />
             </Card>
           </div>
+        )}
+        {/* Language — for everyone, guests included: it is a setting of the
+            phone, not of the account, so it should never sit behind a sign-in. */}
+        {app && (
+          <div className="mb-6">
+            <Card title={tr('Settings', 'Mga setting')}>
+              <ListRow
+                icon="fa-language"
+                title={tr('Language', 'Wika')}
+                detail={tr('Choose the language of the app', 'Piliin ang wika ng app')}
+                hint={LANGUAGES.find((l) => l.value === lang)?.native}
+                onClick={() => setLangOpen(true)}
+              />
+            </Card>
+          </div>
+        )}
+        {langOpen && (
+          <Sheet title={tr('Language', 'Wika')} onClose={() => setLangOpen(false)}>
+            <Card>
+              {LANGUAGES.map((l) => {
+                const active = l.value === lang;
+                return (
+                  <button
+                    key={l.value}
+                    type="button"
+                    onClick={() => { setLang(l.value); setLangOpen(false); }}
+                    aria-pressed={active}
+                    className="flex w-full items-center gap-3 border-b border-[#F1F3F6] px-4 py-3.5 text-left last:border-b-0"
+                  >
+                    <span className="min-w-0 flex-1 text-[14px] font-medium text-gray-900">{l.native}</span>
+                    <span
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${active ? 'border-[#1D9FDA] bg-[#1D9FDA]' : 'border-gray-300'}`}
+                    >
+                      {active && <i className="fa-solid fa-check text-[9px] text-white" />}
+                    </span>
+                  </button>
+                );
+              })}
+            </Card>
+            <p className="px-1 text-[11.5px] leading-relaxed text-gray-500">
+              {tr(
+                'Medicine names, strengths and prescriptions stay as written, so they always match the box and your doctor’s prescription.',
+                'Ang pangalan ng gamot, lakas, at reseta ay hindi isinasalin, para laging tugma sa kahon at sa reseta ng iyong doktor.',
+              )}
+            </p>
+          </Sheet>
         )}
         {screen === 'patients' && <PatientsScreen onClose={closeScreen} />}
         {screen === 'addresses' && <AddressesScreen onClose={closeScreen} />}
@@ -606,9 +685,12 @@ function Account() {
               }
               try {
                 const bonus = await saveProfile(profileOf(details));
-                if (bonus > 0) showToast(`+${bonus} points for completing your details`);
+                if (bonus > 0) showToast(tr(`+${bonus} points for completing your details`, `+${bonus} points dahil kinumpleto mo ang mga detalye mo`));
               } catch (e) {
-                setAlert({ title: 'Not saved', message: (e as Error)?.message || 'Check your connection and try again.' });
+                setAlert({
+                  title: tr('Not saved', 'Hindi na-save'),
+                  message: (e as Error)?.message || tr('Check your connection and try again.', 'Tingnan ang connection mo at subukan ulit.'),
+                });
                 return false;
               }
               // The picture, and a copy for offline forms, stay on the phone.
@@ -623,10 +705,12 @@ function Account() {
 
         {consented === false && showSections && (
           <div className="mb-5 rounded-[18px] border border-[#EEF1F5] bg-white p-4">
-            <p className="text-[13.5px] font-semibold text-gray-900">Keep your details on this phone?</p>
+            <p className="text-[13.5px] font-semibold text-gray-900">{tr('Keep your details on this phone?', 'I-save ang mga detalye mo sa phone na ito?')}</p>
             <p className="mt-1.5 text-[12px] leading-relaxed text-gray-500">
-              Your inquiries and saved details stay on this device. Nothing is sent to
-              Getmeds until you submit a request, and you can erase all of it below at any time.
+              {tr(
+                'Your inquiries and saved details stay on this device. Nothing is sent to Getmeds until you submit a request, and you can erase all of it below at any time.',
+                'Mananatili sa device na ito ang mga inquiry at naka-save na detalye mo. Walang ipapadala sa Getmeds hangga’t hindi ka nagsusumite ng request, at puwede mong burahin lahat sa ibaba anumang oras.',
+              )}
             </p>
             <button
               type="button"
@@ -634,7 +718,7 @@ function Account() {
               className="mt-3 rounded-full px-5 py-2.5 text-[12.5px] font-semibold text-white"
               style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
             >
-              Allow and save
+              {tr('Allow and save', 'Payagan at i-save')}
             </button>
           </div>
         )}
@@ -644,16 +728,18 @@ function Account() {
             showSections && (
               <div className="mb-4 flex items-center justify-between">
                 <p className="text-[15px] font-semibold text-gray-900">
-                  {tab === 'inquiries' ? 'Requests sent from this phone' : 'Saved details for forms'}
+                  {tab === 'inquiries'
+                    ? tr('Requests sent from this phone', 'Mga request na ipinadala mula sa phone na ito')
+                    : tr('Saved details for forms', 'Mga naka-save na detalye para sa form')}
                 </p>
                 <button type="button" onClick={() => setGuestOpen(null)} className="text-[12.5px] font-semibold text-gray-400">
-                  Close
+                  {tr('Close', 'Isara')}
                 </button>
               </div>
             )
           ) : app ? (
             <p className="mb-3 px-1 text-[15px] font-semibold text-gray-900">
-              Your requests
+              {tr('Your requests', 'Mga request mo')}
               {(points.signedIn ? serverRequests : counts.inquiries) > 0 && (
                 <span className="ml-1.5 text-[12px] font-medium text-gray-400">{points.signedIn ? serverRequests : counts.inquiries}</span>
               )}
@@ -679,17 +765,19 @@ function Account() {
                 <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F6FC]">
                   <i className="fa-solid fa-file-lines text-[18px]" style={{ color: BRAND }} />
                 </span>
-                <p className="text-[14px] font-semibold text-gray-900">No inquiries yet</p>
+                <p className="text-[14px] font-semibold text-gray-900">{tr('No inquiries yet', 'Wala pang inquiry')}</p>
                 <p className="mx-auto mt-1.5 max-w-[300px] text-[12px] leading-relaxed text-gray-500">
-                  When you send a request for a quote, it will appear here so you can see what you
-                  asked for and when.
+                  {tr(
+                    'When you send a request for a quote, it will appear here so you can see what you asked for and when.',
+                    'Kapag nagpadala ka ng request para sa quote, lalabas ito rito para makita mo kung ano at kailan ka nag-request.',
+                  )}
                 </p>
                 <a
                   href="/search"
                   className="mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12.5px] font-semibold text-white"
                   style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
                 >
-                  <i className="fa-solid fa-magnifying-glass text-[11px]" /> Find a medicine
+                  <i className="fa-solid fa-magnifying-glass text-[11px]" /> {tr('Find a medicine', 'Maghanap ng gamot')}
                 </a>
               </div>
             ) : (
@@ -709,7 +797,7 @@ function Account() {
                           className="shrink-0 rounded-full px-2.5 py-1 text-[10.5px] font-bold"
                           style={{ background: s.bg, color: s.fg }}
                         >
-                          {s.label}
+                          {tr(s.label, s.labelTl)}
                         </span>
                       </div>
 
@@ -724,11 +812,11 @@ function Account() {
                         </ul>
                       )}
 
-                      <p className="mt-2.5 text-[11.5px] leading-relaxed text-gray-400">{s.note}</p>
+                      <p className="mt-2.5 text-[11.5px] leading-relaxed text-gray-400">{tr(s.note, s.noteTl)}</p>
 
                       <div className="mt-3 flex items-center gap-3 border-t border-gray-50 pt-3">
                         <a href="/contact-us" className="text-[12px] font-semibold" style={{ color: BRAND }}>
-                          Follow up
+                          {tr('Follow up', 'Mag-follow up')}
                         </a>
                         <span className="text-gray-200">·</span>
                         <button
@@ -736,7 +824,7 @@ function Account() {
                           onClick={() => deleteInquiry(q.id)}
                           className="text-[12px] font-semibold text-gray-400"
                         >
-                          Remove from history
+                          {tr('Remove from history', 'Alisin sa history')}
                         </button>
                       </div>
                     </li>
@@ -754,7 +842,7 @@ function Account() {
             >
               <img src="/assets/pap-logo-sm.png" alt="Patient Assistance Program" loading="lazy" className="h-[38px] w-auto shrink-0" />
               <span className="min-w-0 flex-1 text-[11.5px] leading-snug text-gray-500">
-                Support programmes for long-course treatment
+                {tr('Support programmes for long-course treatment', 'Mga programang suporta para sa pangmatagalang gamutan')}
               </span>
               <i className="fa-solid fa-chevron-right shrink-0 text-[12px] text-gray-300" />
             </a>
@@ -764,10 +852,12 @@ function Account() {
         {/* ── Details ───────────────────────────────────────────────────── */}
         {tab === 'details' && showSections && !app && (
           <section className="rounded-[18px] border border-[#EEF1F5] bg-white p-4">
-            <p className="text-[13.5px] font-semibold text-gray-900">Your details</p>
+            <p className="text-[13.5px] font-semibold text-gray-900">{tr('Your details', 'Mga detalye mo')}</p>
             <p className="mt-1 text-[11.5px] leading-relaxed text-gray-500">
-              Saved on this phone and used to fill in inquiry forms, so you do not type them
-              again every time.
+              {tr(
+                'Saved on this phone and used to fill in inquiry forms, so you do not type them again every time.',
+                'Naka-save sa phone na ito at ginagamit para punan ang mga inquiry form, para hindi mo na i-type ulit tuwing magre-request.',
+              )}
             </p>
 
             <div className="mt-4 space-y-3.5">
@@ -780,7 +870,7 @@ function Account() {
                 </span>
                 <div className="flex flex-wrap gap-2">
                   <label className="cursor-pointer rounded-full border border-gray-200 px-3.5 py-2 text-[12px] font-semibold text-gray-600">
-                    {avatar ? 'Change picture' : 'Add a picture'}
+                    {avatar ? tr('Change picture', 'Palitan ang picture') : tr('Add a picture', 'Magdagdag ng picture')}
                     <input type="file" accept="image/*" className="hidden" onChange={onPickAvatar} />
                   </label>
                   {avatar && (
@@ -789,14 +879,14 @@ function Account() {
                       onClick={() => setDetails((d) => ({ ...d, avatar: undefined }))}
                       className="rounded-full px-3 py-2 text-[12px] font-semibold text-gray-400"
                     >
-                      Remove
+                      {tr('Remove', 'Alisin')}
                     </button>
                   )}
                 </div>
               </div>
 
               <div>
-                <label className={label}>Full name</label>
+                <label className={label}>{tr('Full name', 'Buong pangalan')}</label>
                 <input className={field} value={details.name || ''} onChange={(e) => setDetails((d) => ({ ...d, name: e.target.value }))} />
               </div>
               <div>
@@ -819,7 +909,7 @@ function Account() {
                   spreadsheet an inquiry lands in — so answering it once here
                   lets the request list stop asking it every time. */}
               <div>
-                <label className={label}>I am a</label>
+                <label className={label}>{tr('I am a', 'Ako ay')}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {USER_TYPES.map((t) => {
                     const on = details.userType === t.value;
@@ -837,7 +927,7 @@ function Account() {
                         }
                       >
                         <i className={`fa-solid ${t.icon} shrink-0 text-[13px]`} />
-                        <span className="leading-tight">{t.label}</span>
+                        <span className="leading-tight">{tr(t.label, t.labelTl ?? t.label)}</span>
                       </button>
                     );
                   })}
@@ -849,7 +939,7 @@ function Account() {
                   inquiry form from the same edit. */}
               {audience?.fields.map((f) => (
                 <div key={f.key}>
-                  <label className={label}>{f.label}</label>
+                  <label className={label}>{tr(f.label, f.labelTl ?? f.label)}</label>
                   {f.key === 'address' ? (
                     <textarea
                       rows={2}
@@ -882,16 +972,18 @@ function Account() {
                     <input className={field} value={details.contactName || ''} onChange={(e) => setDetails((d) => ({ ...d, contactName: e.target.value }))} />
                   </div>
                   <div className="flex-1">
-                    <label className={label}>Relationship</label>
-                    <input className={field} placeholder="e.g. Daughter" value={details.contactRelationship || ''} onChange={(e) => setDetails((d) => ({ ...d, contactRelationship: e.target.value }))} />
+                    <label className={label}>{tr('Relationship', 'Kaugnayan')}</label>
+                    <input className={field} placeholder={tr('e.g. Daughter', 'hal. Anak')} value={details.contactRelationship || ''} onChange={(e) => setDetails((d) => ({ ...d, contactRelationship: e.target.value }))} />
                   </div>
                 </div>
               )}
 
               {!audience && (
                 <p className="text-[11.5px] leading-relaxed text-gray-400">
-                  Choose one above and we&rsquo;ll keep only the details that audience is actually
-                  asked for.
+                  {tr(
+                    'Choose one above and we’ll keep only the details that audience is actually asked for.',
+                    'Pumili ng isa sa itaas at itatabi lang namin ang mga detalyeng talagang kailangan para doon.',
+                  )}
                 </p>
               )}
             </div>
@@ -911,12 +1003,12 @@ function Account() {
               style={{ background: savedFlash ? '#61A644' : 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
             >
               {savedFlash
-                ? '✓ Saved on this device'
+                ? tr('✓ Saved on this device', '✓ Na-save sa device na ito')
                 : busy
-                  ? 'Saving…'
+                  ? tr('Saving…', 'Sine-save…')
                   : consented === false
-                    ? 'Allow and save on this device'
-                    : 'Save details'}
+                    ? tr('Allow and save on this device', 'Payagan at i-save sa device na ito')
+                    : tr('Save details', 'I-save ang mga detalye')}
             </button>
           </section>
         )}
@@ -926,20 +1018,26 @@ function Account() {
         <div className="mt-8 border-t border-gray-200 pt-4">
           {app && points.signedIn ? (
             <p className="text-[11.5px] leading-relaxed text-gray-400">
-              Your details, patients, addresses, saved medicines, reminders, prescriptions and
-              request history are kept with Getmeds, so they are there on any phone you sign in
-              on. Your picture and your request list stay on this phone. See Privacy and data to
-              download or delete everything.
+              {tr(
+                'Your details, patients, addresses, saved medicines, reminders, prescriptions and request history are kept with Getmeds, so they are there on any phone you sign in on. Your picture and your request list stay on this phone. See Privacy and data to download or delete everything.',
+                'Ang mga detalye, pasyente, address, naka-save na gamot, paalala, reseta at request history mo ay nasa Getmeds, kaya makikita mo ang mga ito sa kahit anong phone na pag-log-in-an mo. Ang picture at request list mo ay nananatili sa phone na ito. Pumunta sa Privacy at data para i-download o i-delete ang lahat.',
+              )}
             </p>
           ) : (
             <p className="text-[11.5px] leading-relaxed text-gray-400">
-              Your inquiries and details are stored on this device only. They are not sent
-              to Getmeds until you submit a request, and they will not appear on your other devices.
-              {app && ' If you sign in, they are kept with Getmeds instead, so they follow you to any phone.'}
+              {tr(
+                'Your inquiries and details are stored on this device only. They are not sent to Getmeds until you submit a request, and they will not appear on your other devices.',
+                'Sa device na ito lang naka-store ang mga inquiry at detalye mo. Hindi ito ipapadala sa Getmeds hangga’t hindi ka nagsusumite ng request, at hindi ito lalabas sa iba mong device.',
+              )}
+              {app &&
+                tr(
+                  ' If you sign in, they are kept with Getmeds instead, so they follow you to any phone.',
+                  ' Kapag nag-log in ka, sa Getmeds na ito itatabi, kaya kasama mo ito sa kahit anong phone.',
+                )}
             </p>
           )}
           <button type="button" onClick={wipe} className="mt-3 text-[12px] font-semibold text-gray-400 underline">
-            Clear saved data on this device
+            {tr('Clear saved data on this device', 'Burahin ang naka-save na data sa device na ito')}
           </button>
         </div>
       </main>

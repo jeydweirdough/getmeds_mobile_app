@@ -1,3 +1,4 @@
+import { translate as t } from '@/lib/i18n';
 /*
  * Getmeds cookie consent, and website analytics that only run after a "yes".
  * Port of getmeds_frontend/public/components/analytics-consent.js (loaded on every
@@ -466,16 +467,18 @@ export function initGetmedsConsent(): void {
     if (banner || !document.body) return;
     banner = mount(
       '<section class="gmc-root gmc-banner" role="region" aria-labelledby="gmc-banner-title">' +
-        '<p class="gmc-eyebrow">' + ICON_COOKIE + 'Your privacy, your choice</p>' +
-        '<h2 class="gmc-title" id="gmc-banner-title">May we use analytics cookies?</h2>' +
-        '<p class="gmc-text">They show us which pages people find useful, so we can make Getmeds better. ' +
-          'They stay off unless you say yes. We never read what you type into forms, and we never sell your data. ' +
+        '<p class="gmc-eyebrow">' + ICON_COOKIE + t('Your privacy, your choice', 'Ang privacy mo, ikaw ang pipili') + '</p>' +
+        '<h2 class="gmc-title" id="gmc-banner-title">' + t('May we use analytics cookies?', 'Puwede ba naming gamitin ang analytics cookies?') + '</h2>' +
+        '<p class="gmc-text">' + t(
+          'They show us which pages people find useful, so we can make Getmeds better. They stay off unless you say yes. We never read what you type into forms, and we never sell your data. ',
+          'Ipinapakita nito kung aling mga page ang nakakatulong, para mas mapabuti namin ang Getmeds. Naka-off ito hangga\'t hindi ka pumapayag. Hindi namin binabasa ang tina-type mo sa mga form, at hindi namin ibinebenta ang data mo. ',
+        ) +
           '<a href="' + PRIVACY_URL + '">Privacy Policy</a></p>' +
         '<div class="gmc-actions">' +
-          '<button type="button" class="gmc-btn gmc-btn-quiet" data-gmc="reject">Reject</button>' +
-          '<button type="button" class="gmc-btn gmc-btn-primary" data-gmc="accept">Accept</button>' +
+          '<button type="button" class="gmc-btn gmc-btn-quiet" data-gmc="reject">' + t('Reject', 'Tanggihan') + '</button>' +
+          '<button type="button" class="gmc-btn gmc-btn-primary" data-gmc="accept">' + t('Accept', 'Tanggapin') + '</button>' +
         '</div>' +
-        '<button type="button" class="gmc-link" data-gmc="manage">Manage preferences</button>' +
+        '<button type="button" class="gmc-link" data-gmc="manage">' + t('Manage preferences', 'Ayusin ang preferences') + '</button>' +
       '</section>'
     );
     wire(banner);
@@ -500,45 +503,50 @@ export function initGetmedsConsent(): void {
         '<div class="gmc-modal" role="dialog" aria-modal="true" aria-labelledby="gmc-prefs-title" ' +
           'aria-describedby="gmc-prefs-intro">' +
           '<div class="gmc-modal-head">' +
-            '<h2 class="gmc-title" id="gmc-prefs-title">Cookie preferences</h2>' +
-            '<button type="button" class="gmc-close" data-gmc="close" aria-label="Close">' + ICON_CLOSE + '</button>' +
+            '<h2 class="gmc-title" id="gmc-prefs-title">' + t('Cookie preferences', 'Mga cookie preference') + '</h2>' +
+            '<button type="button" class="gmc-close" data-gmc="close" aria-label="' + t('Close', 'Isara') + '">' + ICON_CLOSE + '</button>' +
           '</div>' +
-          '<p class="gmc-text" id="gmc-prefs-intro">Choose what Getmeds may use on this browser. You can change ' +
-            'this any time from <strong>Cookie settings</strong> at the bottom of every page, or under More in ' +
-            'the Getmeds app.</p>' +
+          '<p class="gmc-text" id="gmc-prefs-intro">' + t(
+            'Choose what Getmeds may use on this browser. You can change this any time from <strong>Cookie settings</strong> at the bottom of every page, or under More in the Getmeds app.',
+            'Piliin kung ano ang puwedeng gamitin ng Getmeds sa browser na ito. Mababago mo ito anumang oras sa <strong>Cookie settings</strong> sa ibaba ng bawat page, o sa More sa Getmeds app.',
+          ) + '</p>' +
           (signal
-            ? '<p class="gmc-note">Your browser is sending a privacy signal (Global Privacy Control or Do Not ' +
-              'Track), so we have kept analytics off. You can still switch them on here if you like.</p>'
+            ? '<p class="gmc-note">' + t(
+              'Your browser is sending a privacy signal (Global Privacy Control or Do Not Track), so we have kept analytics off. You can still switch them on here if you like.',
+              'Nagpapadala ang browser mo ng privacy signal (Global Privacy Control o Do Not Track), kaya naka-off ang analytics. Puwede mo pa rin itong i-on dito kung gusto mo.',
+            ) + '</p>'
             : '') +
           '<section class="gmc-cat">' +
-            '<div class="gmc-cat-head"><h3 class="gmc-cat-name">Strictly necessary</h3>' +
-              '<span class="gmc-pill">Always on</span></div>' +
-            '<p class="gmc-cat-desc">These keep the site working: your cart, signing in, security checks on forms, ' +
-              'and remembering this choice. They can\'t be switched off.</p>' +
+            '<div class="gmc-cat-head"><h3 class="gmc-cat-name">' + t('Strictly necessary', 'Talagang kailangan') + '</h3>' +
+              '<span class="gmc-pill">' + t('Always on', 'Laging naka-on') + '</span></div>' +
+            '<p class="gmc-cat-desc">' + t(
+              'These keep the site working: your cart, signing in, security checks on forms, and remembering this choice. They can\'t be switched off.',
+              'Ito ang nagpapagana sa site: ang cart mo, pag-sign in, security check sa mga form, at pag-alala sa pinili mo. Hindi ito puwedeng i-off.',
+            ) + '</p>' +
           '</section>' +
           '<section class="gmc-cat">' +
             '<div class="gmc-cat-head"><label class="gmc-cat-name" for="gmc-analytics">Analytics</label>' +
               '<input type="checkbox" role="switch" id="gmc-analytics" class="gmc-switch" ' +
                 'aria-describedby="gmc-analytics-desc"' + (current && current.analytics ? ' checked' : '') + '></div>' +
             '<div class="gmc-cat-desc" id="gmc-analytics-desc">' +
-              '<p>These help us see which pages are useful and which ones people miss. If you allow them, we count:</p>' +
+              '<p>' + t('These help us see which pages are useful and which ones people miss. If you allow them, we count:', 'Tinutulungan kami nito na makita kung aling mga page ang nakakatulong at alin ang hindi napapansin. Kung papayag ka, binibilang namin ang:') + '</p>' +
               '<ul>' +
-                '<li>the pages you open, how long you stay, and how far you scroll</li>' +
-                '<li>the links and buttons you click</li>' +
-                '<li>your device type, browser, language, and the site that sent you here</li>' +
+                '<li>' + t('the pages you open, how long you stay, and how far you scroll', 'mga page na binubuksan mo, gaano ka katagal doon, at gaano kalayo ka nag-scroll') + '</li>' +
+                '<li>' + t('the links and buttons you click', 'mga link at button na kini-click mo') + '</li>' +
+                '<li>' + t('your device type, browser, language, and the site that sent you here', 'uri ng device mo, browser, wika, at ang site na nagdala sa iyo rito') + '</li>' +
               '</ul>' +
-              '<p>This is tied to a random ID stored on this browser, never to your name, email or IP address, ' +
-                'and only the Getmeds team sees it. Each night the day\'s visits are added into anonymous totals ' +
-                'and the individual records are deleted; the totals are kept for 13 months. Switching this off ' +
-                'also erases any records still held for this browser.</p>' +
+              '<p>' + t(
+                'This is tied to a random ID stored on this browser, never to your name, email or IP address, and only the Getmeds team sees it. Each night the day\'s visits are added into anonymous totals and the individual records are deleted; the totals are kept for 13 months. Switching this off also erases any records still held for this browser.',
+                'Nakakabit ito sa isang random ID na naka-save sa browser na ito, hindi sa pangalan, email o IP address mo, at ang Getmeds team lang ang nakakakita nito. Gabi-gabi, pinagsasama ang mga pagbisita sa araw na iyon bilang anonymous na kabuuan at binubura ang bawat record; itinatago ang kabuuan nang 13 buwan. Kapag in-off mo ito, mabubura rin ang anumang record na naiwan para sa browser na ito.',
+              ) + '</p>' +
             '</div>' +
           '</section>' +
           '<div class="gmc-modal-actions">' +
-            '<button type="button" class="gmc-btn gmc-btn-quiet" data-gmc="reject">Reject all</button>' +
-            '<button type="button" class="gmc-btn gmc-btn-quiet" data-gmc="save">Save choices</button>' +
-            '<button type="button" class="gmc-btn gmc-btn-primary" data-gmc="accept">Accept all</button>' +
+            '<button type="button" class="gmc-btn gmc-btn-quiet" data-gmc="reject">' + t('Reject all', 'Tanggihan lahat') + '</button>' +
+            '<button type="button" class="gmc-btn gmc-btn-quiet" data-gmc="save">' + t('Save choices', 'I-save ang pinili') + '</button>' +
+            '<button type="button" class="gmc-btn gmc-btn-primary" data-gmc="accept">' + t('Accept all', 'Tanggapin lahat') + '</button>' +
           '</div>' +
-          '<p class="gmc-foot"><a href="' + PRIVACY_URL + '">Read our Privacy Policy</a></p>' +
+          '<p class="gmc-foot"><a href="' + PRIVACY_URL + '">' + t('Read our Privacy Policy', 'Basahin ang aming Privacy Policy') + '</a></p>' +
         '</div>' +
       '</div>'
     );
@@ -588,8 +596,10 @@ export function initGetmedsConsent(): void {
     if (notice || !document.body) return;
     notice = mount(
       '<div class="gmc-root gmc-notice" role="status">' +
-        '<p><strong>Analytics are off.</strong> Your browser asked sites not to track you, so nothing about ' +
-          'this visit is counted.</p>' +
+        '<p>' + t(
+          '<strong>Analytics are off.</strong> Your browser asked sites not to track you, so nothing about this visit is counted.',
+          '<strong>Naka-off ang analytics.</strong> Hiniling ng browser mo na huwag kang i-track, kaya walang binibilang sa pagbisitang ito.',
+        ) + '</p>' +
         '<div class="gmc-notice-actions">' +
           '<button type="button" data-gmc="manage">Cookie settings</button>' +
           '<button type="button" data-gmc="dismiss">OK</button>' +

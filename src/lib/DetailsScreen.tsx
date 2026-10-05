@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { SavedDetails } from './accountStore';
 import { USER_TYPES, typeByValue } from './audienceTypes';
+import { useLang } from '@/lib/i18n';
 
 /**
  * DetailsScreen.tsx
@@ -40,18 +41,19 @@ interface Props {
 const PH_MOBILE = /^(\+?63|0)?9\d{9}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function validate(d: SavedDetails): Errors {
+function validate(d: SavedDetails, tr: (en: string, tl: string) => string): Errors {
   const e: Errors = {};
-  if (!d.name?.trim()) e.name = 'Enter your full name.';
+  if (!d.name?.trim()) e.name = tr('Enter your full name.', 'Ilagay ang buong pangalan mo.');
   const phone = (d.phone || '').replace(/[\s\-()]/g, '');
-  if (!phone) e.phone = 'Enter a mobile number so our team can reply.';
-  else if (!PH_MOBILE.test(phone)) e.phone = 'Use a Philippine mobile number, like 0917 123 4567.';
-  if (d.email && !EMAIL.test(d.email.trim())) e.email = 'Check the email address.';
+  if (!phone) e.phone = tr('Enter a mobile number so our team can reply.', 'Maglagay ng mobile number para makasagot ang team namin.');
+  else if (!PH_MOBILE.test(phone)) e.phone = tr('Use a Philippine mobile number, like 0917 123 4567.', 'Gumamit ng Philippine mobile number, gaya ng 0917 123 4567.');
+  if (d.email && !EMAIL.test(d.email.trim())) e.email = tr('Check the email address.', 'Pakisuri ang email address.');
   const audience = typeByValue(d.userType);
   for (const f of audience?.fields ?? []) {
-    if (f.required && !String(d[f.key] ?? '').trim()) e[f.key] = `Enter your ${f.label.toLowerCase()}.`;
+    if (f.required && !String(d[f.key] ?? '').trim())
+      e[f.key] = tr(`Enter your ${f.label.toLowerCase()}.`, `Ilagay ang ${(f.labelTl ?? f.label).toLowerCase()} mo.`);
   }
-  if (d.age && !/^\d{1,3}$/.test(d.age)) e.age = 'Age in years, numbers only.';
+  if (d.age && !/^\d{1,3}$/.test(d.age)) e.age = tr('Age in years, numbers only.', 'Edad sa taon, numero lang.');
   return e;
 }
 
@@ -69,11 +71,12 @@ function Row({
   error?: string;
   children: React.ReactNode;
 }) {
+  const { tr } = useLang();
   return (
     <div className="border-t border-[#EEF1F5] px-4 py-3 first:border-t-0" data-field={id}>
       <label htmlFor={id} className="flex items-baseline justify-between text-[11.5px] font-medium text-gray-500">
         {label}
-        {optional && <span className="text-[10.5px] font-normal text-gray-400">Optional</span>}
+        {optional && <span className="text-[10.5px] font-normal text-gray-400">{tr('Optional', 'Opsyonal')}</span>}
       </label>
       {children}
       {error && (
@@ -112,6 +115,7 @@ export default function DetailsScreen({
   onClose,
   busy,
 }: Props) {
+  const { tr } = useLang();
   const [errors, setErrors] = useState<Errors>({});
   const [saved, setSaved] = useState(false);
   const pushed = useRef(false);
@@ -151,7 +155,7 @@ export default function DetailsScreen({
   };
 
   const save = async () => {
-    const found = validate(details);
+    const found = validate(details, tr);
     setErrors(found);
     const first = Object.keys(found)[0];
     if (first) {
@@ -173,12 +177,12 @@ export default function DetailsScreen({
         className="flex items-center gap-2 border-b border-[#E7ECF2] bg-white px-2 pb-2.5"
         style={{ paddingTop: 'calc(10px + var(--gm-safe-top))' }}
       >
-        <button type="button" onClick={close} aria-label="Back" className="flex h-10 w-10 items-center justify-center rounded-full text-gray-700">
+        <button type="button" onClick={close} aria-label={tr('Back', 'Bumalik')} className="flex h-10 w-10 items-center justify-center rounded-full text-gray-700">
           <i className="fa-solid fa-arrow-left text-[16px]" />
         </button>
         <div className="min-w-0 flex-1">
-          <p id="details-title" className="text-[16px] font-semibold text-gray-900">My details</p>
-          <p className="text-[11.5px] text-gray-500">Used to fill in your requests</p>
+          <p id="details-title" className="text-[16px] font-semibold text-gray-900">{tr('My details', 'Mga detalye ko')}</p>
+          <p className="text-[11.5px] text-gray-500">{tr('Used to fill in your requests', 'Ginagamit para punan ang mga request mo')}</p>
         </div>
       </header>
 
@@ -186,7 +190,7 @@ export default function DetailsScreen({
       <div className="flex-1 space-y-5 overflow-y-auto px-4 pb-6 pt-5">
         {/* Picture */}
         <div className="flex items-center gap-4 rounded-[20px] border border-[#EEF1F5] bg-white p-4">
-          <label className="relative shrink-0 cursor-pointer" aria-label={avatar ? 'Change picture' : 'Add a picture'}>
+          <label className="relative shrink-0 cursor-pointer" aria-label={avatar ? tr('Change picture', 'Palitan ang picture') : tr('Add a picture', 'Magdagdag ng picture')}>
             <span
               className="flex h-[64px] w-[64px] items-center justify-center overflow-hidden rounded-full text-[24px] font-bold text-white"
               style={{ background: BRAND }}
@@ -199,11 +203,11 @@ export default function DetailsScreen({
             <input type="file" accept="image/*" className="hidden" onChange={onPickAvatar} />
           </label>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[15px] font-semibold text-gray-900">{details.name || 'Your name'}</p>
-            <p className="text-[12px] text-gray-500">{audience?.label ?? 'Choose who you are below'}</p>
+            <p className="truncate text-[15px] font-semibold text-gray-900">{details.name || tr('Your name', 'Pangalan mo')}</p>
+            <p className="text-[12px] text-gray-500">{audience ? tr(audience.label, audience.labelTl ?? audience.label) : tr('Choose who you are below', 'Piliin sa ibaba kung sino ka')}</p>
             {avatar && (
               <button type="button" onClick={onRemoveAvatar} className="mt-1 text-[11.5px] font-semibold text-gray-400">
-                Remove picture
+                {tr('Remove picture', 'Alisin ang picture')}
               </button>
             )}
           </div>
@@ -212,10 +216,10 @@ export default function DetailsScreen({
         {/* Who */}
         <section className="space-y-2">
           <div className="px-1">
-            <h2 className="text-[13px] font-semibold text-gray-900">I&rsquo;m requesting as</h2>
-            <p className="mt-0.5 text-[11.5px] text-gray-500">Sends your requests to the right Getmeds team.</p>
+            <h2 className="text-[13px] font-semibold text-gray-900">{tr('I’m requesting as', 'Nagre-request ako bilang')}</h2>
+            <p className="mt-0.5 text-[11.5px] text-gray-500">{tr('Sends your requests to the right Getmeds team.', 'Ipinapadala ang mga request mo sa tamang Getmeds team.')}</p>
           </div>
-          <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label="I'm requesting as">
+          <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={tr('I’m requesting as', 'Nagre-request ako bilang')}>
             {USER_TYPES.map((t) => {
               const on = details.userType === t.value;
               return (
@@ -234,7 +238,7 @@ export default function DetailsScreen({
                   >
                     <i className={`fa-solid ${t.icon} text-[13px]`} />
                   </span>
-                  <span className="text-[12.5px] font-semibold leading-tight text-gray-800">{t.label}</span>
+                  <span className="text-[12.5px] font-semibold leading-tight text-gray-800">{tr(t.label, t.labelTl ?? t.label)}</span>
                   {on && <i className="fa-solid fa-circle-check absolute right-3 top-3 text-[15px]" style={{ color: BRAND }} />}
                 </button>
               );
@@ -243,8 +247,11 @@ export default function DetailsScreen({
         </section>
 
         {/* Contact */}
-        <Card title="Contact information" note="How our team replies with availability and a quote.">
-          <Row id="name" label="Full name" error={errors.name}>
+        <Card
+          title={tr('Contact information', 'Contact information')}
+          note={tr('How our team replies with availability and a quote.', 'Dito sasagot ang team namin tungkol sa availability at quote.')}
+        >
+          <Row id="name" label={tr('Full name', 'Buong pangalan')} error={errors.name}>
             <input id="name" className={input} autoComplete="name" placeholder="Juan Dela Cruz" value={details.name || ''} onChange={set('name')} />
           </Row>
           <Row id="phone" label="Mobile number" error={errors.phone}>
@@ -270,24 +277,27 @@ export default function DetailsScreen({
         {/* Patients: where it goes, and who to call */}
         {audience?.kind === 'patient' && (
           <>
-            <Card title="Delivery" note="Where the medicine goes once your request is confirmed.">
-              <Row id="address" label="Delivery address" error={errors.address}>
+            <Card
+              title={tr('Delivery', 'Delivery')}
+              note={tr('Where the medicine goes once your request is confirmed.', 'Kung saan dadalhin ang gamot kapag nakumpirma na ang request mo.')}
+            >
+              <Row id="address" label={tr('Delivery address', 'Address para sa delivery')} error={errors.address}>
                 <textarea
                   id="address"
                   rows={3}
                   className={`${input} resize-none leading-snug`}
                   autoComplete="street-address"
-                  placeholder="House no., street, barangay, city, province"
+                  placeholder={tr('House no., street, barangay, city, province', 'Blg. ng bahay, kalye, barangay, lungsod, probinsya')}
                   value={details.address || ''}
                   onChange={set('address')}
                 />
               </Row>
-              <Row id="age" label="Patient's age" error={errors.age}>
+              <Row id="age" label={tr('Patient’s age', 'Edad ng pasyente')} error={errors.age}>
                 <input
                   id="age"
                   className={input}
                   inputMode="numeric"
-                  placeholder="e.g. 54"
+                  placeholder={tr('e.g. 54', 'hal. 54')}
                   value={details.age || ''}
                   onChange={(e) => {
                     e.target.value = e.target.value.replace(/\D/g, '').slice(0, 3);
@@ -296,12 +306,15 @@ export default function DetailsScreen({
                 />
               </Row>
             </Card>
-            <Card title="Contact person" note="Someone we can reach if the patient can't answer.">
-              <Row id="contactName" label="Name" optional>
+            <Card
+              title={tr('Contact person', 'Contact person')}
+              note={tr('Someone we can reach if the patient can’t answer.', 'Taong matatawagan namin kung hindi makasagot ang pasyente.')}
+            >
+              <Row id="contactName" label={tr('Name', 'Pangalan')} optional>
                 <input id="contactName" className={input} placeholder="Maria Dela Cruz" value={details.contactName || ''} onChange={set('contactName')} />
               </Row>
-              <Row id="contactRelationship" label="Relationship to the patient" optional>
-                <input id="contactRelationship" className={input} placeholder="e.g. Daughter" value={details.contactRelationship || ''} onChange={set('contactRelationship')} />
+              <Row id="contactRelationship" label={tr('Relationship to the patient', 'Kaugnayan sa pasyente')} optional>
+                <input id="contactRelationship" className={input} placeholder={tr('e.g. Daughter', 'hal. Anak')} value={details.contactRelationship || ''} onChange={set('contactRelationship')} />
               </Row>
             </Card>
           </>
@@ -309,9 +322,12 @@ export default function DetailsScreen({
 
         {/* Doctors, pharmacies, hospitals: the columns their team's sheet has */}
         {audience && audience.kind !== 'patient' && audience.fields.length > 0 && (
-          <Card title="Work details" note="Helps the right team prepare your quote.">
+          <Card
+            title={tr('Work details', 'Detalye ng trabaho')}
+            note={tr('Helps the right team prepare your quote.', 'Para maihanda ng tamang team ang quote mo.')}
+          >
             {audience.fields.map((f) => (
-              <Row key={f.key} id={f.key} label={f.label} optional={!f.required} error={errors[f.key]}>
+              <Row key={f.key} id={f.key} label={tr(f.label, f.labelTl ?? f.label)} optional={!f.required} error={errors[f.key]}>
                 <input id={f.key} className={input} value={(details[f.key] as string) || ''} onChange={set(f.key)} />
               </Row>
             ))}
@@ -320,7 +336,10 @@ export default function DetailsScreen({
 
         <p className="flex gap-2 px-1 text-[11.5px] leading-relaxed text-gray-500">
           <i className="fa-solid fa-lock mt-[3px] text-[10px] text-gray-400" />
-          Saved only on this phone. Getmeds sees these details only when you send a request.
+          {tr(
+            'Saved only on this phone. Getmeds sees these details only when you send a request.',
+            'Sa phone na ito lang naka-save. Makikita lang ng Getmeds ang mga detalyeng ito kapag nagpadala ka ng request.',
+          )}
         </p>
       </div>
 
@@ -336,7 +355,13 @@ export default function DetailsScreen({
           className="w-full rounded-full py-3.5 text-[14px] font-semibold text-white disabled:opacity-70"
           style={{ background: saved ? '#61A644' : GRADIENT }}
         >
-          {saved ? '✓ Saved' : busy ? 'Saving…' : consented === false ? 'Allow and save on this phone' : 'Save details'}
+          {saved
+            ? tr('✓ Saved', '✓ Na-save na')
+            : busy
+              ? tr('Saving…', 'Sine-save…')
+              : consented === false
+                ? tr('Allow and save on this phone', 'Payagan at i-save sa phone na ito')
+                : tr('Save details', 'I-save ang mga detalye')}
         </button>
       </div>
     </div>

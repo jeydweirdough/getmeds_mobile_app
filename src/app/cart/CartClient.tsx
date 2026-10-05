@@ -28,6 +28,7 @@ import { loadDetails, type SavedDetails } from '@/lib/accountStore';
 import PointsCard, { usePoints } from '@/lib/PointsCard';
 import { SignInSheet } from '@/lib/ProfileCard';
 import { addRx, useAccountData, type AccountData } from '@/lib/accountApi';
+import { useLang } from '@/lib/i18n';
 import PatientsScreen from '@/lib/account/PatientsScreen';
 import AddressesScreen from '@/lib/account/AddressesScreen';
 import { WalletPicker, prepareForWallet } from '@/lib/account/RxWalletScreen';
@@ -132,6 +133,7 @@ function Cart({
   /** Just signed in from the quote button: carry on to the form without a second tap. */
   resume?: boolean;
 }) {
+  const { tr } = useLang();
   const [items, setItems] = useState<CartItem[] | null>(null);
   const [step, setStep] = useState<Step>('list');
   const [type, setType] = useState<TypeDef | null>(null);
@@ -361,8 +363,7 @@ function Cart({
   }, [resume, items, type]);
 
   useEffect(() => {
-    document.title = 'Your Request List | Getmeds';
-
+    // The tab title is set by App.tsx, in the chosen language.
     refresh();
     window.addEventListener(CART_CHANGED_EVENT, refresh);
 
@@ -414,14 +415,17 @@ function Cart({
       if (missing.length) {
         return setError(
           missing.length === 1
-            ? `Please upload the prescription for ${missing[0].name}.`
-            : `Please upload a prescription for each of: ${missing.map((m) => m.name).join(', ')}.`
+            ? tr(`Please upload the prescription for ${missing[0].name}.`, `Paki-upload ang reseta para sa ${missing[0].name}.`)
+            : tr(
+                `Please upload a prescription for each of: ${missing.map((m) => m.name).join(', ')}.`,
+                `Paki-upload ang reseta para sa bawat isa sa: ${missing.map((m) => m.name).join(', ')}.`
+              )
         );
       }
-      if (!idFile) return setError("Please upload the patient's valid ID.");
-      if (!sameAsPatient && !form.contactName.trim()) return setError("Please provide the contact person's full name.");
-      if (!terms) return setError('Please confirm the information provided is accurate.');
-      if (!privacy) return setError('Please consent to the Privacy Policy to proceed.');
+      if (!idFile) return setError(tr("Please upload the patient's valid ID.", 'Paki-upload ang valid ID ng pasyente.'));
+      if (!sameAsPatient && !form.contactName.trim()) return setError(tr("Please provide the contact person's full name.", 'Pakilagay ang buong pangalan ng contact person.'));
+      if (!terms) return setError(tr('Please confirm the information provided is accurate.', 'Pakikumpirma na tama ang impormasyong ibinigay.'));
+      if (!privacy) return setError(tr('Please consent to the Privacy Policy to proceed.', 'Pumayag muna sa Privacy Policy para magpatuloy.'));
     }
 
     setSending(true);
@@ -447,10 +451,12 @@ function Cart({
         const bytes = estimateUploadBytes(prepared.map((x) => x.file));
         if (bytes > MAX_UPLOAD_BYTES) {
           setSending(false);
-          return setError(
+          return setError(tr(
             `Your attachments are too large to send together (about ${(bytes / 1024 / 1024).toFixed(1)} MB). ` +
-            'Please send fewer products in one request, or attach smaller files.'
-          );
+            'Please send fewer products in one request, or attach smaller files.',
+            `Masyadong malaki ang mga attachment para maipadala nang sabay (mga ${(bytes / 1024 / 1024).toFixed(1)} MB). ` +
+            'Bawasan ang mga produkto sa isang request, o mag-attach ng mas maliliit na file.'
+          ));
         }
 
         for (const { file, category } of prepared) {
@@ -557,12 +563,15 @@ function Cart({
           try { sessionStorage.removeItem(REFILL_KEY); } catch { /* storage blocked */ }
         }
         if (result.status === 'sent' && toWallet.length) {
-          setWalletNote('Saving your prescription to your wallet…');
+          setWalletNote(tr('Saving your prescription to your wallet…', 'Sine-save ang reseta mo sa iyong wallet…'));
           saveUploadsToWallet(toWallet, patientName || form.name.trim() || undefined).then((n) =>
             setWalletNote(
               n === toWallet.length
-                ? 'Your prescription is saved in your wallet for next time.'
-                : 'Your request was sent, but we could not save the prescription to your wallet. Add it from Account, Prescription wallet.'
+                ? tr('Your prescription is saved in your wallet for next time.', 'Naka-save na ang reseta mo sa wallet para sa susunod.')
+                : tr(
+                    'Your request was sent, but we could not save the prescription to your wallet. Add it from Account, Prescription wallet.',
+                    'Naipadala ang request mo, pero hindi namin na-save ang reseta sa iyong wallet. Idagdag ito sa Account, Prescription wallet.'
+                  )
             )
           );
         }
@@ -574,7 +583,7 @@ function Cart({
       await clearCart();
       setStep('done');
     } catch (err: any) {
-      setError(err?.message || 'Something went wrong. Please try again.');
+      setError(err?.message || tr('Something went wrong. Please try again.', 'Nagkaproblema. Pakisubukan ulit.'));
     } finally {
       setSending(false);
     }
@@ -600,12 +609,20 @@ function Cart({
               <i className="fa-solid fa-check text-2xl text-green-600"></i>
             </div>
             <h1 className="text-xl font-semibold text-gray-900">
-              {queued ? 'Saved — we’ll send it shortly' : 'Request sent'}
+              {queued
+                ? tr('Saved — we’ll send it shortly', 'Naka-save — ipapadala namin ito maya-maya')
+                : tr('Request sent', 'Naipadala na ang request')}
             </h1>
             <p className="mt-2 max-w-sm text-[13.5px] leading-relaxed text-gray-500">
               {queued
-                ? 'You were offline, so your request is saved on this device and will be sent automatically as soon as you have a connection.'
-                : 'Our team will get back to you with availability and pricing. Prescription items still need a valid prescription.'}
+                ? tr(
+                    'You were offline, so your request is saved on this device and will be sent automatically as soon as you have a connection.',
+                    'Offline ka kanina, kaya naka-save ang request mo sa device na ito at awtomatiko itong ipapadala kapag may connection ka na.'
+                  )
+                : tr(
+                    'Our team will get back to you with availability and pricing. Prescription items still need a valid prescription.',
+                    'Babalikan ka ng aming team tungkol sa availability at presyo. Kailangan pa rin ng valid na reseta para sa mga gamot na may reseta.'
+                  )}
             </p>
             {walletNote && (
               <p className="mt-3 flex max-w-sm items-start gap-2 rounded-2xl bg-[#F6F7F9] px-3.5 py-2.5 text-left text-[12px] leading-snug text-gray-600">
@@ -615,17 +632,20 @@ function Cart({
             )}
             <a href="/product-range" className="mt-6 rounded-full px-7 py-3 text-sm font-semibold text-white"
               style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}>
-              Keep browsing
+              {tr('Keep browsing', 'Mag-browse pa')}
             </a>
           </div>
         ) : step === 'type' ? (
           <>
             <button type="button" onClick={() => setStep('list')} className="mb-4 self-start text-[13px] font-semibold text-gray-400">
-              <i className="fa-solid fa-chevron-left mr-1.5 text-[11px]"></i>Back to list
+              <i className="fa-solid fa-chevron-left mr-1.5 text-[11px]"></i>{tr('Back to list', 'Bumalik sa listahan')}
             </button>
-            <h1 className="text-2xl font-semibold text-gray-900">Who is requesting?</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">{tr('Who is requesting?', 'Sino ang nagre-request?')}</h1>
             <p className="mt-1.5 text-sm text-gray-500">
-              This tells us which team should handle your {count} item{count === 1 ? '' : 's'}.
+              {tr(
+                `This tells us which team should handle your ${count} item${count === 1 ? '' : 's'}.`,
+                `Para malaman namin kung aling team ang hahawak sa iyong ${count} ${count === 1 ? 'item' : 'mga item'}.`
+              )}
             </p>
 
             <div className="mt-6 space-y-3">
@@ -642,7 +662,7 @@ function Cart({
                     style={{ background: 'linear-gradient(135deg,#eaf6fd,#eef7ea)' }}>
                     <i className={`fa-solid ${t.icon} text-[15px]`} style={{ color: '#1D9FDA' }}></i>
                   </span>
-                  <span className="flex-1 text-[14px] font-semibold text-gray-800">{t.label}</span>
+                  <span className="flex-1 text-[14px] font-semibold text-gray-800">{tr(t.label, t.labelTl ?? t.label)}</span>
                   <i className="fa-solid fa-chevron-right text-[12px] text-gray-300"></i>
                 </button>
               ))}
@@ -651,26 +671,29 @@ function Cart({
         ) : step === 'form' && type ? (
           <>
             <button type="button" onClick={() => setStep('type')} className="mb-4 self-start text-[13px] font-semibold text-gray-400">
-              <i className="fa-solid fa-chevron-left mr-1.5 text-[11px]"></i>Change type
+              <i className="fa-solid fa-chevron-left mr-1.5 text-[11px]"></i>{tr('Change type', 'Palitan ang type')}
             </button>
-            <h1 className="text-2xl font-semibold text-gray-900">Request a quote</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">{tr('Request a quote', 'Humingi ng quote')}</h1>
             <p className="mt-1.5 text-sm text-gray-500">
-              {type.label} · {count} product{count === 1 ? '' : 's'}
+              {tr(type.label, type.labelTl ?? type.label)} · {tr(
+                `${count} product${count === 1 ? '' : 's'}`,
+                `${count} ${count === 1 ? 'produkto' : 'mga produkto'}`
+              )}
             </p>
 
             <form onSubmit={submit} className="mt-6 space-y-3">
               {member && type.kind === 'patient' && (
                 <div>
                   <div className="mb-1.5 flex items-center justify-between px-0.5">
-                    <p className="text-[12.5px] font-semibold text-gray-700">Ordering for</p>
+                    <p className="text-[12.5px] font-semibold text-gray-700">{tr('Ordering for', 'Para kay')}</p>
                     <button id="cart-add-patient" type="button" onClick={() => setScreen('patients')}
                       className="text-[12px] font-semibold text-[#1D9FDA]">
-                      <i className="fa-solid fa-plus mr-1 text-[10px]"></i>Add patient
+                      <i className="fa-solid fa-plus mr-1 text-[10px]"></i>{tr('Add patient', 'Magdagdag ng pasyente')}
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     <Chip id="cart-for-me" on={!forKey} onClick={() => orderFor('')}>
-                      <i className="fa-solid fa-user text-[10px]"></i>Me
+                      <i className="fa-solid fa-user text-[10px]"></i>{tr('Me', 'Ako')}
                     </Chip>
                     {patients.map((p) => (
                       <Chip key={p._key} id={`cart-for-${p._key}`} on={forKey === p._key} onClick={() => orderFor(p._key)}>
@@ -683,7 +706,7 @@ function Cart({
               )}
 
               <input id="cart-name" required className={field}
-                placeholder={member && forKey ? "Patient's name *" : 'Your name *'} value={form.name}
+                placeholder={member && forKey ? tr("Patient's name *", 'Pangalan ng pasyente *') : tr('Your name *', 'Iyong pangalan *')} value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })} />
 
               {type.fields.map((f) => (
@@ -691,10 +714,10 @@ function Cart({
                   {member && f.key === 'address' && (
                     <div>
                       <div className="mb-1.5 flex items-center justify-between px-0.5">
-                        <p className="text-[12.5px] font-semibold text-gray-700">Deliver to</p>
+                        <p className="text-[12.5px] font-semibold text-gray-700">{tr('Deliver to', 'Ide-deliver sa')}</p>
                         <button id="cart-add-address" type="button" onClick={() => setScreen('addresses')}
                           className="text-[12px] font-semibold text-[#1D9FDA]">
-                          <i className="fa-solid fa-plus mr-1 text-[10px]"></i>Add address
+                          <i className="fa-solid fa-plus mr-1 text-[10px]"></i>{tr('Add address', 'Magdagdag ng address')}
                         </button>
                       </div>
                       {addresses.length > 0 && (
@@ -716,7 +739,7 @@ function Cart({
                     id={`cart-${f.key}`}
                     required={f.required}
                     className={field}
-                    placeholder={f.required ? `${f.label} *` : `${f.label} (optional)`}
+                    placeholder={f.required ? `${tr(f.label, f.labelTl ?? f.label)} *` : `${tr(f.label, f.labelTl ?? f.label)} ${tr('(optional)', '(opsyonal)')}`}
                     value={form[f.key]}
                     onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
                   />
@@ -732,14 +755,14 @@ function Cart({
                   <label className="flex items-start gap-2.5 pt-1">
                     <input type="checkbox" checked={sameAsPatient} onChange={(e) => setSameAsPatient(e.target.checked)}
                       className="mt-0.5 h-4 w-4 rounded border-gray-300" />
-                    <span className="text-[12.5px] leading-snug text-gray-600">The contact person is the patient</span>
+                    <span className="text-[12.5px] leading-snug text-gray-600">{tr('The contact person is the patient', 'Ang pasyente ang contact person')}</span>
                   </label>
 
                   {!sameAsPatient && (
                     <>
-                      <input required className={field} placeholder="Contact person's full name *" value={form.contactName}
+                      <input required className={field} placeholder={tr("Contact person's full name *", 'Buong pangalan ng contact person *')} value={form.contactName}
                         onChange={(e) => setForm({ ...form, contactName: e.target.value })} />
-                      <input className={field} placeholder="Relationship to patient (optional)" value={form.contactRelationship}
+                      <input className={field} placeholder={tr('Relationship to patient (optional)', 'Relasyon sa pasyente (opsyonal)')} value={form.contactRelationship}
                         onChange={(e) => setForm({ ...form, contactRelationship: e.target.value })} />
                     </>
                   )}
@@ -747,10 +770,13 @@ function Cart({
                   {rxNeeded.length > 0 && (
                     <div className="rounded-xl border border-gray-200 p-3">
                       <p className="text-[12.5px] font-semibold text-gray-700">
-                        Prescriptions * <span className="font-normal text-gray-400">({rxNeeded.length} needed)</span>
+                        {tr('Prescriptions', 'Mga reseta')} * <span className="font-normal text-gray-400">({tr(`${rxNeeded.length} needed`, `${rxNeeded.length} kailangan`)})</span>
                       </p>
                       <p className="mt-0.5 text-[11px] leading-snug text-gray-400">
-                        One per prescription-only medicine, so each can be checked against the right item.
+                        {tr(
+                          'One per prescription-only medicine, so each can be checked against the right item.',
+                          'Isa para sa bawat gamot na kailangan ng reseta, para matsek ang bawat isa sa tamang item.'
+                        )}
                       </p>
                       <div className="mt-3 space-y-3">
                         {rxNeeded.map((it) => (
@@ -773,14 +799,17 @@ function Cart({
                             {member && (
                               <button id={`rx-wallet-${it.id}`} type="button" onClick={() => setWalletFor(it)}
                                 className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-[#F1F8FE] px-3 py-1.5 text-[12px] font-semibold text-[#1D9FDA]">
-                                <i className="fa-solid fa-wallet text-[10.5px]"></i>Use from wallet
+                                <i className="fa-solid fa-wallet text-[10.5px]"></i>{tr('Use from wallet', 'Gamitin mula sa wallet')}
                               </button>
                             )}
                             {rxByItem[it.id]?.length ? (
                               <p className="mt-1 text-[11.5px] text-green-700">
                                 {walletUsed[it.id]
-                                  ? `From your wallet: ${walletUsed[it.id]}`
-                                  : `${rxByItem[it.id].length} file${rxByItem[it.id].length === 1 ? '' : 's'} attached`}
+                                  ? tr(`From your wallet: ${walletUsed[it.id]}`, `Mula sa iyong wallet: ${walletUsed[it.id]}`)
+                                  : tr(
+                                      `${rxByItem[it.id].length} file${rxByItem[it.id].length === 1 ? '' : 's'} attached`,
+                                      `${rxByItem[it.id].length} ${rxByItem[it.id].length === 1 ? 'file' : 'mga file'} ang naka-attach`
+                                    )}
                               </p>
                             ) : null}
                             {member && rxByItem[it.id]?.length && !walletUsed[it.id] ? (
@@ -793,7 +822,7 @@ function Cart({
                                   className="h-4 w-4 rounded border-gray-300"
                                   style={{ accentColor: '#1D9FDA' }}
                                 />
-                                <span className="text-[11.5px] text-gray-600">Save to my prescription wallet</span>
+                                <span className="text-[11.5px] text-gray-600">{tr('Save to my prescription wallet', 'I-save sa aking prescription wallet')}</span>
                               </label>
                             ) : null}
                           </div>
@@ -803,7 +832,7 @@ function Cart({
                   )}
 
                   <div className="rounded-xl border border-gray-200 p-3">
-                    <p className="text-[12.5px] font-semibold text-gray-700">Upload valid ID of patient *</p>
+                    <p className="text-[12.5px] font-semibold text-gray-700">{tr('Upload valid ID of patient *', 'I-upload ang valid ID ng pasyente *')}</p>
                     <input
                       type="file" accept={ALLOWED_FILE_TYPES_ACCEPT}
                       onChange={(e) => {
@@ -818,7 +847,7 @@ function Cart({
                 </>
               )}
 
-              <textarea rows={3} className={`${field} resize-none`} placeholder="Anything else we should know? (optional)"
+              <textarea rows={3} className={`${field} resize-none`} placeholder={tr('Anything else we should know? (optional)', 'May iba pa ba kaming dapat malaman? (opsyonal)')}
                 value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
 
               {type.kind === 'patient' && (
@@ -827,15 +856,21 @@ function Cart({
                     <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)}
                       className="mt-0.5 h-4 w-4 rounded border-gray-300" />
                     <span className="text-[11.5px] leading-snug text-gray-600">
-                      I confirm the information provided is accurate and the prescription submitted is valid. *
+                      {tr(
+                        'I confirm the information provided is accurate and the prescription submitted is valid.',
+                        'Kinukumpirma ko na tama ang impormasyong ibinigay at valid ang isinumiteng reseta.'
+                      )} *
                     </span>
                   </label>
                   <label className="flex items-start gap-2.5">
                     <input type="checkbox" checked={privacy} onChange={(e) => setPrivacy(e.target.checked)}
                       className="mt-0.5 h-4 w-4 rounded border-gray-300" />
                     <span className="text-[11.5px] leading-snug text-gray-600">
-                      I have read and consent to the processing of my personal and sensitive personal information
-                      under the <a href="/privacy-policy" className="underline">Privacy Policy</a>. *
+                      {tr(
+                        'I have read and consent to the processing of my personal and sensitive personal information under the ',
+                        'Nabasa ko at pumapayag ako sa pagproseso ng aking personal at sensitibong personal na impormasyon ayon sa '
+                      )}
+                      <a href="/privacy-policy" className="underline">Privacy Policy</a>. *
                     </span>
                   </label>
                 </>
@@ -851,10 +886,16 @@ function Cart({
                 className="w-full rounded-full py-3.5 text-[14px] font-semibold text-white disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
               >
-                {sending ? 'Sending…' : `Send request for ${count} item${count === 1 ? '' : 's'}`}
+                {sending
+                  ? tr('Sending…', 'Ipinapadala…')
+                  : tr(
+                      `Send request for ${count} item${count === 1 ? '' : 's'}`,
+                      `Ipadala ang request para sa ${count} ${count === 1 ? 'item' : 'mga item'}`
+                    )}
               </button>
               <p className="pt-1 text-center text-[11px] text-gray-400">
-                By submitting, you agree to our <a href="/privacy-policy" className="underline">Privacy Policy</a>.
+                {tr('By submitting, you agree to our ', 'Sa pagpapadala, sumasang-ayon ka sa aming ')}
+                <a href="/privacy-policy" className="underline">Privacy Policy</a>.
               </p>
             </form>
           </>
@@ -863,15 +904,18 @@ function Cart({
             {/* Only the heading shares its row with "Clear list"; the note
                 below gets the full width rather than wrapping beside it. */}
             <div className="flex items-start justify-between gap-4">
-              <h1 className="text-2xl font-semibold text-gray-900">Your request list</h1>
+              <h1 className="text-2xl font-semibold text-gray-900">{tr('Your request list', 'Ang iyong request list')}</h1>
               {count > 0 && (
                 <button type="button" onClick={() => clearCart()} className="mt-1.5 shrink-0 text-[12px] font-semibold text-gray-400 hover:text-gray-600">
-                  Clear list
+                  {tr('Clear list', 'I-clear ang listahan')}
                 </button>
               )}
             </div>
             <p className="mt-1.5 text-sm leading-relaxed text-gray-500">
-              Add medicines you want a quote for, then send them to us in one request.
+              {tr(
+                'Add medicines you want a quote for, then send them to us in one request.',
+                'Idagdag ang mga gamot na gusto mong ma-quote, tapos ipadala sa amin sa iisang request.'
+              )}
             </p>
 
             {items === null ? (
@@ -884,14 +928,16 @@ function Cart({
                   style={{ background: 'linear-gradient(135deg,#eaf6fd,#eef7ea)' }}>
                   <i className="fa-solid fa-cart-shopping text-2xl" style={{ color: '#1D9FDA' }}></i>
                 </div>
-                <h2 className="text-base font-semibold text-gray-800">Nothing saved yet</h2>
+                <h2 className="text-base font-semibold text-gray-800">{tr('Nothing saved yet', 'Wala pang naka-save')}</h2>
                 <p className="mt-2 max-w-sm text-[13.5px] leading-relaxed text-gray-500">
-                  Browse the catalogue and tap the cart icon on any medicine. We&apos;ll reply with
-                  availability and pricing — prescription items still need a valid prescription.
+                  {tr(
+                    'Browse the catalogue and tap the cart icon on any medicine. We’ll reply with availability and pricing — prescription items still need a valid prescription.',
+                    'Mag-browse sa catalogue at i-tap ang cart icon sa kahit anong gamot. Sasagot kami tungkol sa availability at presyo — kailangan pa rin ng valid na reseta para sa mga gamot na may reseta.'
+                  )}
                 </p>
                 <a href="/product-range" className="mt-6 rounded-full px-7 py-3 text-sm font-semibold text-white"
                   style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}>
-                  Browse products
+                  {tr('Browse products', 'Mag-browse ng produkto')}
                 </a>
               </div>
             ) : (
@@ -911,7 +957,7 @@ function Cart({
                         <input
                           type="checkbox"
                           checked={selected.has(it.id)}
-                          aria-label={`Include ${it.name} in this request`}
+                          aria-label={tr(`Include ${it.name} in this request`, `Isama ang ${it.name} sa request na ito`)}
                           onChange={(e) => setSelected((prev) => {
                             const next = new Set(prev);
                             if (e.target.checked) next.add(it.id); else next.delete(it.id);
@@ -946,12 +992,12 @@ function Cart({
                         )}
                         {it.needsRx && (
                           <span className="mt-1.5 inline-block rounded-full bg-[#E8F5FC] px-2 py-[3px] text-[10px] font-semibold text-[#1D9FDA]">
-                            <i className="fa-solid fa-file-prescription mr-1"></i>Prescription required
+                            <i className="fa-solid fa-file-prescription mr-1"></i>{tr('Prescription required', 'Kailangan ng reseta')}
                           </span>
                         )}
                       </div>
 
-                      <button type="button" onClick={() => removeFromCart(it.id)} aria-label={`Remove ${it.name}`}
+                      <button type="button" onClick={() => removeFromCart(it.id)} aria-label={tr(`Remove ${it.name}`, `Alisin ang ${it.name}`)}
                         className="shrink-0 rounded-full p-2 text-gray-300 hover:text-red-500">
                         <i className="fa-solid fa-xmark"></i>
                       </button>
@@ -991,10 +1037,13 @@ function Cart({
                       rather than an outcome, and with one item it should never
                       have appeared at all. */}
                   {count === 0
-                    ? 'Tick an item to continue'
+                    ? tr('Tick an item to continue', 'Pumili ng item para magpatuloy')
                     : items.length === 1
-                      ? 'Request a quote'
-                      : `Request a quote for ${count} item${count === 1 ? '' : 's'}`}
+                      ? tr('Request a quote', 'Humingi ng quote')
+                      : tr(
+                          `Request a quote for ${count} item${count === 1 ? '' : 's'}`,
+                          `Humingi ng quote para sa ${count} ${count === 1 ? 'item' : 'mga item'}`
+                        )}
                 </button>
                 </div>
               </>
@@ -1037,6 +1086,7 @@ function Cart({
  * Cart calls, and that choice must stay fixed for an instance's lifetime.
  */
 export default function CartClient() {
+  const { tr } = useLang();
   const [mode, setMode] = useState({ app: false, member: false });
   const points = usePoints();
   const [needAccount, setNeedAccount] = useState(false);
@@ -1068,7 +1118,10 @@ export default function CartClient() {
           points={points}
           bare
           initialMode="signup"
-          intro="You need a free account to request a quote. It also earns you Getmeds Points on every request."
+          intro={tr(
+            'You need a free account to request a quote. It also earns you Getmeds Points on every request.',
+            'Kailangan mo ng libreng account para humingi ng quote. Makakakuha ka rin ng Getmeds Points sa bawat request.'
+          )}
         />
       </SignInSheet>
     </div>

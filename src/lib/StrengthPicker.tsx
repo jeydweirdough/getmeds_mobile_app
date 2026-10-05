@@ -4,6 +4,7 @@ import React from 'react';
 import { useProducts } from './useSanity';
 import { productUrl, type CatalogueRow } from './catalogueItem';
 import { goTo } from '@/platform/navigation';
+import { useLang } from './i18n';
 
 /**
  * StrengthPicker.tsx
@@ -32,6 +33,7 @@ const chipLabel = (s?: string) => {
 };
 
 export default function StrengthPicker({ current }: { current: CatalogueRow }) {
+  const { tr } = useLang();
   const { data } = useProducts();
   const rows = (data || []) as CatalogueRow[];
   const key = groupKey(current);
@@ -47,9 +49,9 @@ export default function StrengthPicker({ current }: { current: CatalogueRow }) {
   return (
     <div className="mt-4">
       <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-        {options.length > 1 ? 'Select strength' : 'Strength'}
+        {options.length > 1 ? tr('Select strength', 'Pumili ng strength') : tr('Strength', 'Strength')}
       </p>
-      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Strength">
+      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={tr('Strength', 'Strength')}>
         {options.map((p) => {
           const on = isCurrent(p);
           return (
@@ -68,7 +70,7 @@ export default function StrengthPicker({ current }: { current: CatalogueRow }) {
               style={on ? { background: 'linear-gradient(135deg,#1D9FDA,#61A644)' } : undefined}
             >
               {chipLabel(p.strength)}
-              {p.availability === false && <span className="ml-1 text-[10px] font-medium">(out of stock)</span>}
+              {p.availability === false && <span className="ml-1 text-[10px] font-medium">{tr('(out of stock)', '(walang stock)')}</span>}
             </button>
           );
         })}

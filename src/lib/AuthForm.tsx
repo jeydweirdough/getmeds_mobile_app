@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Turnstile, ensureTurnstileScript, useTurnstile } from './turnstile';
 import { RewardsError, logIn, requestResetCode, resetPassword, signUp } from './rewards';
+import { translate, useLang } from '@/lib/i18n';
 
 /**
  * AuthForm.tsx
@@ -28,7 +29,8 @@ const RESEND_SECONDS = 60;
 
 export type AuthMode = 'login' | 'signup' | 'reset';
 
-const message = (e: unknown) => (e instanceof RewardsError ? e.message : 'Something went wrong. Please try again.');
+const message = (e: unknown) =>
+  e instanceof RewardsError ? e.message : translate('Something went wrong. Please try again.', 'May nangyaring mali. Pakisubukan ulit.');
 
 /** Enough to try: an @ with something either side, or at least 10 digits. */
 const looksLikeLogin = (v: string) => /\S@\S+\.\S/.test(v.trim()) || v.replace(/\D/g, '').length >= 10;
@@ -51,6 +53,7 @@ function PasswordInput({
   autoComplete: string;
   placeholder?: string;
 }) {
+  const { tr } = useLang();
   const [shown, setShown] = useState(false);
   return (
     <div className="relative">
@@ -66,7 +69,7 @@ function PasswordInput({
       <button
         type="button"
         onClick={() => setShown((s) => !s)}
-        aria-label={shown ? 'Hide password' : 'Show password'}
+        aria-label={shown ? tr('Hide password', 'Itago ang password') : tr('Show password', 'Ipakita ang password')}
         className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center text-gray-400"
       >
         <i className={`fa-solid ${shown ? 'fa-eye-slash' : 'fa-eye'} text-[14px]`} />
@@ -76,6 +79,7 @@ function PasswordInput({
 }
 
 function LoginInput({ id, value, onChange }: { id: string; value: string; onChange: (v: string) => void }) {
+  const { tr } = useLang();
   return (
     <input
       id={id}
@@ -84,7 +88,7 @@ function LoginInput({ id, value, onChange }: { id: string; value: string; onChan
       inputMode="email"
       autoComplete="username"
       autoCapitalize="none"
-      placeholder="you@email.com or 0917 123 4567"
+      placeholder={tr('you@email.com or 0917 123 4567', 'you@email.com o 0917 123 4567')}
       value={value}
       onChange={(e) => onChange(e.target.value)}
     />
@@ -92,6 +96,7 @@ function LoginInput({ id, value, onChange }: { id: string; value: string; onChan
 }
 
 export default function AuthForm({ initialMode = 'signup', intro }: { initialMode?: AuthMode; intro?: string }) {
+  const { tr } = useLang();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   // Forgot password only: who the account is, then the code and new password.
   const [resetStep, setResetStep] = useState<'start' | 'code'>('start');
@@ -147,8 +152,11 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
   };
 
   const checkPasswords = () => {
-    if (password.length < MIN_PASSWORD) throw new RewardsError(`Use at least ${MIN_PASSWORD} characters for your password.`, 400);
-    if (password !== confirm) throw new RewardsError('The two passwords don’t match.', 400);
+    if (password.length < MIN_PASSWORD) throw new RewardsError(
+        tr(`Use at least ${MIN_PASSWORD} characters for your password.`, `Gumamit ng hindi bababa sa ${MIN_PASSWORD} characters para sa password mo.`),
+        400,
+      );
+    if (password !== confirm) throw new RewardsError(tr('The two passwords don’t match.', 'Hindi magkapareho ang dalawang password.'), 400);
   };
 
   const doSignUp = () =>
@@ -197,15 +205,26 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
       await resetPassword(ticket, code, password);
     });
 
-  const heading = mode === 'login' ? 'Log in' : mode === 'signup' ? 'Create your account' : 'Reset your password';
+  const heading =
+    mode === 'login'
+      ? tr('Log in', 'Mag-log in')
+      : mode === 'signup'
+        ? tr('Create your account', 'Gumawa ng account')
+        : tr('Reset your password', 'I-reset ang password mo');
   const subtitle =
     mode === 'login'
-      ? 'Use the email or mobile number on your account.'
+      ? tr('Use the email or mobile number on your account.', 'Gamitin ang email o mobile number ng account mo.')
       : mode === 'signup'
-        ? intro || 'Earn Getmeds Points on every request.'
+        ? intro || tr('Earn Getmeds Points on every request.', 'Kumita ng Getmeds Points sa bawat request.')
         : resetStep === 'start'
-          ? 'Enter the email or mobile number on your account and we’ll send you a 6-digit code.'
-          : `We ${via === 'mobile' ? 'texted' : 'emailed'} a 6-digit code to ${sentTo}. Enter it below and choose a new password.`;
+          ? tr(
+              'Enter the email or mobile number on your account and we’ll send you a 6-digit code.',
+              'Ilagay ang email o mobile number ng account mo at padadalhan ka namin ng 6-digit code.',
+            )
+          : tr(
+              `We ${via === 'mobile' ? 'texted' : 'emailed'} a 6-digit code to ${sentTo}. Enter it below and choose a new password.`,
+              `Nagpadala kami ng 6-digit code ${via === 'mobile' ? 'sa text' : 'sa email'} sa ${sentTo}. Ilagay ito sa ibaba at pumili ng bagong password.`,
+            );
 
   return (
     <div>
@@ -222,7 +241,7 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
           }}
         >
           <label className={label} htmlFor="auth-name">
-            Full name
+            {tr('Full name', 'Buong pangalan')}
           </label>
           <input
             id="auth-name"
@@ -235,7 +254,7 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
             onChange={(e) => setName(e.target.value)}
           />
           <label className={`${label} mt-3`} htmlFor="auth-signup-login">
-            Email or mobile number
+            {tr('Email or mobile number', 'Email o mobile number')}
           </label>
           <LoginInput id="auth-signup-login" value={login} onChange={setLogin} />
           <label className={`${label} mt-3`} htmlFor="auth-new-password">
@@ -246,10 +265,10 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
             value={password}
             onChange={setPassword}
             autoComplete="new-password"
-            placeholder={`At least ${MIN_PASSWORD} characters`}
+            placeholder={tr(`At least ${MIN_PASSWORD} characters`, `Hindi bababa sa ${MIN_PASSWORD} characters`)}
           />
           <label className={`${label} mt-3`} htmlFor="auth-confirm-password">
-            Confirm password
+            {tr('Confirm password', 'Kumpirmahin ang password')}
           </label>
           <PasswordInput id="auth-confirm-password" value={confirm} onChange={setConfirm} autoComplete="new-password" />
           <Turnstile turnstile={turnstile} className="mt-3 w-full max-w-full overflow-x-auto" />
@@ -262,12 +281,12 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
             className={primary}
             style={{ background: GRADIENT }}
           >
-            {busy ? 'Creating account…' : 'Create account'}
+            {busy ? tr('Creating account…', 'Ginagawa ang account…') : tr('Create account', 'Gumawa ng account')}
           </button>
           <p className="mt-4 text-center text-[12.5px] text-gray-500">
-            Already have an account?{' '}
+            {tr('Already have an account?', 'May account ka na?')}{' '}
             <button type="button" onClick={() => switchTo('login')} className="font-semibold" style={{ color: BRAND }}>
-              Log in
+              {tr('Log in', 'Mag-log in')}
             </button>
           </p>
         </form>
@@ -283,7 +302,7 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
           }}
         >
           <label className={label} htmlFor="auth-login">
-            Email or mobile number
+            {tr('Email or mobile number', 'Email o mobile number')}
           </label>
           <LoginInput id="auth-login" value={login} onChange={setLogin} />
           <div className="mb-1.5 mt-3 flex items-center justify-between">
@@ -291,7 +310,7 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
               Password
             </label>
             <button type="button" onClick={() => switchTo('reset')} className="text-[12px] font-semibold" style={{ color: BRAND }}>
-              Forgot password?
+              {tr('Forgot password?', 'Nakalimutan ang password?')}
             </button>
           </div>
           <PasswordInput id="auth-password" value={password} onChange={setPassword} autoComplete="current-password" />
@@ -302,12 +321,12 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
             className={primary}
             style={{ background: GRADIENT }}
           >
-            {busy ? 'Logging in…' : 'Log in'}
+            {busy ? tr('Logging in…', 'Nagla-log in…') : tr('Log in', 'Mag-log in')}
           </button>
           <p className="mt-4 text-center text-[12.5px] text-gray-500">
-            New to Getmeds?{' '}
+            {tr('New to Getmeds?', 'Bago sa Getmeds?')}{' '}
             <button type="button" onClick={() => switchTo('signup')} className="font-semibold" style={{ color: BRAND }}>
-              Create an account
+              {tr('Create an account', 'Gumawa ng account')}
             </button>
           </p>
         </form>
@@ -323,7 +342,7 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
           }}
         >
           <label className={label} htmlFor="auth-reset-login">
-            Email or mobile number
+            {tr('Email or mobile number', 'Email o mobile number')}
           </label>
           <LoginInput id="auth-reset-login" value={login} onChange={setLogin} />
           <Turnstile turnstile={turnstile} className="mt-3 w-full max-w-full overflow-x-auto" />
@@ -334,12 +353,12 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
             className={primary}
             style={{ background: GRADIENT }}
           >
-            {busy ? 'Sending…' : 'Send code'}
+            {busy ? tr('Sending…', 'Ipinapadala…') : tr('Send code', 'Ipadala ang code')}
           </button>
           <p className="mt-4 text-center text-[12.5px] text-gray-500">
-            Remembered it?{' '}
+            {tr('Remembered it?', 'Naalala mo na?')}{' '}
             <button type="button" onClick={() => switchTo('login')} className="font-semibold" style={{ color: BRAND }}>
-              Log in
+              {tr('Log in', 'Mag-log in')}
             </button>
           </p>
         </form>
@@ -355,7 +374,7 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
           }}
         >
           <label className={label} htmlFor="auth-code">
-            6-digit code
+            {tr('6-digit code', '6-digit code')}
           </label>
           <input
             id="auth-code"
@@ -368,17 +387,17 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
           />
           <label className={`${label} mt-3`} htmlFor="auth-reset-password">
-            New password
+            {tr('New password', 'Bagong password')}
           </label>
           <PasswordInput
             id="auth-reset-password"
             value={password}
             onChange={setPassword}
             autoComplete="new-password"
-            placeholder={`At least ${MIN_PASSWORD} characters`}
+            placeholder={tr(`At least ${MIN_PASSWORD} characters`, `Hindi bababa sa ${MIN_PASSWORD} characters`)}
           />
           <label className={`${label} mt-3`} htmlFor="auth-reset-confirm">
-            Confirm new password
+            {tr('Confirm new password', 'Kumpirmahin ang bagong password')}
           </label>
           <PasswordInput id="auth-reset-confirm" value={confirm} onChange={setConfirm} autoComplete="new-password" />
           {error && <p className="mt-2 text-[12px] text-red-500">{error}</p>}
@@ -388,7 +407,7 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
             className={primary}
             style={{ background: GRADIENT }}
           >
-            {busy ? 'Saving…' : 'Save password and log in'}
+            {busy ? tr('Saving…', 'Sine-save…') : tr('Save password and log in', 'I-save ang password at mag-log in')}
           </button>
           <div className="mt-3 flex items-center justify-between">
             <button
@@ -399,7 +418,7 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
               }}
               className="text-[12px] font-semibold text-gray-400"
             >
-              {via === 'mobile' ? 'Change number' : 'Change email'}
+              {via === 'mobile' ? tr('Change number', 'Palitan ang number') : tr('Change email', 'Palitan ang email')}
             </button>
             <button
               type="button"
@@ -412,7 +431,7 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
               className="text-[12px] font-semibold disabled:text-gray-300"
               style={wait > 0 ? undefined : { color: BRAND }}
             >
-              {wait > 0 ? `Resend in ${wait}s` : 'Send a new code'}
+              {wait > 0 ? tr(`Resend in ${wait}s`, `Ipadala ulit sa ${wait}s`) : tr('Send a new code', 'Magpadala ng bagong code')}
             </button>
           </div>
         </form>

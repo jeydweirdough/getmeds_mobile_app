@@ -20,11 +20,13 @@ import { validateFiles, ALLOWED_FILE_TYPES_ACCEPT } from '@/lib/fileUpload';
 import AlertModal from '@/lib/AlertModal';
 import { ORDER_AUDIENCES, ORDER_MEDICINES_BASE, audienceBySlug, audiencePath } from '@/lib/orderAudiences';
 import OrderMedicinesHub from '@/lib/OrderMedicinesHub';
+import { useLang } from '@/lib/i18n';
 
 
 // `audienceSlug` comes from the [audience] route segment (undefined on the hub
 // at /order-medicines), so server and client agree on which page this is.
 export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: string } = {}) {
+  const { tr } = useLang();
   // No setPageMeta here. This is a multi-page app with no client-side router, so
   // this URL never changes while the page is open — the title, description and OG
   // tags served in order-medicines.html are already the final ones. Re-setting them on mount
@@ -254,7 +256,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
   const handlePatientIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const { valid, errors } = validateFiles([e.target.files[0]]);
-      if (errors.length > 0) showAlert(errors, 'Invalid File');
+      if (errors.length > 0) showAlert(errors, tr('Invalid File', 'Hindi valid ang file'));
       if (valid.length > 0) setPatientIdFile(valid[0]);
       e.target.value = '';
     }
@@ -284,6 +286,9 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
   const USER_TYPE_LABELS: Record<string, string> = Object.fromEntries(
     ORDER_AUDIENCES.map((a) => [a.type, a.label]),
   );
+  const USER_TYPE_DISPLAY_LABELS: Record<string, string> = Object.fromEntries(
+    ORDER_AUDIENCES.map((a) => [a.type, tr(a.label, a.labelTl ?? a.label)]),
+  );
   // Where an inquiry queued offline sends the visitor back to finish it by hand.
   // That has to be the audience page the form is on — the hub carries no form.
   const formReturnPath = audience ? audiencePath(audience) : ORDER_MEDICINES_BASE;
@@ -302,35 +307,32 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
   // the shared professional copy, and everyone else sees the patient flow.
   const heroCopy = isDoctorUserType
     ? {
-        title: 'For Doctors & Healthcare Professionals',
-        tagline: 'Product Access & Support for Your Practice',
-        subtitle:
-          'Product orders, medical and product information, sample requests, Compassionate Special Permit (CSP) coordination, and clinical documentation \u2014 for physicians, specialists, and healthcare professionals across the Philippines.',
+        title: tr('For Doctors & Healthcare Professionals', 'Para sa mga Doktor at Healthcare Professional'),
+        tagline: tr('Product Access & Support for Your Practice', 'Access sa Produkto at Suporta para sa Inyong Practice'),
+        subtitle: tr('Product orders, medical and product information, sample requests, Compassionate Special Permit (CSP) coordination, and clinical documentation \u2014 for physicians, specialists, and healthcare professionals across the Philippines.', 'Product orders, impormasyong medikal at tungkol sa produkto, sample request, koordinasyon ng Compassionate Special Permit (CSP), at clinical documentation \u2014 para sa mga physician, specialist at healthcare professional sa buong Pilipinas.'),
       }
     : isPharmacyUserType
     ? {
-        title: 'For Pharmacy Owners & Retail Pharmacies',
-        tagline: 'Your Reliable Pharmaceutical Distributor Partner',
-        subtitle:
-          'Wholesale pricing, distributor account setup, bulk order fulfillment, and ongoing supply support \u2014 for independent pharmacies, drugstores, and pharmacy chains across the Philippines. As an FDA Philippines-licensed wholesaler, importer, and distributor, Getmeds serves as a dedicated B2B supply partner for pharmacies.',
+        title: tr('For Pharmacy Owners & Retail Pharmacies', 'Para sa mga May-ari ng Botika at Retail Pharmacy'),
+        tagline: tr('Your Reliable Pharmaceutical Distributor Partner', 'Ang Maaasahan Ninyong Pharmaceutical Distributor Partner'),
+        subtitle: tr('Wholesale pricing, distributor account setup, bulk order fulfillment, and ongoing supply support \u2014 for independent pharmacies, drugstores, and pharmacy chains across the Philippines. As an FDA Philippines-licensed wholesaler, importer, and distributor, Getmeds serves as a dedicated B2B supply partner for pharmacies.', 'Wholesale na presyo, pag-setup ng distributor account, bulk order fulfillment, at tuloy-tuloy na supply support \u2014 para sa mga independent pharmacy, drugstore at pharmacy chain sa buong Pilipinas. Bilang wholesaler, importer at distributor na lisensyado ng FDA Philippines, ang Getmeds ay nakatutok na B2B supply partner ng mga botika.'),
       }
     : isHospitalUserType
     ? {
-        title: 'For Hospitals & Healthcare Institutions',
-        tagline: 'Hospital Procurement, Handled with Care',
-        subtitle:
-          'Product quotations, hospital procurement, emergency purchase requirements, pharmaceutical product availability, institutional orders, and dedicated account support — for hospitals and healthcare institutions across the Philippines.',
+        title: tr('For Hospitals & Healthcare Institutions', 'Para sa mga Ospital at Healthcare Institution'),
+        tagline: tr('Hospital Procurement, Handled with Care', 'Hospital Procurement, Inaasikaso nang Maingat'),
+        subtitle: tr('Product quotations, hospital procurement, emergency purchase requirements, pharmaceutical product availability, institutional orders, and dedicated account support — for hospitals and healthcare institutions across the Philippines.', 'Product quotation, hospital procurement, emergency na pagbili, availability ng mga pharmaceutical product, institutional order, at dedicated na account support — para sa mga ospital at healthcare institution sa buong Pilipinas.'),
       }
     : isProfessionalUserType
       ? {
-          title: 'Professional & Partner Inquiries',
+          title: tr('Professional & Partner Inquiries', 'Inquiry ng mga Professional at Partner'),
           tagline: '',
-          subtitle: 'Send us your requirements and our team will follow up with a formal response.',
+          subtitle: tr('Send us your requirements and our team will follow up with a formal response.', 'Ipadala ang inyong mga kailangan at magfo-follow up ang aming team ng pormal na sagot.'),
         }
       : {
-          title: 'How to order with prescription',
+          title: tr('How to order with prescription', 'Paano mag-order gamit ang reseta'),
           tagline: '',
-          subtitle: 'A simple 3-step process designed for your convenience.',
+          subtitle: tr('A simple 3-step process designed for your convenience.', 'Isang simpleng 3-step na proseso para sa inyong kaginhawaan.'),
         };
 
   // The "Who's placing this order?" modal that used to guard these upload controls
@@ -427,23 +429,23 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
   const PARTNER_FORM = isDoctorUserType
     ? {
         badgeIcon: 'fa-user-doctor',
-        badgeLabel: USER_TYPE_LABELS.doctor,
-        heading: 'Send an Inquiry',
-        subtitle: 'Submit your request and our team will follow up with product availability, pricing, documentation, or order coordination.',
-        namePlaceholder: 'e.g., Dr. Maria Santos',
-        positionLabel: 'Specialty / Field of Practice',
-        positionPlaceholder: 'e.g., Oncology, Internal Medicine, Anesthesiology',
+        badgeLabel: USER_TYPE_DISPLAY_LABELS.doctor,
+        heading: tr('Send an Inquiry', 'Magpadala ng Inquiry'),
+        subtitle: tr('Submit your request and our team will follow up with product availability, pricing, documentation, or order coordination.', 'Ipadala ang inyong request at magfo-follow up ang aming team tungkol sa availability ng produkto, presyo, dokumentasyon o koordinasyon ng order.'),
+        namePlaceholder: tr('e.g., Dr. Maria Santos', 'hal., Dr. Maria Santos'),
+        positionLabel: tr('Specialty / Field of Practice', 'Specialty / Larangan ng Practice'),
+        positionPlaceholder: tr('e.g., Oncology, Internal Medicine, Anesthesiology', 'hal., Oncology, Internal Medicine, Anesthesiology'),
         showPrcLicense: true,
-        prcPlaceholder: 'e.g., 0000000',
-        orgLabel: 'Hospital / Clinic Affiliation',
-        orgPlaceholder: 'e.g., Makati Medical Center',
-        locationPlaceholder: 'e.g., Makati City, Metro Manila',
-        emailLabel: 'Professional Email',
-        emailPlaceholder: 'e.g., dr.santos@hospital.com',
-        messagePlaceholder: "Tell us the product, molecule, or patient/institutional requirement you're inquiring about.",
-        consent: 'I confirm that I am a licensed healthcare professional submitting this inquiry in a professional capacity, and I consent to Getmeds collecting, using, and storing the information provided in this form to respond to my inquiry.',
-        helpHeading: 'Contact Our Team',
-        helpBlurb: 'For urgent orders or medical inquiries, reach out directly.',
+        prcPlaceholder: tr('e.g., 0000000', 'hal., 0000000'),
+        orgLabel: tr('Hospital / Clinic Affiliation', 'Ospital / Klinikang Kaanib'),
+        orgPlaceholder: tr('e.g., Makati Medical Center', 'hal., Makati Medical Center'),
+        locationPlaceholder: tr('e.g., Makati City, Metro Manila', 'hal., Makati City, Metro Manila'),
+        emailLabel: tr('Professional Email', 'Professional Email'),
+        emailPlaceholder: tr('e.g., dr.santos@hospital.com', 'hal., dr.santos@hospital.com'),
+        messagePlaceholder: tr("Tell us the product, molecule, or patient/institutional requirement you're inquiring about.", 'Sabihin sa amin ang produkto, molecule, o pangangailangan ng pasyente/institusyon na inyong itinatanong.'),
+        consent: tr('I confirm that I am a licensed healthcare professional submitting this inquiry in a professional capacity, and I consent to Getmeds collecting, using, and storing the information provided in this form to respond to my inquiry.', 'Kinukumpirma kong ako ay lisensyadong healthcare professional na nagpapadala ng inquiry na ito bilang propesyonal, at pumapayag akong kolektahin, gamitin at itago ng Getmeds ang impormasyon sa form na ito para sagutin ang aking inquiry.'),
+        helpHeading: tr('Contact Our Team', 'Makipag-ugnayan sa Aming Team'),
+        helpBlurb: tr('For urgent orders or medical inquiries, reach out directly.', 'Para sa urgent na order o medical inquiry, direktang makipag-ugnayan sa amin.'),
         contacts: [
           { icon: 'fa-phone', label: '+63 917 166 5029', href: 'tel:+639171665029' },
           { icon: 'fa-phone', label: '+63 917 581 4029', href: 'tel:+639175814029' },
@@ -454,23 +456,23 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
     : isPharmacyUserType
     ? {
         badgeIcon: 'fa-store',
-        badgeLabel: USER_TYPE_LABELS.pharmacy,
-        heading: 'Become a Getmeds Partner Distributor',
-        subtitle: "Submit your pharmacy's details and our distributor team will follow up with product catalogs, pricing, and account setup.",
-        namePlaceholder: 'e.g., Juan Dela Cruz',
-        positionLabel: 'Position / Role',
-        positionPlaceholder: 'e.g., Pharmacy Owner, Pharmacist-in-Charge, Purchasing Manager',
+        badgeLabel: USER_TYPE_DISPLAY_LABELS.pharmacy,
+        heading: tr('Become a Getmeds Partner Distributor', 'Maging Partner Distributor ng Getmeds'),
+        subtitle: tr("Submit your pharmacy's details and our distributor team will follow up with product catalogs, pricing, and account setup.", 'Ipadala ang detalye ng inyong botika at magfo-follow up ang aming distributor team ng product catalog, presyo at account setup.'),
+        namePlaceholder: tr('e.g., Juan Dela Cruz', 'hal., Juan Dela Cruz'),
+        positionLabel: tr('Position / Role', 'Posisyon / Tungkulin'),
+        positionPlaceholder: tr('e.g., Pharmacy Owner, Pharmacist-in-Charge, Purchasing Manager', 'hal., Pharmacy Owner, Pharmacist-in-Charge, Purchasing Manager'),
         showPrcLicense: false,
         prcPlaceholder: '',
-        emailLabel: 'Business Email',
-        orgLabel: 'Pharmacy / Business Name',
-        orgPlaceholder: 'e.g., Dela Cruz Drugstore',
-        locationPlaceholder: 'e.g., Cebu City, Cebu',
-        emailPlaceholder: 'e.g., owner@drugstore.com',
-        messagePlaceholder: "Tell us what products, brands, or categories you're looking to source.",
-        consent: 'I confirm that I am authorized to submit this inquiry on behalf of the pharmacy or business named above, and I consent to Getmeds collecting, using, and storing the information provided in this form to respond to my inquiry.',
-        helpHeading: 'Need Help Setting Up Your Distributor Account?',
-        helpBlurb: 'For onboarding assistance, credit terms, or product catalog requests, contact our Pharmacy Partnerships Team directly.',
+        emailLabel: tr('Business Email', 'Business Email'),
+        orgLabel: tr('Pharmacy / Business Name', 'Pangalan ng Botika / Negosyo'),
+        orgPlaceholder: tr('e.g., Dela Cruz Drugstore', 'hal., Dela Cruz Drugstore'),
+        locationPlaceholder: tr('e.g., Cebu City, Cebu', 'hal., Cebu City, Cebu'),
+        emailPlaceholder: tr('e.g., owner@drugstore.com', 'hal., owner@drugstore.com'),
+        messagePlaceholder: tr("Tell us what products, brands, or categories you're looking to source.", 'Sabihin sa amin kung anong mga produkto, brand o kategorya ang gusto ninyong i-source.'),
+        consent: tr('I confirm that I am authorized to submit this inquiry on behalf of the pharmacy or business named above, and I consent to Getmeds collecting, using, and storing the information provided in this form to respond to my inquiry.', 'Kinukumpirma kong awtorisado akong magpadala ng inquiry na ito para sa botika o negosyong nakapangalan sa itaas, at pumapayag akong kolektahin, gamitin at itago ng Getmeds ang impormasyon sa form na ito para sagutin ang aking inquiry.'),
+        helpHeading: tr('Need Help Setting Up Your Distributor Account?', 'Kailangan ng Tulong sa Pag-setup ng Distributor Account?'),
+        helpBlurb: tr('For onboarding assistance, credit terms, or product catalog requests, contact our Pharmacy Partnerships Team directly.', 'Para sa tulong sa onboarding, credit terms o request ng product catalog, direktang makipag-ugnayan sa aming Pharmacy Partnerships Team.'),
         contacts: [
           { icon: 'fa-phone', label: '+63 908 866 7139', href: 'tel:+639088667139' },
           { icon: 'fa-phone', label: '+63 993 373 9842', href: 'tel:+639933739842' },
@@ -480,23 +482,23 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
       }
     : {
         badgeIcon: 'fa-hospital',
-        badgeLabel: USER_TYPE_LABELS.hospital,
-        heading: 'Send an Inquiry',
-        subtitle: "Submit your hospital's requirements and our team will follow up with formal documentation, quotations, and coordination.",
-        namePlaceholder: 'e.g., Dr. Juan Dela Cruz',
-        positionLabel: 'Position / Role',
-        positionPlaceholder: 'e.g., Chief of Pharmacy, Procurement Officer',
+        badgeLabel: USER_TYPE_DISPLAY_LABELS.hospital,
+        heading: tr('Send an Inquiry', 'Magpadala ng Inquiry'),
+        subtitle: tr("Submit your hospital's requirements and our team will follow up with formal documentation, quotations, and coordination.", 'Ipadala ang mga kailangan ng inyong ospital at magfo-follow up ang aming team ng pormal na dokumentasyon, quotation at koordinasyon.'),
+        namePlaceholder: tr('e.g., Dr. Juan Dela Cruz', 'hal., Dr. Juan Dela Cruz'),
+        positionLabel: tr('Position / Role', 'Posisyon / Tungkulin'),
+        positionPlaceholder: tr('e.g., Chief of Pharmacy, Procurement Officer', 'hal., Chief of Pharmacy, Procurement Officer'),
         showPrcLicense: false,
         prcPlaceholder: '',
-        emailLabel: 'Business Email',
-        orgLabel: 'Hospital / Institution Name',
-        orgPlaceholder: 'e.g., Philippine General Hospital',
-        locationPlaceholder: 'e.g., Quezon City, Metro Manila',
-        emailPlaceholder: 'e.g., procurement@hospital.gov.ph',
-        messagePlaceholder: 'Tell us more about your requirements...',
-        consent: 'I confirm that I am authorized to submit this inquiry on behalf of the hospital or healthcare institution named above, and I consent to Getmeds collecting, using, and storing the information provided in this form to respond to my inquiry.',
-        helpHeading: 'Need Urgent Hospital Assistance?',
-        helpBlurb: 'For emergency purchases and critical-care orders, contact our Hospital Sales Team directly for immediate coordination.',
+        emailLabel: tr('Business Email', 'Business Email'),
+        orgLabel: tr('Hospital / Institution Name', 'Pangalan ng Ospital / Institusyon'),
+        orgPlaceholder: tr('e.g., Philippine General Hospital', 'hal., Philippine General Hospital'),
+        locationPlaceholder: tr('e.g., Quezon City, Metro Manila', 'hal., Quezon City, Metro Manila'),
+        emailPlaceholder: tr('e.g., procurement@hospital.gov.ph', 'hal., procurement@hospital.gov.ph'),
+        messagePlaceholder: tr('Tell us more about your requirements...', 'Sabihin sa amin ang higit pa tungkol sa inyong mga kailangan...'),
+        consent: tr('I confirm that I am authorized to submit this inquiry on behalf of the hospital or healthcare institution named above, and I consent to Getmeds collecting, using, and storing the information provided in this form to respond to my inquiry.', 'Kinukumpirma kong awtorisado akong magpadala ng inquiry na ito para sa ospital o healthcare institution na nakapangalan sa itaas, at pumapayag akong kolektahin, gamitin at itago ng Getmeds ang impormasyon sa form na ito para sagutin ang aking inquiry.'),
+        helpHeading: tr('Need Urgent Hospital Assistance?', 'Kailangan ng Urgent na Tulong para sa Ospital?'),
+        helpBlurb: tr('For emergency purchases and critical-care orders, contact our Hospital Sales Team directly for immediate coordination.', 'Para sa emergency na pagbili at critical-care order, direktang makipag-ugnayan sa aming Hospital Sales Team para sa agarang koordinasyon.'),
         contacts: [
           { icon: 'fa-phone', label: '+63 999 889 0592', href: 'tel:+639998890592' },
           { icon: 'fa-phone', label: '+63 917 155 7029', href: 'tel:+639171557029' },
@@ -548,7 +550,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
     // visitor sees in the box.
     const phoneInput = partnerPhoneRef.current;
     if (!window.gcbPhone?.isEmpty(phoneInput) && !window.gcbPhone?.isValid(phoneInput)) {
-      setPartnerPhoneError('Please enter a valid phone number for the selected country.');
+      setPartnerPhoneError(tr('Please enter a valid phone number for the selected country.', 'Pakilagay ang valid na phone number para sa napiling bansa.'));
       phoneInput?.focus();
       return;
     }
@@ -618,24 +620,24 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
       return;
     }
     if (!formData.patientName || !formData.email || !formData.phone || !formData.age || !formData.address) {
-      showAlert('Please fill in all required fields.');
+      showAlert(tr('Please fill in all required fields.', 'Pakisagutan ang lahat ng kailangang field.'));
       return;
     }
     const expectedPhoneDigits = (phoneCountry.mask.match(/#/g) || []).length;
     if (formData.phone.replace(/\D/g, '').length !== expectedPhoneDigits) {
-      showAlert('Please enter a valid phone number.');
+      showAlert(tr('Please enter a valid phone number.', 'Pakilagay ang valid na phone number.'));
       return;
     }
     if (!contactSameAsPatient && !formData.contactName) {
-      showAlert("Please provide the contact person's full name.");
+      showAlert(tr("Please provide the contact person's full name.", 'Pakilagay ang buong pangalan ng contact person.'));
       return;
     }
     if (!formData.terms) {
-      showAlert('Please confirm that all provided information is authentic.');
+      showAlert(tr('Please confirm that all provided information is authentic.', 'Pakikumpirma na totoo ang lahat ng ibinigay na impormasyon.'));
       return;
     }
     if (!formData.privacyConsent) {
-      showAlert('Please consent to the Privacy Policy to proceed.');
+      showAlert(tr('Please consent to the Privacy Policy to proceed.', 'Pumayag muna sa Privacy Policy para makapagpatuloy.'));
       return;
     }
     setSubmitState('sending');
@@ -753,7 +755,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const { valid, errors } = validateFiles(Array.from(e.target.files));
-      if (errors.length > 0) showAlert(errors, 'Invalid File');
+      if (errors.length > 0) showAlert(errors, tr('Invalid File', 'Hindi valid ang file'));
       if (valid.length > 0) {
         setUploadedFiles(prev => [...prev, ...valid]);
         openUploadModal();
@@ -803,117 +805,117 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
   const HOSPITAL_CREDENTIALS = [
     {
       Icon: BadgeCheck,
-      title: 'Fully Licensed Pharmaceutical Company',
-      desc: 'FDA Philippines-licensed wholesaler, importer, distributor, and retail pharmacy. PDEA-licensed across LTO categories S1 to S5 for controlled substance supply.',
+      title: tr('Fully Licensed Pharmaceutical Company', 'Kumpletong Lisensyadong Pharmaceutical Company'),
+      desc: tr('FDA Philippines-licensed wholesaler, importer, distributor, and retail pharmacy. PDEA-licensed across LTO categories S1 to S5 for controlled substance supply.', 'Wholesaler, importer, distributor at retail pharmacy na lisensyado ng FDA Philippines. May PDEA license sa LTO categories S1 hanggang S5 para sa supply ng controlled substances.'),
     },
     {
       Icon: Factory,
-      title: 'International Manufacturing Standards',
-      desc: 'Our medicines are manufactured and sourced internationally in compliance with global quality standards \u2014 ensuring consistent safety, efficacy, and reliability for your patients.',
+      title: tr('International Manufacturing Standards', 'Internasyonal na Pamantayan sa Paggawa'),
+      desc: tr('Our medicines are manufactured and sourced internationally in compliance with global quality standards \u2014 ensuring consistent safety, efficacy, and reliability for your patients.', 'Ang aming mga gamot ay ginagawa at kinukuha sa ibang bansa alinsunod sa global quality standards \u2014 para sa tuloy-tuloy na kaligtasan, bisa at pagiging maaasahan para sa inyong mga pasyente.'),
     },
     {
       Icon: FileCheck,
-      title: 'Complete Regulatory Documentation',
-      desc: 'Every hospital order comes with Certificate of Analysis, batch records, cold-chain temperature logs, Certificate of Product Registration, and country-of-origin certification.',
+      title: tr('Complete Regulatory Documentation', 'Kumpletong Regulatory Documentation'),
+      desc: tr('Every hospital order comes with Certificate of Analysis, batch records, cold-chain temperature logs, Certificate of Product Registration, and country-of-origin certification.', 'Bawat hospital order ay may kasamang Certificate of Analysis, batch records, cold-chain temperature logs, Certificate of Product Registration at country-of-origin certification.'),
     },
     {
       Icon: Truck,
-      title: 'Nationwide Hospital Delivery',
-      desc: 'GDP-compliant delivery to hospitals across Luzon, Visayas, and Mindanao, with cold-chain handling for biologics, vaccines, and specialty medicines.',
+      title: tr('Nationwide Hospital Delivery', 'Hospital Delivery sa Buong Bansa'),
+      desc: tr('GDP-compliant delivery to hospitals across Luzon, Visayas, and Mindanao, with cold-chain handling for biologics, vaccines, and specialty medicines.', 'Delivery na sumusunod sa GDP para sa mga ospital sa buong Luzon, Visayas at Mindanao, may cold-chain handling para sa biologics, bakuna at specialty medicines.'),
     },
     {
       Icon: Headset,
-      title: 'Dedicated Hospital Account Support',
-      desc: 'A dedicated account manager, formulary-ready documentation, and standing supply agreements \u2014 for hospitals that need a serious pharmaceutical partner.',
+      title: tr('Dedicated Hospital Account Support', 'Dedicated na Suporta sa Hospital Account'),
+      desc: tr('A dedicated account manager, formulary-ready documentation, and standing supply agreements \u2014 for hospitals that need a serious pharmaceutical partner.', 'May dedicated na account manager, formulary-ready na dokumentasyon at standing supply agreement \u2014 para sa mga ospital na kailangan ng seryosong pharmaceutical partner.'),
     },
     {
       Icon: Gavel,
-      title: 'Government Bidding & Formulary Support',
-      desc: 'Complete documentation for DOH, LGU, and government tenders, including Product Inserts and safety data for formulary requirements.',
+      title: tr('Government Bidding & Formulary Support', 'Suporta sa Government Bidding at Formulary'),
+      desc: tr('Complete documentation for DOH, LGU, and government tenders, including Product Inserts and safety data for formulary requirements.', 'Kumpletong dokumentasyon para sa DOH, LGU at government tender, kasama ang Product Inserts at safety data para sa formulary requirements.'),
     },
     {
       Icon: Siren,
-      title: 'Emergency Order Coordination',
-      desc: 'Urgent-order coordination for critical care and time-sensitive hospital requirements.',
+      title: tr('Emergency Order Coordination', 'Koordinasyon ng Emergency Order'),
+      desc: tr('Urgent-order coordination for critical care and time-sensitive hospital requirements.', 'Koordinasyon ng urgent na order para sa critical care at mga kailangan ng ospital na hindi makapaghihintay.'),
     },
   ];
 
   const PHARMACY_CREDENTIALS = [
     {
       Icon: BadgeCheck,
-      title: 'FDA-Licensed Pharmaceutical Distributor and Importer',
-      desc: 'FDA Philippines-licensed wholesaler, importer, distributor, and retail pharmacy. PDEA-licensed across LTO categories S1 to S5 for controlled substance supply \u2014 fully compliant sourcing for your pharmacy.',
+      title: tr('FDA-Licensed Pharmaceutical Distributor and Importer', 'Pharmaceutical Distributor at Importer na Lisensyado ng FDA'),
+      desc: tr('FDA Philippines-licensed wholesaler, importer, distributor, and retail pharmacy. PDEA-licensed across LTO categories S1 to S5 for controlled substance supply \u2014 fully compliant sourcing for your pharmacy.', 'Wholesaler, importer, distributor at retail pharmacy na lisensyado ng FDA Philippines. May PDEA license sa LTO categories S1 hanggang S5 para sa supply ng controlled substances \u2014 sumusunod sa lahat ng regulasyon ang sourcing para sa inyong botika.'),
     },
     {
       Icon: Boxes,
-      title: 'Wide Product Portfolio',
-      desc: 'A broad catalog of generic and specialty pharmaceutical products under our own in-house brands \u2014 sourced and manufactured internationally in compliance with global quality standards.',
+      title: tr('Wide Product Portfolio', 'Malawak na Product Portfolio'),
+      desc: tr('A broad catalog of generic and specialty pharmaceutical products under our own in-house brands \u2014 sourced and manufactured internationally in compliance with global quality standards.', 'Malawak na catalog ng generic at specialty pharmaceutical products sa ilalim ng sarili naming mga brand \u2014 kinukuha at ginagawa sa ibang bansa alinsunod sa global quality standards.'),
     },
     {
       Icon: Tags,
-      title: 'Competitive Wholesale Pricing',
-      desc: 'Volume-based pricing tiers and flexible credit terms designed for independent pharmacies, drugstore chains, and multi-branch operations.',
+      title: tr('Competitive Wholesale Pricing', 'Abot-kayang Wholesale na Presyo'),
+      desc: tr('Volume-based pricing tiers and flexible credit terms designed for independent pharmacies, drugstore chains, and multi-branch operations.', 'Presyong nakabatay sa dami at flexible na credit terms para sa mga independent pharmacy, drugstore chain at mga may maraming branch.'),
     },
     {
       Icon: CreditCard,
-      title: 'Flexible Order & Payment Terms',
-      desc: 'Minimum order flexibility and credit terms for qualified accounts \u2014 built to reduce risk for independent pharmacy owners.',
+      title: tr('Flexible Order & Payment Terms', 'Flexible na Order at Payment Terms'),
+      desc: tr('Minimum order flexibility and credit terms for qualified accounts \u2014 built to reduce risk for independent pharmacy owners.', 'Flexible na minimum order at credit terms para sa mga kwalipikadong account \u2014 para mabawasan ang risk ng mga independent pharmacy owner.'),
     },
     {
       Icon: PackageCheck,
-      title: 'Reliable Replenishment & Logistics',
-      desc: 'Consistent stock availability, fast dispatch, and GDP-compliant distribution \u2014 including cold-chain handling for temperature-sensitive products \u2014 to keep your shelves stocked.',
+      title: tr('Reliable Replenishment & Logistics', 'Maaasahang Replenishment at Logistics'),
+      desc: tr('Consistent stock availability, fast dispatch, and GDP-compliant distribution \u2014 including cold-chain handling for temperature-sensitive products \u2014 to keep your shelves stocked.', 'Tuloy-tuloy na stock, mabilis na dispatch at distribution na sumusunod sa GDP \u2014 kasama ang cold-chain handling para sa mga produktong sensitibo sa temperatura \u2014 para laging puno ang inyong mga shelf.'),
     },
     {
       Icon: ClipboardCheck,
-      title: 'Complete Product Documentation',
-      desc: 'We are dedicated to providing all documents needed for compliant sourcing \u2014 Certificate of Analysis, cGMP certification, local assay certificates, Certificate of Product Registration, anti-counterfeit batch notifications, and ISO certification.',
+      title: tr('Complete Product Documentation', 'Kumpletong Product Documentation'),
+      desc: tr('We are dedicated to providing all documents needed for compliant sourcing \u2014 Certificate of Analysis, cGMP certification, local assay certificates, Certificate of Product Registration, anti-counterfeit batch notifications, and ISO certification.', 'Ibinibigay namin ang lahat ng dokumentong kailangan para sa compliant na sourcing \u2014 Certificate of Analysis, cGMP certification, local assay certificates, Certificate of Product Registration, anti-counterfeit batch notifications at ISO certification.'),
     },
     {
       Icon: UserRoundCheck,
-      title: 'Dedicated Distributor Account Support',
-      desc: 'A dedicated account manager to handle reordering, new product requests, and account-specific pricing \u2014 built for long-term partnership, not one-off transactions.',
+      title: tr('Dedicated Distributor Account Support', 'Dedicated na Suporta sa Distributor Account'),
+      desc: tr('A dedicated account manager to handle reordering, new product requests, and account-specific pricing \u2014 built for long-term partnership, not one-off transactions.', 'May dedicated na account manager para sa reorder, request ng bagong produkto at presyong para sa inyong account \u2014 para sa pangmatagalang partnership, hindi one-time na transaksyon.'),
     },
   ];
 
   const DOCTOR_CREDENTIALS = [
     {
       Icon: BadgeCheck,
-      title: 'FDA-Licensed Pharmaceutical Company',
-      desc: 'FDA Philippines-licensed wholesaler, importer, distributor, and retail pharmacy. PDEA-licensed across LTO categories S1 to S5 for controlled substance supply.',
+      title: tr('FDA-Licensed Pharmaceutical Company', 'Pharmaceutical Company na Lisensyado ng FDA'),
+      desc: tr('FDA Philippines-licensed wholesaler, importer, distributor, and retail pharmacy. PDEA-licensed across LTO categories S1 to S5 for controlled substance supply.', 'Wholesaler, importer, distributor at retail pharmacy na lisensyado ng FDA Philippines. May PDEA license sa LTO categories S1 hanggang S5 para sa supply ng controlled substances.'),
     },
     {
       Icon: Factory,
-      title: 'International Manufacturing Standards',
-      desc: 'Our medicines are manufactured and sourced internationally in compliance with global quality standards \u2014 ensuring consistent safety, efficacy, and reliability for your patients.',
+      title: tr('International Manufacturing Standards', 'Internasyonal na Pamantayan sa Paggawa'),
+      desc: tr('Our medicines are manufactured and sourced internationally in compliance with global quality standards \u2014 ensuring consistent safety, efficacy, and reliability for your patients.', 'Ang aming mga gamot ay ginagawa at kinukuha sa ibang bansa alinsunod sa global quality standards \u2014 para sa tuloy-tuloy na kaligtasan, bisa at pagiging maaasahan para sa inyong mga pasyente.'),
     },
     {
       Icon: Stethoscope,
-      title: 'Direct Product Access',
-      desc: 'Order directly from us \u2014 no resellers, no middlemen. Every order comes with accurate product information, Certificate of Product Registration, and Product Inserts.',
+      title: tr('Direct Product Access', 'Direktang Access sa Produkto'),
+      desc: tr('Order directly from us \u2014 no resellers, no middlemen. Every order comes with accurate product information, Certificate of Product Registration, and Product Inserts.', 'Direktang mag-order sa amin \u2014 walang reseller, walang middleman. Bawat order ay may kasamang tamang impormasyon ng produkto, Certificate of Product Registration at Product Inserts.'),
     },
     {
       Icon: Truck,
-      title: 'Fast, Reliable Fulfillment',
-      desc: 'Fast dispatch and GDP-compliant distribution, including cold-chain handling for temperature-sensitive products, delivered to your clinic or practice.',
+      title: tr('Fast, Reliable Fulfillment', 'Mabilis at Maaasahang Fulfillment'),
+      desc: tr('Fast dispatch and GDP-compliant distribution, including cold-chain handling for temperature-sensitive products, delivered to your clinic or practice.', 'Mabilis na dispatch at distribution na sumusunod sa GDP, kasama ang cold-chain handling para sa mga produktong sensitibo sa temperatura, ide-deliver sa inyong klinika o practice.'),
     },
     {
       Icon: HeartPulse,
-      title: 'Patient-First Medical & Sales Support',
-      desc: "Direct access to our team for product inquiries, order coordination, sample requests, and documentation \u2014 because your patients' needs come first.",
+      title: tr('Patient-First Medical & Sales Support', 'Medical at Sales Support na Pasyente ang Inuuna'),
+      desc: tr("Direct access to our team for product inquiries, order coordination, sample requests, and documentation \u2014 because your patients' needs come first.", 'Direktang access sa aming team para sa product inquiry, koordinasyon ng order, sample request at dokumentasyon \u2014 dahil inuuna namin ang kailangan ng inyong mga pasyente.'),
     },
   ];
 
   const CSP_COMMON_USES = [
-    'Rare disease and orphan drug treatments',
-    'Oncology medicines not yet locally registered',
-    'Specialty biologics unavailable through standard channels',
+    tr('Rare disease and orphan drug treatments', 'Gamutan para sa rare disease at orphan drug'),
+    tr('Oncology medicines not yet locally registered', 'Mga gamot sa oncology na hindi pa rehistrado dito'),
+    tr('Specialty biologics unavailable through standard channels', 'Specialty biologics na hindi makukuha sa karaniwang paraan'),
   ];
 
   const CSP_HOW_IT_WORKS = [
-    "Submit your patient's or institution's clinical requirement and product details",
-    'Our team coordinates sourcing and FDA/CSP documentation',
-    'Product is imported and delivered under compassionate-use provisions',
+    tr("Submit your patient's or institution's clinical requirement and product details", 'Ipadala ang clinical requirement ng inyong pasyente o institusyon at ang detalye ng produkto'),
+    tr('Our team coordinates sourcing and FDA/CSP documentation', 'Ang aming team ang mag-aasikaso ng sourcing at FDA/CSP documentation'),
+    tr('Product is imported and delivered under compassionate-use provisions', 'Ini-import at dine-deliver ang produkto sa ilalim ng compassionate-use provisions'),
   ];
 
   const ADVERSE_EVENT_CONTACT = {
@@ -928,91 +930,91 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
   };
 
   const PARTNERSHIP_STEPS = [
-    { title: 'Submit your inquiry', desc: 'Tell us about your pharmacy and product needs' },
-    { title: 'Verification & account setup', desc: 'We confirm your business documents and set your account terms' },
-    { title: 'Catalog & pricing', desc: 'Receive your product catalog and wholesale price list' },
-    { title: 'Start ordering', desc: 'Place your first order with ongoing account manager support' },
+    { title: tr('Submit your inquiry', 'Ipadala ang inyong inquiry'), desc: tr('Tell us about your pharmacy and product needs', 'Sabihin sa amin ang tungkol sa inyong botika at mga kailangang produkto') },
+    { title: tr('Verification & account setup', 'Verification at account setup'), desc: tr('We confirm your business documents and set your account terms', 'Kinukumpirma namin ang inyong business documents at sine-set ang inyong account terms') },
+    { title: tr('Catalog & pricing', 'Catalog at presyo'), desc: tr('Receive your product catalog and wholesale price list', 'Matanggap ang inyong product catalog at wholesale price list') },
+    { title: tr('Start ordering', 'Magsimulang mag-order'), desc: tr('Place your first order with ongoing account manager support', 'Ilagay ang unang order na may tuloy-tuloy na suporta ng account manager') },
   ];
 
   const THERAPEUTIC_AREAS = [
-    { icon: 'fa-ribbon', name: 'Oncology', desc: 'Anti-cancer medicines and supportive care products' },
-    { icon: 'fa-droplet', name: 'Hematology', desc: 'Blood disorder treatments and related specialty products' },
-    { icon: 'fa-syringe', name: 'Anesthesia', desc: 'Anesthetic and perioperative medicines for surgical and critical care use' },
-    { icon: 'fa-dna', name: 'Rare Diseases', desc: 'Specialty and orphan drug medicines for rare disease treatment' },
-    { icon: 'fa-pills', name: 'Essential Medicines', desc: 'Core hospital formulary drugs for everyday clinical needs' },
+    { icon: 'fa-ribbon', name: 'Oncology', desc: tr('Anti-cancer medicines and supportive care products', 'Mga gamot laban sa cancer at supportive care products') },
+    { icon: 'fa-droplet', name: 'Hematology', desc: tr('Blood disorder treatments and related specialty products', 'Gamutan sa sakit sa dugo at kaugnay na specialty products') },
+    { icon: 'fa-syringe', name: 'Anesthesia', desc: tr('Anesthetic and perioperative medicines for surgical and critical care use', 'Anesthetic at perioperative na gamot para sa operasyon at critical care') },
+    { icon: 'fa-dna', name: tr('Rare Diseases', 'Rare Diseases'), desc: tr('Specialty and orphan drug medicines for rare disease treatment', 'Specialty at orphan drug na gamot para sa rare disease') },
+    { icon: 'fa-pills', name: tr('Essential Medicines', 'Essential Medicines'), desc: tr('Core hospital formulary drugs for everyday clinical needs', 'Pangunahing gamot sa hospital formulary para sa pang-araw-araw na clinical needs') },
   ];
 
   const HOSPITAL_REACH_STATS = [
-    { value: '2,000+', label: 'molecules' },
-    { value: '500+', label: 'hospitals' },
-    { value: '10,000+', label: 'pharmacies' },
+    { value: '2,000+', label: tr('molecules', 'molecule') },
+    { value: '500+', label: tr('hospitals', 'ospital') },
+    { value: '10,000+', label: tr('pharmacies', 'botika') },
   ];
 
   const CSP_USE_TYPES = [
-    { name: 'Institutional Use', desc: 'for hospitals requiring unregistered medicines for broader patient care needs' },
-    { name: 'Named Patient Use', desc: 'for a specific, individually identified patient requiring an unregistered medicine' },
+    { name: tr('Institutional Use', 'Institutional Use'), desc: tr('for hospitals requiring unregistered medicines for broader patient care needs', 'para sa mga ospital na nangangailangan ng hindi rehistradong gamot para sa mas malawak na pangangalaga ng pasyente') },
+    { name: tr('Named Patient Use', 'Named Patient Use'), desc: tr('for a specific, individually identified patient requiring an unregistered medicine', 'para sa isang partikular na pasyente na nangangailangan ng hindi rehistradong gamot') },
   ];
 
   const PARTNER_TRUST = isDoctorUserType
     ? {
-        credentialsHeading: 'Why Doctors & Healthcare Professionals Choose Getmeds',
+        credentialsHeading: tr('Why Doctors & Healthcare Professionals Choose Getmeds', 'Bakit Getmeds ang Pinipili ng mga Doktor at Healthcare Professional'),
         credentials: DOCTOR_CREDENTIALS,
         credentialsTitleSpan: 'lg:col-span-1',
-        therapeuticIntro: 'Getmeds supports doctors and healthcare professionals with a focused portfolio across critical and specialty therapeutic categories, backed by proper documentation and cold-chain handling where required.',
+        therapeuticIntro: tr('Getmeds supports doctors and healthcare professionals with a focused portfolio across critical and specialty therapeutic categories, backed by proper documentation and cold-chain handling where required.', 'Sinusuportahan ng Getmeds ang mga doktor at healthcare professional ng nakatutok na portfolio sa critical at specialty therapeutic categories, may tamang dokumentasyon at cold-chain handling kung kailangan.'),
         areasWeServe: '',
         showCsp: true,
-        cspIntro: 'For patients who need access to medicines not yet registered in the Philippines, Compassionate Special Permit (CSP) coordination is facilitated through 2MG Inc., our trusted partner company specializing in compassionate-use and unregistered drug importation.',
+        cspIntro: tr('For patients who need access to medicines not yet registered in the Philippines, Compassionate Special Permit (CSP) coordination is facilitated through 2MG Inc., our trusted partner company specializing in compassionate-use and unregistered drug importation.', 'Para sa mga pasyenteng nangangailangan ng gamot na hindi pa rehistrado sa Pilipinas, ang koordinasyon ng Compassionate Special Permit (CSP) ay isinasagawa sa pamamagitan ng 2MG Inc., ang aming pinagkakatiwalaang partner company na dalubhasa sa compassionate-use at pag-import ng hindi rehistradong gamot.'),
         cspUseTypes: [
-          { name: 'Named Patient Use', desc: 'for a specific, individually identified patient requiring an unregistered medicine' },
-          { name: 'Institutional Use', desc: 'for hospitals and healthcare institutions requiring unregistered medicines for broader patient care needs' },
+          { name: tr('Named Patient Use', 'Named Patient Use'), desc: tr('for a specific, individually identified patient requiring an unregistered medicine', 'para sa isang partikular na pasyente na nangangailangan ng hindi rehistradong gamot') },
+          { name: tr('Institutional Use', 'Institutional Use'), desc: tr('for hospitals and healthcare institutions requiring unregistered medicines for broader patient care needs', 'para sa mga ospital at healthcare institution na nangangailangan ng hindi rehistradong gamot para sa mas malawak na pangangalaga ng pasyente') },
         ],
         cspCommonUses: CSP_COMMON_USES,
         cspHowItWorks: CSP_HOW_IT_WORKS,
-        cspNote: 'This process requires physician or institutional initiation and is subject to FDA approval and applicable regulations.',
-        reachHeading: 'Trusted by Healthcare Professionals Nationwide',
+        cspNote: tr('This process requires physician or institutional initiation and is subject to FDA approval and applicable regulations.', 'Kailangang simulan ito ng physician o institusyon at depende sa pag-apruba ng FDA at sa mga naaangkop na regulasyon.'),
+        reachHeading: tr('Trusted by Healthcare Professionals Nationwide', 'Pinagkakatiwalaan ng mga Healthcare Professional sa Buong Bansa'),
         reachStats: [
-          { value: '500+', label: 'hospitals' },
-          { value: '10,000+', label: 'pharmacies' },
-          { value: '2,000+', label: 'molecules' },
+          { value: '500+', label: tr('hospitals', 'ospital') },
+          { value: '10,000+', label: tr('pharmacies', 'botika') },
+          { value: '2,000+', label: tr('molecules', 'molecule') },
         ],
-        reachBlurb: 'From Luzon to Visayas to Mindanao \u2014 Getmeds supports doctors and healthcare professionals with reliable product access and support nationwide.',
+        reachBlurb: tr('From Luzon to Visayas to Mindanao \u2014 Getmeds supports doctors and healthcare professionals with reliable product access and support nationwide.', 'Mula Luzon hanggang Visayas at Mindanao \u2014 sinusuportahan ng Getmeds ang mga doktor at healthcare professional ng maaasahang access sa produkto at suporta sa buong bansa.'),
       }
     : isPharmacyUserType
     ? {
-        credentialsHeading: 'Your Trusted Pharmaceutical Distributor and Importer in the Philippines',
+        credentialsHeading: tr('Your Trusted Pharmaceutical Distributor and Importer in the Philippines', 'Ang Inyong Pinagkakatiwalaang Pharmaceutical Distributor at Importer sa Pilipinas'),
         credentials: PHARMACY_CREDENTIALS,
         credentialsTitleSpan: 'lg:col-span-2',
-        therapeuticIntro: 'Getmeds distributes a focused portfolio across key therapeutic categories, giving your pharmacy access to both everyday essentials and specialty products your customers may not find elsewhere.',
-        areasWeServe: 'Getmeds supplies independent pharmacies, drugstore chains, and multi-branch pharmacy partners across the Philippines \u2014 including Metro Manila, Cebu, Davao, and provincial areas nationwide.',
+        therapeuticIntro: tr('Getmeds distributes a focused portfolio across key therapeutic categories, giving your pharmacy access to both everyday essentials and specialty products your customers may not find elsewhere.', 'Nagdi-distribute ang Getmeds ng nakatutok na portfolio sa mga pangunahing therapeutic category, para may access ang inyong botika sa pang-araw-araw na essentials at specialty products na maaaring hindi makita ng inyong customers sa iba.'),
+        areasWeServe: tr('Getmeds supplies independent pharmacies, drugstore chains, and multi-branch pharmacy partners across the Philippines \u2014 including Metro Manila, Cebu, Davao, and provincial areas nationwide.', 'Nagsu-supply ang Getmeds sa mga independent pharmacy, drugstore chain at multi-branch pharmacy partner sa buong Pilipinas \u2014 kasama ang Metro Manila, Cebu, Davao at mga probinsya sa buong bansa.'),
         showCsp: false,
         cspIntro: '', cspUseTypes: [], cspCommonUses: [], cspHowItWorks: [], cspNote: '',
-        reachHeading: 'Supplying Distributors Across the Philippines',
+        reachHeading: tr('Supplying Distributors Across the Philippines', 'Nagsu-supply sa mga Distributor sa Buong Pilipinas'),
         reachStats: HOSPITAL_REACH_STATS,
-        reachBlurb: 'From Luzon to Visayas to Mindanao \u2014 Getmeds is the distributor of choice for independent pharmacies, drugstore chains, and retail pharmacy partners nationwide.',
+        reachBlurb: tr('From Luzon to Visayas to Mindanao \u2014 Getmeds is the distributor of choice for independent pharmacies, drugstore chains, and retail pharmacy partners nationwide.', 'Mula Luzon hanggang Visayas at Mindanao \u2014 Getmeds ang piniling distributor ng mga independent pharmacy, drugstore chain at retail pharmacy partner sa buong bansa.'),
       }
     : {
-        credentialsHeading: 'Your Trusted Pharmaceutical Supplier for Philippine Hospitals',
+        credentialsHeading: tr('Your Trusted Pharmaceutical Supplier for Philippine Hospitals', 'Ang Inyong Pinagkakatiwalaang Pharmaceutical Supplier para sa mga Ospital sa Pilipinas'),
         credentials: HOSPITAL_CREDENTIALS,
         credentialsTitleSpan: 'lg:col-span-2',
-        therapeuticIntro: 'Getmeds supplies hospitals with a focused portfolio across critical and specialty therapeutic categories, backed by proper documentation and cold-chain handling where required.',
+        therapeuticIntro: tr('Getmeds supplies hospitals with a focused portfolio across critical and specialty therapeutic categories, backed by proper documentation and cold-chain handling where required.', 'Nagsu-supply ang Getmeds sa mga ospital ng nakatutok na portfolio sa critical at specialty therapeutic categories, may tamang dokumentasyon at cold-chain handling kung kailangan.'),
         areasWeServe: '',
         showCsp: true,
-        cspIntro: 'For patients or institutional needs requiring medicines not yet registered in the Philippines, Compassionate Special Permit (CSP) coordination is facilitated through 2MG Inc., our trusted partner company specializing in compassionate-use and unregistered drug importation.',
+        cspIntro: tr('For patients or institutional needs requiring medicines not yet registered in the Philippines, Compassionate Special Permit (CSP) coordination is facilitated through 2MG Inc., our trusted partner company specializing in compassionate-use and unregistered drug importation.', 'Para sa mga pasyente o institusyong nangangailangan ng gamot na hindi pa rehistrado sa Pilipinas, ang koordinasyon ng Compassionate Special Permit (CSP) ay isinasagawa sa pamamagitan ng 2MG Inc., ang aming pinagkakatiwalaang partner company na dalubhasa sa compassionate-use at pag-import ng hindi rehistradong gamot.'),
         cspUseTypes: CSP_USE_TYPES,
         cspCommonUses: [],
         cspHowItWorks: [],
-        cspNote: 'This process requires institutional or physician initiation and is subject to FDA approval and applicable regulations.',
-        reachHeading: 'Serving Hospitals Across the Philippines',
+        cspNote: tr('This process requires institutional or physician initiation and is subject to FDA approval and applicable regulations.', 'Kailangang simulan ito ng institusyon o physician at depende sa pag-apruba ng FDA at sa mga naaangkop na regulasyon.'),
+        reachHeading: tr('Serving Hospitals Across the Philippines', 'Naglilingkod sa mga Ospital sa Buong Pilipinas'),
         reachStats: HOSPITAL_REACH_STATS,
-        reachBlurb: 'From Luzon to Visayas to Mindanao \u2014 Getmeds is trusted by leading Filipino hospitals, healthcare institutions, and pharmaceutical partners.',
+        reachBlurb: tr('From Luzon to Visayas to Mindanao \u2014 Getmeds is trusted by leading Filipino hospitals, healthcare institutions, and pharmaceutical partners.', 'Mula Luzon hanggang Visayas at Mindanao \u2014 pinagkakatiwalaan ang Getmeds ng mga nangungunang ospital, healthcare institution at pharmaceutical partner sa Pilipinas.'),
       };
 
   const GUIDE_ITEMS = [
-    "Patient's full name",
-    "Medicine name, dosage, and quantity",
-    "Prescribing physician's name and PRC license number",
-    "Clinic/hospital address and physician's signature",
-    "Valid date",
+    tr("Patient's full name", 'Buong pangalan ng pasyente'),
+    tr("Medicine name, dosage, and quantity", 'Pangalan ng gamot, dosage at dami'),
+    tr("Prescribing physician's name and PRC license number", 'Pangalan ng nagresetang doktor at numero ng PRC license'),
+    tr("Clinic/hospital address and physician's signature", 'Address ng klinika/ospital at pirma ng doktor'),
+    tr("Valid date", 'Valid na petsa'),
   ];
 
   return (
@@ -1046,16 +1048,6 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
             four audience pages below it. Everything after this point is an audience
             page, and only renders once the URL has named one. */}
         {isHub ? <OrderMedicinesHub /> : (<>
-        {/* Breadcrumb — an audience page is now a real URL a visitor can land on
-            cold, so it has to say where it sits and offer the way back up. */}
-        <nav aria-label="Breadcrumb" className="w-full px-4 md:px-6 pt-4">
-          <ol className="flex items-center gap-2 text-[12px] text-gray-400">
-            <li><a href={ORDER_MEDICINES_BASE} className="font-semibold hover:text-primary transition">Order medicines</a></li>
-            <li aria-hidden="true"><i className="fa-solid fa-chevron-right text-[8px]"></i></li>
-            <li className="font-semibold text-gray-600" aria-current="page">{audience?.cardTitle}</li>
-          </ol>
-        </nav>
-
         {/* ── Hero + Step Cards ── */}
         <section className="w-full px-4 md:px-6 pt-5 pb-4">
           <div
@@ -1089,18 +1081,18 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                   {[
                     {
                       icon: 'fa-cloud-arrow-up',
-                      label: '1. Upload',
-                      desc: 'Upload your valid prescription and contact details.'
+                      label: tr('1. Upload', '1. Mag-upload'),
+                      desc: tr('Upload your valid prescription and contact details.', 'I-upload ang inyong valid na reseta at contact details.')
                     },
                     {
                       icon: 'fa-phone-volume',
-                      label: '2. We reach out',
-                      desc: 'Our pharmacists contact you to verify your order.'
+                      label: tr('2. We reach out', '2. Kokontakin namin kayo'),
+                      desc: tr('Our pharmacists contact you to verify your order.', 'Kokontakin kayo ng aming pharmacist para i-verify ang order.')
                     },
                     {
                       icon: 'fa-circle-check',
-                      label: '3. Receive Your Order',
-                      desc: 'Get your order confirmed and delivered.'
+                      label: tr('3. Receive Your Order', '3. Tanggapin ang Order'),
+                      desc: tr('Get your order confirmed and delivered.', 'Makumpirma at ma-deliver ang inyong order.')
                     }
                   ].map((step, i) => (
                     <div key={i} className={`ca-anim ca-zoom ${['ca-d1', 'ca-d3', 'ca-d5'][i]} bg-white/10 backdrop-blur-sm rounded-[15px] border border-white/20 p-4 md:p-6 flex flex-row items-center md:flex-col md:items-center text-left md:text-center cursor-default`}>
@@ -1131,8 +1123,8 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
 
               {/* LEFT: Guide for Valid Prescription */}
               <div className="lg:col-span-2 ca-anim ca-left bg-white rounded-[15px] border border-gray-100 p-8 shadow-sm">
-                <h2 className="text-[17px] font-semibold text-dark mb-1">Guide for a valid prescription</h2>
-                <p className="text-gray-400 text-[12px] mb-6">Please ensure the document includes:</p>
+                <h2 className="text-[17px] font-semibold text-dark mb-1">{tr('Guide for a valid prescription', 'Gabay para sa valid na reseta')}</h2>
+                <p className="text-gray-400 text-[12px] mb-6">{tr('Please ensure the document includes:', 'Siguraduhing nakalagay sa dokumento ang:')}</p>
                 <ul className="space-y-3.5">
                   {GUIDE_ITEMS.map((item, i) => (
                     <li key={i} className="flex items-center gap-3">
@@ -1144,7 +1136,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                   ))}
                 </ul>
                 <p className="text-[12px] text-gray-400 mt-5 leading-relaxed">
-                  All details must be clear and legible for verification.
+                  {tr('All details must be clear and legible for verification.', 'Dapat malinaw at nababasa ang lahat ng detalye para sa verification.')}
                 </p>
               </div>
 
@@ -1156,8 +1148,8 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                     <i className="fa-solid fa-file-prescription text-base"></i>
                   </div>
                   <div>
-                    <h2 className="text-[15px] font-semibold text-dark tracking-tight">Upload prescription</h2>
-                    <p className="text-gray-400 text-[11px] mt-0.5">Accepted formats: JPEG, PNG, PDF</p>
+                    <h2 className="text-[15px] font-semibold text-dark tracking-tight">{tr('Upload prescription', 'Mag-upload ng reseta')}</h2>
+                    <p className="text-gray-400 text-[11px] mt-0.5">{tr('Accepted formats: JPEG, PNG, PDF', 'Tinatanggap na format: JPEG, PNG, PDF')}</p>
                   </div>
                 </div>
 
@@ -1168,9 +1160,9 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                     <div className="text-gray-300 group-hover:text-primary transition-colors duration-200 mb-3">
                       <i className="fa-solid fa-cloud-arrow-up text-4xl"></i>
                     </div>
-                    <p className="text-[13px] text-gray-400 mb-3">Click to browse — multiple files allowed</p>
+                    <p className="text-[13px] text-gray-400 mb-3">{tr('Click to browse — multiple files allowed', 'I-click para pumili — puwede ang maraming file')}</p>
                     <span className="inline-block bg-dark group-hover:bg-primary text-white text-[13px] font-semibold px-5 py-2 rounded-[10px] transition-colors duration-200">
-                      Browse files
+                      {tr('Browse files', 'Pumili ng file')}
                     </span>
                   </div>
                 </label>
@@ -1208,14 +1200,14 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                   ) : (
                     <div className="flex flex-col items-center justify-center text-center px-4 py-6 h-full">
                       <i className="fa-regular fa-images text-3xl text-gray-200 mb-2"></i>
-                      <span className="text-gray-300 text-[11px]">Uploaded files appear here</span>
+                      <span className="text-gray-300 text-[11px]">{tr('Uploaded files appear here', 'Dito lalabas ang mga na-upload na file')}</span>
                     </div>
                   )}
                 </div>
 
                 <div className="mt-4 flex items-start gap-3 p-3 bg-gray-50 rounded-[12px]">
                   <i className="fa-solid fa-circle-info text-gray-400 mt-0.5 text-sm flex-shrink-0"></i>
-                  <p className="text-[12px] text-gray-500 leading-relaxed">Always upload a clean, legible copy for faster verification.</p>
+                  <p className="text-[12px] text-gray-500 leading-relaxed">{tr('Always upload a clean, legible copy for faster verification.', 'Laging mag-upload ng malinis at nababasang kopya para mas mabilis ang verification.')}</p>
                 </div>
               </div>
 
@@ -1224,16 +1216,16 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
             {/* ── Customer Validation Form ── */}
             <div className="ca-anim ca-up bg-white rounded-[15px] border border-gray-100 p-8 md:p-12 shadow-sm">
               <div className="mb-8">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-1">Customer Information</h2>
-                <p className="text-gray-400 text-[13px]">Please provide accurate information so our pharmacists can process your order.</p>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-1">{tr('Customer Information', 'Impormasyon ng Customer')}</h2>
+                <p className="text-gray-400 text-[13px]">{tr('Please provide accurate information so our pharmacists can process your order.', 'Pakibigay ang tamang impormasyon para ma-process ng aming pharmacist ang inyong order.')}</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Patient full name + Upload valid ID — side by side */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                   <div className="space-y-2">
-                    <label className="text-[14px] font-semibold text-gray-700">Patient Full Name</label>
-                    <input type="text" placeholder="Full name as shown on the prescription"
+                    <label className="text-[14px] font-semibold text-gray-700">{tr('Patient Full Name', 'Buong Pangalan ng Pasyente')}</label>
+                    <input type="text" placeholder={tr('Full name as shown on the prescription', 'Buong pangalan gaya ng nasa reseta')}
                       required
                       value={formData.patientName}
                       onChange={e => setFormData(prev => ({ ...prev, patientName: e.target.value }))}
@@ -1242,9 +1234,9 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
 
                   {/* Upload valid ID of the patient */}
                   <div className="space-y-2">
-                    <label className="text-[14px] font-semibold text-gray-700">Upload valid ID of the patient</label>
+                    <label className="text-[14px] font-semibold text-gray-700">{tr('Upload valid ID of the patient', 'Mag-upload ng valid ID ng pasyente')}</label>
                     <p className="text-[12px] text-gray-400 leading-relaxed">
-                      Upload a valid government-issued ID of the patient. This helps us process your order faster and ensures the prescription is dispensed to the right person.
+                      {tr('Upload a valid government-issued ID of the patient. This helps us process your order faster and ensures the prescription is dispensed to the right person.', 'Mag-upload ng valid na government-issued ID ng pasyente. Makakatulong ito para mas mabilis ma-process ang order at masigurong maibibigay ang gamot sa tamang tao.')}
                     </p>
                     <div className="flex items-center gap-3 flex-wrap pt-1">
                       {!patientIdFile ? (
@@ -1252,7 +1244,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                           style={{ background: 'linear-gradient(to right,#61A644,#1D9FDA)' }}>
                           <input type="file" accept={ALLOWED_FILE_TYPES_ACCEPT} className="hidden" onChange={handlePatientIdChange} />
                           <i className="fa-solid fa-upload text-[11px]"></i>
-                          Upload File
+                          {tr('Upload File', 'Mag-upload ng File')}
                         </label>
                       ) : (
                         <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-[10px] pl-1.5 pr-3 py-1.5">
@@ -1271,47 +1263,47 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                           </button>
                         </div>
                       )}
-                      <span className="text-[11px] text-gray-400">Accepted formats: JPG, PNG, PDF</span>
+                      <span className="text-[11px] text-gray-400">{tr('Accepted formats: JPG, PNG, PDF', 'Tinatanggap na format: JPG, PNG, PDF')}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Contact Person */}
                 <div className="border border-gray-100 rounded-[15px] p-6 bg-gray-50/40 space-y-4">
-                  <h3 className="text-[15px] font-semibold text-gray-800">Contact Person</h3>
+                  <h3 className="text-[15px] font-semibold text-gray-800">{tr('Contact Person', 'Contact Person')}</h3>
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input type="checkbox"
                       checked={contactSameAsPatient}
                       onChange={e => setContactSameAsPatient(e.target.checked)}
                       className="w-4 h-4 mt-0.5 rounded-md border-gray-200 text-success focus:ring-success cursor-pointer" />
                     <span>
-                      <span className="block text-[13px] font-semibold text-gray-700">Same as patient details</span>
-                      <span className="block text-[12px] text-gray-400 mt-0.5">Check this box if the patient is the one placing the order and receiving delivery.</span>
+                      <span className="block text-[13px] font-semibold text-gray-700">{tr('Same as patient details', 'Kapareho ng detalye ng pasyente')}</span>
+                      <span className="block text-[12px] text-gray-400 mt-0.5">{tr('Check this box if the patient is the one placing the order and receiving delivery.', 'I-check ito kung ang pasyente mismo ang nag-o-order at tatanggap ng delivery.')}</span>
                     </span>
                   </label>
 
                   {!contactSameAsPatient && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 pt-2">
                       <div className="space-y-2">
-                        <label className="text-[14px] font-semibold text-gray-700">Contact Person's Full Name</label>
-                        <input type="text" placeholder="Person we should contact"
+                        <label className="text-[14px] font-semibold text-gray-700">{tr("Contact Person's Full Name", 'Buong Pangalan ng Contact Person')}</label>
+                        <input type="text" placeholder={tr('Person we should contact', 'Taong dapat naming kontakin')}
                           required={!contactSameAsPatient}
                           value={formData.contactName}
                           onChange={e => setFormData(prev => ({ ...prev, contactName: e.target.value }))}
                           className="w-full bg-white border-none rounded-[15px] px-6 py-3.5 text-[13px] text-gray-700 outline-none focus:ring-2 focus:ring-primary/20 transition placeholder-gray-300" />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[14px] font-semibold text-gray-700">Relationship to Patient</label>
+                        <label className="text-[14px] font-semibold text-gray-700">{tr('Relationship to Patient', 'Kaugnayan sa Pasyente')}</label>
                         <select
                           value={formData.contactRelationship}
                           onChange={e => setFormData(prev => ({ ...prev, contactRelationship: e.target.value }))}
                           className="w-full bg-white border-none rounded-[15px] px-6 py-3.5 text-[13px] text-gray-700 outline-none focus:ring-2 focus:ring-primary/20 transition">
-                          <option value="">Select relationship (optional)</option>
-                          <option value="Family member">Family member</option>
-                          <option value="Caregiver">Caregiver</option>
-                          <option value="Guardian">Guardian</option>
-                          <option value="Healthcare professional">Healthcare professional</option>
-                          <option value="Other">Other</option>
+                          <option value="">{tr('Select relationship (optional)', 'Pumili ng kaugnayan (opsyonal)')}</option>
+                          <option value="Family member">{tr('Family member', 'Kapamilya')}</option>
+                          <option value="Caregiver">{tr('Caregiver', 'Tagapag-alaga')}</option>
+                          <option value="Guardian">{tr('Guardian', 'Guardian')}</option>
+                          <option value="Healthcare professional">{tr('Healthcare professional', 'Healthcare professional')}</option>
+                          <option value="Other">{tr('Other', 'Iba pa')}</option>
                         </select>
                       </div>
                     </div>
@@ -1322,13 +1314,13 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
 
 
                 <div className="mb-8">
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-1">Contact & Delivery</h2>
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-1">{tr('Contact & Delivery', 'Contact at Delivery')}</h2>
                 </div>
 
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                   <div className="space-y-2">
-                    <label className="text-[14px] font-semibold text-gray-700">Email Address</label>
+                    <label className="text-[14px] font-semibold text-gray-700">{tr('Email Address', 'Email Address')}</label>
                     <input type="email" placeholder="example@domain.com"
                       required
                       value={formData.email}
@@ -1338,12 +1330,12 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
 
                   {/* Age — right of Email, same size as the other fields */}
                   <div className="space-y-2" ref={ageDropdownRef}>
-                    <label className="text-[14px] font-semibold text-gray-700">Age</label>
+                    <label className="text-[14px] font-semibold text-gray-700">{tr('Age', 'Edad')}</label>
                     <div className="relative">
                       <button type="button"
                         onClick={() => setAgeDropdownOpen(o => !o)}
                         className="w-full flex items-center justify-between bg-gray-50 rounded-[15px] px-6 py-3.5 text-[13px] text-gray-700 outline-none focus:ring-2 focus:ring-primary/20 transition cursor-pointer">
-                        <span className={formData.age ? 'text-gray-700' : 'text-gray-300'}>{formData.age || 'Age'}</span>
+                        <span className={formData.age ? 'text-gray-700' : 'text-gray-300'}>{formData.age || tr('Age', 'Edad')}</span>
                         <i className="fa-solid fa-chevron-down text-[10px] text-gray-400"></i>
                       </button>
                       {ageDropdownOpen && (
@@ -1364,7 +1356,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
 
                   {/* Phone number — under Email */}
                   <div className="space-y-2">
-                    <label className="text-[14px] font-semibold text-gray-700">Phone Number</label>
+                    <label className="text-[14px] font-semibold text-gray-700">{tr('Phone Number', 'Phone Number')}</label>
                     <div className="relative flex items-center bg-gray-50 rounded-[15px] overflow-visible focus-within:ring-2 focus-within:ring-primary/20 transition">
                       <button type="button" onClick={() => setPhoneCountryOpen(o => !o)}
                         className="flex items-center gap-1.5 pl-4 pr-2 py-3.5 shrink-0 border-r border-gray-200 text-[13px] text-gray-700 hover:bg-gray-100 rounded-l-[15px] transition">
@@ -1380,7 +1372,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                       {phoneCountryOpen && (
                         <div className="absolute top-full left-0 mt-1 w-72 bg-white rounded-[12px] shadow-xl border border-gray-100 z-[60] overflow-hidden" onClick={e => e.stopPropagation()}>
                           <div className="p-2 border-b border-gray-100">
-                            <input autoFocus type="text" placeholder="Search country..."
+                            <input autoFocus type="text" placeholder={tr('Search country...', 'Maghanap ng bansa...')}
                               value={phoneSearch} onChange={e => setPhoneSearch(e.target.value)}
                               className="w-full px-3 py-2 text-[12px] bg-gray-50 rounded-[8px] outline-none placeholder-gray-300 text-gray-700" />
                           </div>
@@ -1404,8 +1396,8 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
 
                   {/* Delivery address — under Age */}
                   <div className="space-y-2">
-                    <label className="text-[14px] font-semibold text-gray-700">Delivery Address</label>
-                    <input type="text" placeholder="Complete address for courier delivery"
+                    <label className="text-[14px] font-semibold text-gray-700">{tr('Delivery Address', 'Address para sa Delivery')}</label>
+                    <input type="text" placeholder={tr('Complete address for courier delivery', 'Kumpletong address para sa courier delivery')}
                       required
                       value={formData.address}
                       onChange={e => setFormData(prev => ({ ...prev, address: e.target.value }))}
@@ -1416,13 +1408,13 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                 {/* After-submit note */}
                 <div className="flex items-start gap-2 text-[12px] text-gray-400 pt-2">
                   <i className="fa-solid fa-circle-info mt-0.5 flex-shrink-0"></i>
-                  <span>Our pharmacists will contact you on the mobile number provided.</span>
+                  <span>{tr('Our pharmacists will contact you on the mobile number provided.', 'Kokontakin kayo ng aming pharmacist sa ibinigay na mobile number.')}</span>
                 </div>
 
                 <hr className="border-gray-100" />
 
                 <div>
-                  <h3 className="text-[15px] font-semibold text-gray-800 mb-3">Declarations and Consent</h3>
+                  <h3 className="text-[15px] font-semibold text-gray-800 mb-3">{tr('Declarations and Consent', 'Mga Deklarasyon at Pahintulot')}</h3>
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex flex-col gap-3 max-w-xl">
                       <div className="flex items-start gap-3">
@@ -1431,7 +1423,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                           onChange={e => setFormData(prev => ({ ...prev, terms: e.target.checked }))}
                           className="w-4 h-4 mt-0.5 rounded-md border-gray-200 text-success focus:ring-success cursor-pointer" />
                         <label htmlFor="terms" className="text-[12px] text-gray-500 cursor-pointer">
-                          I confirm that the information provided is accurate and that the prescription submitted is valid.
+                          {tr('I confirm that the information provided is accurate and that the prescription submitted is valid.', 'Kinukumpirma kong tama ang ibinigay na impormasyon at valid ang ipinadalang reseta.')}
                         </label>
                       </div>
                       <div className="flex items-start gap-3">
@@ -1440,7 +1432,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                           onChange={e => setFormData(prev => ({ ...prev, privacyConsent: e.target.checked }))}
                           className="w-4 h-4 mt-0.5 rounded-md border-gray-200 text-success focus:ring-success cursor-pointer" />
                         <label htmlFor="privacyConsent" className="text-[12px] text-gray-500 cursor-pointer">
-                          I have read and understood the{' '}
+                          {tr('I have read and understood the', 'Nabasa at naintindihan ko ang')}{' '}
                           <button type="button"
                             onClick={(e) => {
                               e.preventDefault();
@@ -1454,7 +1446,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                             className="text-primary font-semibold hover:underline">
                             Privacy Policy
                           </button>
-                          {' '}and consent to the collection, use, and processing of my personal and sensitive personal information for the purpose of verifying, processing, dispensing, and delivering my order.
+                          {' '}{tr('and consent to the collection, use, and processing of my personal and sensitive personal information for the purpose of verifying, processing, dispensing, and delivering my order.', 'at pumapayag ako sa pagkolekta, paggamit at pagproseso ng aking personal at sensitibong personal na impormasyon para sa pag-verify, pagproseso, pag-dispense at pag-deliver ng aking order.')}
                         </label>
                       </div>
                     </div>
@@ -1472,12 +1464,12 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                           setContactSameAsPatient(false);
                         }}
                         className="shadow-none px-5 py-2 rounded-[15px] text-[13px] font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition">
-                        Cancel
+                        {tr('Cancel', 'Kanselahin')}
                       </button>
                       <button type="submit" disabled={submitState === 'sending' || (orderTurnstile.enabled && !orderTurnstile.token)}
                         className="shadow-none hover:opacity-90 text-white font-bold py-2 px-6 rounded-[15px] text-[13px] transition disabled:opacity-50"
                         style={{ background: 'linear-gradient(to right,#61A644,#1D9FDA)' }}>
-                        {submitState === 'sending' ? 'Submitting...' : 'Submit'}
+                        {submitState === 'sending' ? tr('Submitting...', 'Ipinapadala...') : tr('Submit', 'Ipadala')}
                       </button>
                     </div>
                   </div>
@@ -1488,8 +1480,8 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
               <div className="mt-8 p-5 bg-amber-50 border border-amber-100 rounded-[15px] flex items-start gap-3">
                 <i className="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5 flex-shrink-0"></i>
                 <p className="text-[11px] text-amber-800 leading-relaxed">
-                  <span className="font-bold">Medical Disclaimer: </span>
-                  Getmeds dispenses prescription medicines only upon receipt of a valid prescription from a licensed physician. This service does not replace professional medical advice, diagnosis, or treatment. Always consult your healthcare provider for any medical concerns.
+                  <span className="font-bold">{tr('Medical Disclaimer: ', 'Medical Disclaimer: ')}</span>
+                  {tr('Getmeds dispenses prescription medicines only upon receipt of a valid prescription from a licensed physician. This service does not replace professional medical advice, diagnosis, or treatment. Always consult your healthcare provider for any medical concerns.', 'Nagbibigay lang ang Getmeds ng mga gamot na may reseta kapag may valid na reseta mula sa lisensyadong doktor. Hindi pumapalit ang serbisyong ito sa propesyonal na payo, diagnosis o gamutan ng doktor. Laging kumonsulta sa inyong healthcare provider para sa anumang medikal na alalahanin.')}
                 </p>
               </div>
             </div>
@@ -1504,27 +1496,27 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
               <div className="ca-anim ca-up bg-white rounded-[15px] border border-gray-100 p-6 md:p-10 shadow-sm">
                 <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-1">Send an Inquiry</h2>
-                    <p className="text-gray-400 text-[13px]">Submit your details and our team will follow up with a formal response.</p>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-1">{tr('Send an Inquiry', 'Magpadala ng Inquiry')}</h2>
+                    <p className="text-gray-400 text-[13px]">{tr('Submit your details and our team will follow up with a formal response.', 'Ipadala ang inyong detalye at magfo-follow up ang aming team ng pormal na sagot.')}</p>
                   </div>
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-primary border border-blue-100 shrink-0">
                     <i className="fa-solid fa-user-tag text-[9px]"></i>
-                    {USER_TYPE_LABELS[orderUserType]}
+                    {USER_TYPE_DISPLAY_LABELS[orderUserType]}
                   </div>
                 </div>
 
                 <form onSubmit={handleInquirySubmit} className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6">
                     <div className="space-y-2">
-                      <label className="text-[13px] font-semibold text-gray-700">Full Name</label>
-                      <input type="text" required placeholder="John Doe"
+                      <label className="text-[13px] font-semibold text-gray-700">{tr('Full Name', 'Buong Pangalan')}</label>
+                      <input type="text" required placeholder={tr('John Doe', 'Juan Dela Cruz')}
                         value={inquiryFormData.name}
                         onChange={e => setInquiryFormData(prev => ({ ...prev, name: e.target.value }))}
                         className="w-full bg-gray-50 border-none rounded-[12px] px-4 py-3 text-[13px] text-gray-700 outline-none focus:ring-2 focus:ring-primary/20 transition placeholder-gray-300" />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[13px] font-semibold text-gray-700">Email Address</label>
+                      <label className="text-[13px] font-semibold text-gray-700">{tr('Email Address', 'Email Address')}</label>
                       <input type="email" required placeholder="example@domain.com"
                         value={inquiryFormData.email}
                         onChange={e => setInquiryFormData(prev => ({ ...prev, email: e.target.value }))}
@@ -1532,7 +1524,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[13px] font-semibold text-gray-700">Phone Number</label>
+                      <label className="text-[13px] font-semibold text-gray-700">{tr('Phone Number', 'Phone Number')}</label>
                       <input type="tel" required placeholder="+63 900 000 0000"
                         inputMode="numeric"
                         value={inquiryFormData.phone}
@@ -1541,12 +1533,12 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                     </div>
 
                     <div className="space-y-2" ref={inquiryAgeDropdownRef}>
-                      <label className="text-[13px] font-semibold text-gray-700">Age</label>
+                      <label className="text-[13px] font-semibold text-gray-700">{tr('Age', 'Edad')}</label>
                       <div className="relative">
                         <button type="button"
                           onClick={() => setInquiryAgeDropdownOpen(o => !o)}
                           className="w-full flex items-center justify-between bg-gray-50 rounded-[12px] px-4 py-3 text-[13px] text-gray-700 outline-none focus:ring-2 focus:ring-primary/20 transition cursor-pointer">
-                          <span className={inquiryFormData.age ? 'text-gray-700' : 'text-gray-300'}>{inquiryFormData.age || 'Age'}</span>
+                          <span className={inquiryFormData.age ? 'text-gray-700' : 'text-gray-300'}>{inquiryFormData.age || tr('Age', 'Edad')}</span>
                           <i className="fa-solid fa-chevron-down text-[10px] text-gray-400"></i>
                         </button>
                         {inquiryAgeDropdownOpen && (
@@ -1567,8 +1559,8 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[13px] font-semibold text-gray-700">Message</label>
-                    <textarea rows={3} placeholder="Tell us more about your requirements..."
+                    <label className="text-[13px] font-semibold text-gray-700">{tr('Message', 'Mensahe')}</label>
+                    <textarea rows={3} placeholder={tr('Tell us more about your requirements...', 'Sabihin sa amin ang higit pa tungkol sa inyong mga kailangan...')}
                       value={inquiryFormData.message}
                       onChange={e => setInquiryFormData(prev => ({ ...prev, message: e.target.value }))}
                       className="w-full bg-gray-50 border-none rounded-[12px] px-4 py-3 text-[13px] text-gray-700 outline-none focus:ring-2 focus:ring-primary/20 transition placeholder-gray-300 resize-none" />
@@ -1580,10 +1572,10 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                       className="text-white font-bold py-3 px-10 rounded-[12px] transition-all duration-300 text-[13px] disabled:opacity-50 whitespace-nowrap"
                       style={{ background: 'linear-gradient(to right, #61A644, #0D99FF)' }}>
                       {inquirySubmitState === 'sending'
-                        ? 'Sending...'
+                        ? tr('Sending...', 'Ipinapadala...')
                         : inquirySubmitState === 'error'
-                          ? 'Failed to submit. Try again.'
-                          : 'Submit Inquiry Request'}
+                          ? tr('Failed to submit. Try again.', 'Hindi naipadala. Subukan ulit.')
+                          : tr('Submit Inquiry Request', 'Ipadala ang Inquiry Request')}
                     </button>
                   </div>
                 </form>
@@ -1599,9 +1591,9 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
               {/* Onboarding steps — pharmacy partners only */}
               {isPharmacyUserType && (
                 <div className="ca-anim ca-up bg-white rounded-[15px] border border-gray-100 p-6 md:p-10 shadow-sm">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-1.5">How Partnership Works</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-1.5">{tr('How Partnership Works', 'Paano Gumagana ang Partnership')}</h2>
                   <p className="text-gray-900 text-[15px] leading-relaxed mb-6">
-                    We are dedicated to providing all documents needed, competitive pricing, and fast dispatch and distribution &mdash; from onboarding to your first order.
+                    {tr('We are dedicated to providing all documents needed, competitive pricing, and fast dispatch and distribution — from onboarding to your first order.', 'Ibinibigay namin ang lahat ng kailangang dokumento, abot-kayang presyo, at mabilis na dispatch at distribution — mula onboarding hanggang sa inyong unang order.')}
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {PARTNERSHIP_STEPS.map((step, i) => (
@@ -1633,7 +1625,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                 <form onSubmit={handlePartnerSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-6">
                     <div className="space-y-2">
-                      <label className="text-[13px] font-semibold text-gray-700">Full Name</label>
+                      <label className="text-[13px] font-semibold text-gray-700">{tr('Full Name', 'Buong Pangalan')}</label>
                       <input type="text" required placeholder={PARTNER_FORM.namePlaceholder}
                         value={partnerFormData.name}
                         onChange={e => setPartnerFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -1650,7 +1642,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
 
                     {PARTNER_FORM.showPrcLicense && (
                       <div className="space-y-2">
-                        <label className="text-[13px] font-semibold text-gray-700">PRC License Number</label>
+                        <label className="text-[13px] font-semibold text-gray-700">{tr('PRC License Number', 'Numero ng PRC License')}</label>
                         <input type="text" required placeholder={PARTNER_FORM.prcPlaceholder}
                           inputMode="numeric"
                           value={partnerFormData.prcLicense}
@@ -1668,7 +1660,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[13px] font-semibold text-gray-700">Location / City</label>
+                      <label className="text-[13px] font-semibold text-gray-700">{tr('Location / City', 'Lokasyon / Lungsod')}</label>
                       <input type="text" required placeholder={PARTNER_FORM.locationPlaceholder}
                         value={partnerFormData.location}
                         onChange={e => setPartnerFormData(prev => ({ ...prev, location: e.target.value }))}
@@ -1684,11 +1676,11 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="hospital-phone" className="text-[13px] font-semibold text-gray-700">Phone / Mobile Number</label>
+                      <label htmlFor="hospital-phone" className="text-[13px] font-semibold text-gray-700">{tr('Phone / Mobile Number', 'Phone / Mobile Number')}</label>
                       <div className="gcb-phone-wrap">
                         <input type="tel" id="hospital-phone" name="phone" required
                           ref={partnerPhoneRef}
-                          placeholder="e.g. 912 345 6789"
+                          placeholder={tr('e.g. 912 345 6789', 'hal. 912 345 6789')}
                           autoComplete="tel"
                           inputMode="numeric"
                           onInput={() => { if (partnerPhoneError) setPartnerPhoneError(''); }}
@@ -1701,7 +1693,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[13px] font-semibold text-gray-700">Message</label>
+                    <label className="text-[13px] font-semibold text-gray-700">{tr('Message', 'Mensahe')}</label>
                     <textarea rows={3} placeholder={PARTNER_FORM.messagePlaceholder}
                       value={partnerFormData.message}
                       onChange={e => setPartnerFormData(prev => ({ ...prev, message: e.target.value }))}
@@ -1709,7 +1701,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[13px] font-semibold text-gray-700">Consent</label>
+                    <label className="text-[13px] font-semibold text-gray-700">{tr('Consent', 'Pahintulot')}</label>
                     <label className="flex items-start gap-3 cursor-pointer bg-gray-50 rounded-[12px] px-4 py-3">
                       <input type="checkbox" required
                         checked={partnerFormData.consent}
@@ -1732,10 +1724,10 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                       className="text-white font-bold py-3 px-10 rounded-[12px] transition-all duration-300 text-[13px] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
                       style={{ background: 'linear-gradient(to right, #61A644, #0D99FF)' }}>
                       {partnerSubmitState === 'sending'
-                        ? 'Sending...'
+                        ? tr('Sending...', 'Ipinapadala...')
                         : partnerSubmitState === 'error'
-                          ? 'Failed to submit. Try again.'
-                          : 'Submit Inquiry Request'}
+                          ? tr('Failed to submit. Try again.', 'Hindi naipadala. Subukan ulit.')
+                          : tr('Submit Inquiry Request', 'Ipadala ang Inquiry Request')}
                     </button>
                   </div>
                 </form>
@@ -1750,7 +1742,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                     <p className="text-gray-900 text-[15px] leading-relaxed">{PARTNER_FORM.helpBlurb}</p>
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-3">Contact Details</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-3">{tr('Contact Details', 'Contact Details')}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
                       {PARTNER_FORM.contacts.map(item => (
                         <a key={item.label} href={item.href}
@@ -1777,10 +1769,10 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
 
                 {/* Need Assistance */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col">
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">Need Assistance?</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">{tr('Need Assistance?', 'Kailangan ng Tulong?')}</p>
                   <p className="text-[15px] font-semibold mb-4"
                     style={{ background: 'linear-gradient(to right,#61A644,#1D9FDA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                    Chat with our pharmacist
+                    {tr('Chat with our pharmacist', 'Makipag-chat sa aming pharmacist')}
                   </p>
                   <div className="mt-auto space-y-3">
                     <a href="tel:+639190769105" className="flex items-center gap-3 group">
@@ -1788,7 +1780,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                         <i className="fa-solid fa-phone"></i>
                       </div>
                       <div>
-                        <p className="text-[13px] text-gray-400 font-medium">Customer Support</p>
+                        <p className="text-[13px] text-gray-400 font-medium">{tr('Customer Support', 'Customer Support')}</p>
                         <p className="text-[15px] font-semibold text-dark">+639190769105</p>
                       </div>
                     </a>
@@ -1797,7 +1789,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                         <i className="fa-solid fa-envelope"></i>
                       </div>
                       <div>
-                        <p className="text-[13px] text-gray-400 font-medium">Email Address</p>
+                        <p className="text-[13px] text-gray-400 font-medium">{tr('Email Address', 'Email Address')}</p>
                         <p className="text-[15px] font-semibold text-dark">info@getmeds.ph</p>
                       </div>
                     </a>
@@ -1809,8 +1801,8 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                   <div className="w-11 h-11 rounded-2xl bg-green-50 flex items-center justify-center text-green-600 shadow-sm mb-4">
                     <i className="fa-solid fa-lock text-lg"></i>
                   </div>
-                  <h3 className="text-[15px] font-semibold text-dark mb-1">Secure prescription storage</h3>
-                  <p className="text-[13px] text-gray-400 leading-relaxed">All uploads are encrypted and handled with strict confidentiality.</p>
+                  <h3 className="text-[15px] font-semibold text-dark mb-1">{tr('Secure prescription storage', 'Ligtas na pag-iimbak ng reseta')}</h3>
+                  <p className="text-[13px] text-gray-400 leading-relaxed">{tr('All uploads are encrypted and handled with strict confidentiality.', 'Naka-encrypt ang lahat ng upload at mahigpit na kumpidensyal.')}</p>
                 </div>
 
                 {/* Patient Privacy Commitment */}
@@ -1818,9 +1810,9 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                   <div className="w-11 h-11 rounded-2xl bg-green-50 flex items-center justify-center text-green-600 shadow-sm mb-4">
                     <i className="fa-solid fa-shield-halved text-lg"></i>
                   </div>
-                  <h3 className="text-[15px] font-semibold text-dark mb-1">Patient Privacy Commitment</h3>
+                  <h3 className="text-[15px] font-semibold text-dark mb-1">{tr('Patient Privacy Commitment', 'Pangako sa Privacy ng Pasyente')}</h3>
                   <p className="text-[13px] text-gray-400 leading-relaxed">
-                    Personal and prescription information is handled with care, in line with Philippine Data Privacy Act principles.
+                    {tr('Personal and prescription information is handled with care, in line with Philippine Data Privacy Act principles.', 'Maingat na pinangangasiwaan ang personal na impormasyon at reseta, alinsunod sa mga prinsipyo ng Philippine Data Privacy Act.')}
                   </p>
                 </div>
               </div>
@@ -1834,9 +1826,9 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                     <i className="fa-solid fa-certificate text-lg"></i>
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-semibold text-dark mb-1">Licensed Pharmacy Operations</h3>
-                    <p className="text-[13px] font-semibold text-gray-500 leading-relaxed">FDA Philippines Licensed</p>
-                    <p className="text-[13px] text-gray-400 leading-relaxed">Operating under valid Food and Drug Administration of the Philippines licenses as a wholesaler, distributor, and retail pharmacy.</p>
+                    <h3 className="text-[15px] font-semibold text-dark mb-1">{tr('Licensed Pharmacy Operations', 'Lisensyadong Operasyon ng Botika')}</h3>
+                    <p className="text-[13px] font-semibold text-gray-500 leading-relaxed">{tr('FDA Philippines Licensed', 'Lisensyado ng FDA Philippines')}</p>
+                    <p className="text-[13px] text-gray-400 leading-relaxed">{tr('Operating under valid Food and Drug Administration of the Philippines licenses as a wholesaler, distributor, and retail pharmacy.', 'Nag-o-operate sa ilalim ng valid na lisensya ng Food and Drug Administration of the Philippines bilang wholesaler, distributor at retail pharmacy.')}</p>
                   </div>
                 </div>
 
@@ -1846,9 +1838,9 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                     <i className="fa-solid fa-user-doctor text-lg"></i>
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-semibold text-dark mb-1">Pharmacist-Verified Dispensing</h3>
+                    <h3 className="text-[15px] font-semibold text-dark mb-1">{tr('Pharmacist-Verified Dispensing', 'Dispensing na Beripikado ng Pharmacist')}</h3>
                     <p className="text-[13px] text-gray-400 leading-relaxed">
-                      All medications reviewed and dispensed under the supervision of PRC-licensed Filipino pharmacists, in accordance with the Philippine Pharmacy Act (RA 10918).
+                      {tr('All medications reviewed and dispensed under the supervision of PRC-licensed Filipino pharmacists, in accordance with the Philippine Pharmacy Act (RA 10918).', 'Lahat ng gamot ay sinusuri at ibinibigay sa ilalim ng pangangasiwa ng mga Pilipinong pharmacist na may PRC license, alinsunod sa Philippine Pharmacy Act (RA 10918).')}
                     </p>
                   </div>
                 </div>
@@ -1881,7 +1873,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
 
                 {/* Therapeutic areas */}
                 <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-1.5">Our Therapeutic Areas</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-1.5">{tr('Our Therapeutic Areas', 'Ang Aming mga Therapeutic Area')}</h2>
                   <p className="text-[15px] text-gray-900 leading-relaxed mb-6">{PARTNER_TRUST.therapeuticIntro}</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {THERAPEUTIC_AREAS.map(area => (
@@ -1897,14 +1889,14 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                     ))}
                   </div>
                   <p className="text-[13px] text-gray-500 leading-relaxed mt-6">
-                    Looking for a specific product or molecule? Let us know in your inquiry, and our team will confirm availability and next steps.
+                    {tr('Looking for a specific product or molecule? Let us know in your inquiry, and our team will confirm availability and next steps.', 'May hinahanap na partikular na produkto o molecule? Sabihin sa inyong inquiry, at kukumpirmahin ng aming team ang availability at susunod na hakbang.')}
                   </p>
                 </div>
 
                 {/* Areas We Serve — pharmacy partners only */}
                 {isPharmacyUserType && (
                   <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-1.5">Areas We Serve</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-1.5">{tr('Areas We Serve', 'Mga Lugar na Aming Sineserbisyuhan')}</h2>
                     <p className="text-[15px] text-gray-900 leading-relaxed">{PARTNER_TRUST.areasWeServe}</p>
                   </div>
                 )}
@@ -1915,7 +1907,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                   <h2 className="text-xl font-semibold text-gray-900 mb-1.5">Compassionate Special Permit (CSP)</h2>
                   <p className="text-[15px] text-gray-900 leading-relaxed">{PARTNER_TRUST.cspIntro}</p>
 
-                  <p className="text-[13px] font-semibold text-dark mt-6 mb-3">Getmeds coordinates CSP applications for both:</p>
+                  <p className="text-[13px] font-semibold text-dark mt-6 mb-3">{tr('Getmeds coordinates CSP applications for both:', 'Inaasikaso ng Getmeds ang CSP application para sa dalawang ito:')}</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {PARTNER_TRUST.cspUseTypes.map(use => (
                       <div key={use.name} className="flex items-start gap-3.5 rounded-[14px] bg-gray-50 p-4">
@@ -1932,7 +1924,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
 
                   {PARTNER_TRUST.cspCommonUses.length > 0 ? (
                     <>
-                      <p className="text-[13px] font-semibold text-dark mt-6 mb-3">This pathway is commonly used for:</p>
+                      <p className="text-[13px] font-semibold text-dark mt-6 mb-3">{tr('This pathway is commonly used for:', 'Karaniwang ginagamit ang prosesong ito para sa:')}</p>
                       <ul className="space-y-2">
                         {PARTNER_TRUST.cspCommonUses.map(use => (
                           <li key={use} className="flex items-start gap-2.5 text-[14px] text-gray-600 leading-relaxed">
@@ -1942,7 +1934,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                         ))}
                       </ul>
 
-                      <p className="text-[13px] font-semibold text-dark mt-6 mb-3">How it works:</p>
+                      <p className="text-[13px] font-semibold text-dark mt-6 mb-3">{tr('How it works:', 'Paano ito gumagana:')}</p>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {PARTNER_TRUST.cspHowItWorks.map((step, i) => (
                           <div key={step} className="rounded-[14px] bg-gray-50 p-4">
@@ -1957,14 +1949,14 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                     </>
                   ) : (
                     <p className="text-[13px] text-gray-400 leading-relaxed max-w-3xl mt-6">
-                      This pathway is commonly used for rare disease treatments, oncology medicines not yet locally registered, and specialty biologics unavailable through standard channels.
+                      {tr('This pathway is commonly used for rare disease treatments, oncology medicines not yet locally registered, and specialty biologics unavailable through standard channels.', 'Karaniwang ginagamit ang prosesong ito para sa gamutan ng rare disease, mga gamot sa oncology na hindi pa rehistrado dito, at specialty biologics na hindi makukuha sa karaniwang paraan.')}
                     </p>
                   )}
 
                   <div className="flex items-start gap-3 rounded-[14px] bg-amber-50 border border-amber-100 p-4 mt-6">
                     <i className="fa-solid fa-circle-info text-amber-500 text-[13px] mt-0.5 flex-shrink-0"></i>
                     <p className="text-[12.5px] text-amber-900 leading-relaxed">
-                      <span className="font-semibold">Note:</span> {PARTNER_TRUST.cspNote}
+                      <span className="font-semibold">{tr('Note:', 'Paalala:')}</span> {PARTNER_TRUST.cspNote}
                     </p>
                   </div>
                 </div>
@@ -1975,10 +1967,10 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                   <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
                     <div className="flex items-start gap-3 mb-1.5">
                       <TriangleAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" strokeWidth={1.75} aria-hidden="true" />
-                      <h2 className="text-xl font-semibold text-gray-900">Reporting an Adverse Event?</h2>
+                      <h2 className="text-xl font-semibold text-gray-900">{tr('Reporting an Adverse Event?', 'Mag-uulat ng Adverse Event?')}</h2>
                     </div>
                     <p className="text-[15px] text-gray-900 leading-relaxed mb-5">
-                      If you need to report a suspected adverse drug reaction or product quality complaint, please contact:
+                      {tr('If you need to report a suspected adverse drug reaction or product quality complaint, please contact:', 'Kung kailangan ninyong mag-ulat ng pinaghihinalaang adverse drug reaction o reklamo sa kalidad ng produkto, makipag-ugnayan kay:')}
                     </p>
                     <div className="rounded-[14px] bg-gray-50 p-5">
                       <p className="text-[15px] font-semibold text-dark">{ADVERSE_EVENT_CONTACT.name}</p>
@@ -2045,9 +2037,9 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
             <div className="w-16 h-16 bg-[#5E5CE6]/20 text-[#5E5CE6] rounded-2xl flex items-center justify-center mx-auto mb-6">
               <i className="fa-solid fa-file-arrow-up text-3xl"></i>
             </div>
-            <h3 className="text-white text-lg font-bold mb-2">Just a moment...</h3>
+            <h3 className="text-white text-lg font-bold mb-2">{tr('Just a moment...', 'Sandali lang...')}</h3>
             <p className="text-gray-400 text-[12px] leading-relaxed mb-8 px-4">
-              Your file is uploading. Please wait a few moments.
+              {tr('Your file is uploading. Please wait a few moments.', 'Ina-upload ang inyong file. Pakihintay sandali.')}
             </p>
             <div className="mb-8">
               <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden mb-3">
@@ -2058,7 +2050,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
             </div>
             <button onClick={closeUploadModal}
               className="w-full py-4 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-[12px] text-[13px] transition">
-              Cancel
+              {tr('Cancel', 'Kanselahin')}
             </button>
           </div>
         </div>
@@ -2088,14 +2080,14 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
 
                 {/* Title */}
                 <h2 className="text-[19px] font-semibold text-gray-900 mb-4 leading-snug">
-                  {successKind === 'inquiry' ? 'Thank you for your inquiry.' : 'Thank you for your order.'}
+                  {successKind === 'inquiry' ? tr('Thank you for your inquiry.', 'Salamat sa inyong inquiry.') : tr('Thank you for your order.', 'Salamat sa inyong order.')}
                 </h2>
 
                 {/* Message */}
                 <p className="text-[13px] text-gray-500 leading-relaxed">
                   {successKind === 'inquiry'
-                    ? <>Our team will get back to you shortly with a formal response. For urgent concerns, please call{' '}</>
-                    : <>We will contact you shortly to confirm your order details. For urgent concerns, please call{' '}</>}
+                    ? <>{tr('Our team will get back to you shortly with a formal response. For urgent concerns, please call', 'Babalikan kayo ng aming team sa lalong madaling panahon na may pormal na sagot. Para sa urgent na concern, tumawag sa')}{' '}</>
+                    : <>{tr('We will contact you shortly to confirm your order details. For urgent concerns, please call', 'Kokontakin namin kayo sa lalong madaling panahon para kumpirmahin ang detalye ng order. Para sa urgent na concern, tumawag sa')}{' '}</>}
                   <a href="tel:+639190769105" className="text-[#1D9FDA] font-semibold hover:underline">
                     +63 919 076 9105
                   </a>.
@@ -2109,7 +2101,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                   className="text-[13px] font-semibold hover:underline"
                   style={{ background: 'linear-gradient(to right,#61A644,#1D9FDA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
                 >
-                  Close
+                  {tr('Close', 'Isara')}
                 </button>
               </div>
             </div>
@@ -2151,10 +2143,9 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                     <i className="fa-solid fa-id-card text-white text-xl"></i>
                   </div>
                 </div>
-                <h2 className="text-[19px] font-semibold text-gray-900 mb-2 leading-snug">Valid ID Required</h2>
+                <h2 className="text-[19px] font-semibold text-gray-900 mb-2 leading-snug">{tr('Valid ID Required', 'Kailangan ng Valid ID')}</h2>
                 <p className="text-[13px] text-gray-500 leading-relaxed">
-                  Please upload a valid government-issued ID (JPG, PNG, or PDF) of the patient to help us
-                  process your order faster and ensure the prescription is dispensed to the right person.
+                  {tr('Please upload a valid government-issued ID (JPG, PNG, or PDF) of the patient to help us process your order faster and ensure the prescription is dispensed to the right person.', 'Pakiupload ang valid na government-issued ID (JPG, PNG o PDF) ng pasyente para mas mabilis naming ma-process ang order at masigurong maibibigay ang gamot sa tamang tao.')}
                 </p>
               </div>
 
@@ -2166,7 +2157,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                   className="text-[13px] font-semibold hover:underline"
                   style={{ background: 'linear-gradient(to right,#61A644,#1D9FDA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
                 >
-                  I Understand, Upload Now
+                  {tr('I Understand, Upload Now', 'Sige, Mag-upload Na')}
                 </button>
               </div>
             </div>
@@ -2178,7 +2169,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
       {viewingFileUrl && (
         <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm"
           onClick={() => setViewingFileUrl(null)}>
-          <img src={viewingFileUrl} alt="Prescription preview"
+          <img src={viewingFileUrl} alt={tr('Prescription preview', 'Preview ng reseta')}
             className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
             onClick={e => e.stopPropagation()} />
           <button onClick={() => setViewingFileUrl(null)}

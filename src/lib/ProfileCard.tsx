@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLang } from '@/lib/i18n';
 
 /**
  * ProfileCard.tsx
@@ -84,15 +85,16 @@ const SKY =
  * offers one way in. The sign-in itself opens in a sheet (see SignInSheet).
  */
 export function GuestCard({ onSignIn }: { onSignIn: (mode: 'signup' | 'login') => void }) {
+  const { tr } = useLang();
   const perks: Array<[string, string]> = [
-    ['fa-star', 'Earn points on every request you send'],
-    ['fa-user-plus', 'Get more when a friend joins with your code'],
-    ['fa-envelope', 'Sign up with your email or mobile number'],
+    ['fa-star', tr('Earn points on every request you send', 'Kumita ng points sa bawat request na ipapadala mo')],
+    ['fa-user-plus', tr('Get more when a friend joins with your code', 'Dagdag points kapag may kaibigang sumali gamit ang code mo')],
+    ['fa-envelope', tr('Sign up with your email or mobile number', 'Mag-sign up gamit ang email o mobile number mo')],
   ];
   return (
     <section
       className="mb-5 rounded-[28px] border border-[#EEF1F5] bg-white p-2 pb-5"
-      aria-label="Sign in"
+      aria-label={tr('Sign in', 'Mag-log in')}
     >
       <div className="h-[92px] rounded-[22px]" style={{ background: SKY }} />
       <div className="-mt-[46px] flex justify-center">
@@ -101,9 +103,12 @@ export function GuestCard({ onSignIn }: { onSignIn: (mode: 'signup' | 'login') =
         </span>
       </div>
       <div className="mt-3 px-5 text-center">
-        <h1 className="text-[21px] font-semibold text-gray-900">Welcome to Getmeds</h1>
+        <h1 className="text-[21px] font-semibold text-gray-900">{tr('Welcome to Getmeds', 'Welcome sa Getmeds')}</h1>
         <p className="mx-auto mt-1 max-w-[290px] text-[13px] leading-relaxed text-gray-500">
-          Create an account to request quotes and start collecting Getmeds Points.
+          {tr(
+            'Create an account to request quotes and start collecting Getmeds Points.',
+            'Gumawa ng account para makapag-request ng quote at makaipon ng Getmeds Points.',
+          )}
         </p>
       </div>
       <ul className="mx-4 mt-4 space-y-2.5">
@@ -123,7 +128,7 @@ export function GuestCard({ onSignIn }: { onSignIn: (mode: 'signup' | 'login') =
           className="w-full rounded-full py-3.5 text-[14px] font-semibold text-white"
           style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
         >
-          Create account
+          {tr('Create account', 'Gumawa ng account')}
         </button>
         <button
           type="button"
@@ -131,7 +136,7 @@ export function GuestCard({ onSignIn }: { onSignIn: (mode: 'signup' | 'login') =
           className="mt-2.5 w-full rounded-full border-[1.5px] py-3 text-[14px] font-semibold"
           style={{ borderColor: BRAND, color: BRAND }}
         >
-          Log in
+          {tr('Log in', 'Mag-log in')}
         </button>
       </div>
     </section>
@@ -140,9 +145,10 @@ export function GuestCard({ onSignIn }: { onSignIn: (mode: 'signup' | 'login') =
 
 /** A plain list of what a guest can still open, one row each. */
 export function GuestList({ rows }: { rows: Array<{ icon: string; label: string; hint?: string; onClick: () => void }> }) {
+  const { tr } = useLang();
   return (
-    <section className="mb-5 overflow-hidden rounded-[22px] border border-[#EEF1F5] bg-white" aria-label="More">
-      <p className="px-4 pb-1 pt-3.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">More</p>
+    <section className="mb-5 overflow-hidden rounded-[22px] border border-[#EEF1F5] bg-white" aria-label={tr('More', 'Iba pa')}>
+      <p className="px-4 pb-1 pt-3.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">{tr('More', 'Iba pa')}</p>
       {rows.map((r) => (
         <button
           key={r.label}
@@ -162,10 +168,11 @@ export function GuestList({ rows }: { rows: Array<{ icon: string; label: string;
 
 /** Bottom sheet above the tab bar (which sits at z-index 9999). */
 export function SignInSheet({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  const { tr } = useLang();
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[10050] flex items-end" role="dialog" aria-modal="true" aria-label="Sign in">
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-[rgba(15,23,42,.45)]" />
+    <div className="fixed inset-0 z-[10050] flex items-end" role="dialog" aria-modal="true" aria-label={tr('Sign in', 'Mag-log in')}>
+      <button type="button" aria-label={tr('Close', 'Isara')} onClick={onClose} className="absolute inset-0 bg-[rgba(15,23,42,.45)]" />
       <div
         className="relative max-h-[90vh] w-full overflow-y-auto rounded-t-[28px] bg-white px-5 pt-3"
         style={{ paddingBottom: 'calc(20px + var(--gm-safe-bottom))' }}
@@ -174,7 +181,7 @@ export function SignInSheet({ open, onClose, children }: { open: boolean; onClos
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={tr('Close', 'Isara')}
           className="absolute right-4 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500"
         >
           <i className="fa-solid fa-xmark text-[13px]" />
@@ -186,13 +193,14 @@ export function SignInSheet({ open, onClose, children }: { open: boolean; onClos
 }
 
 export default function ProfileCard({ name, subtitle, avatar, completeness, onEdit, stats, actions }: Props) {
+  const { tr } = useLang();
   const initial = (name || 'G').charAt(0).toUpperCase();
   const pct = Math.max(0, Math.min(100, Math.round(completeness)));
 
   return (
     <section
       className="mb-5 rounded-[28px] border border-[#EEF1F5] bg-white p-2 pb-3"
-      aria-label="Your profile"
+      aria-label={tr('Your profile', 'Ang profile mo')}
     >
       {/* Cover: a soft sky, drawn in CSS so it costs no download. */}
       <div
@@ -208,7 +216,7 @@ export default function ProfileCard({ name, subtitle, avatar, completeness, onEd
         <button
           type="button"
           onClick={onEdit}
-          aria-label="Edit profile"
+          aria-label={tr('Edit profile', 'I-edit ang profile')}
           className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-700 backdrop-blur"
           style={{ boxShadow: '0 2px 8px rgba(23,43,77,.12)' }}
         >
@@ -230,12 +238,14 @@ export default function ProfileCard({ name, subtitle, avatar, completeness, onEd
           </div>
         </div>
         <button type="button" onClick={onEdit} className="mt-1.5 text-[11.5px] font-medium text-gray-400">
-          {pct >= 100 ? 'Profile complete' : `Profile ${pct}% complete · Finish it`}
+          {pct >= 100
+            ? tr('Profile complete', 'Kumpleto na ang profile')
+            : tr(`Profile ${pct}% complete · Finish it`, `${pct}% kumpleto ang profile · Tapusin na`)}
         </button>
       </div>
 
       <div className="mt-2 px-4 text-center">
-        <h1 className="truncate text-[21px] font-semibold text-gray-900">{name || 'Guest'}</h1>
+        <h1 className="truncate text-[21px] font-semibold text-gray-900">{name || tr('Guest', 'Bisita')}</h1>
         <p className="mx-auto mt-1 max-w-[280px] text-[13px] leading-relaxed text-gray-500">{subtitle}</p>
       </div>
 

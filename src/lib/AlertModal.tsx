@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useLang } from './i18n';
 
 interface AlertModalProps {
   open: boolean;
@@ -9,7 +10,8 @@ interface AlertModalProps {
   message: string | string[];
 }
 
-export default function AlertModal({ open, onClose, title = "Please Check This", message }: AlertModalProps) {
+export default function AlertModal({ open, onClose, title, message }: AlertModalProps) {
+  const { tr } = useLang();
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [cached, setCached] = useState({ title, message });
@@ -57,7 +59,7 @@ export default function AlertModal({ open, onClose, title = "Please Check This",
               <i className="fa-solid fa-triangle-exclamation text-white text-xl"></i>
             </div>
           </div>
-          <h2 className="text-[19px] font-semibold text-gray-900 mb-2 leading-snug">{cached.title}</h2>
+          <h2 className="text-[19px] font-semibold text-gray-900 mb-2 leading-snug">{cached.title ?? tr('Please Check This', 'Pakisuri Ito')}</h2>
           <div className="space-y-1.5">
             {messages.map((line, i) => (
               <p key={i} className="text-[13px] text-gray-500 leading-relaxed">{line}</p>
@@ -71,7 +73,7 @@ export default function AlertModal({ open, onClose, title = "Please Check This",
             className="text-[13px] font-semibold hover:underline"
             style={{ background: 'linear-gradient(to right,#61A644,#1D9FDA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
           >
-            Got it
+            {tr('Got it', 'Sige')}
           </button>
         </div>
       </div>

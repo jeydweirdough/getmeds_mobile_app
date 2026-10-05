@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { BRAND, Card, ErrorNote, Field, ListRow, PrimaryButton, Screen, Sheet, Toast, inputClass, useToast } from '../ui/Screen';
 import { deleteAccount, exportAccount, manilaToday } from '../accountApi';
 import { signOut } from '../rewards';
+import { useLang } from '../i18n';
 
 /**
  * PrivacyScreen.tsx
@@ -18,21 +19,30 @@ import { signOut } from '../rewards';
  */
 
 const KEPT = [
-  { icon: 'fa-mobile-screen-button', text: 'Your email or mobile number, used to log in (your password is stored only as a scrambled hash)' },
-  { icon: 'fa-id-card', text: 'My details: name, email and delivery details' },
-  { icon: 'fa-user-group', text: 'Patients and delivery addresses you add' },
-  { icon: 'fa-heart', text: 'Saved medicines, saved guides and refill reminders' },
-  { icon: 'fa-file-prescription', text: 'Prescriptions in your wallet' },
-  { icon: 'fa-clock-rotate-left', text: 'Requests you have sent' },
-  { icon: 'fa-star', text: 'Getmeds Points, rewards and Patient Assistance applications' },
+  {
+    icon: 'fa-mobile-screen-button',
+    text: 'Your email or mobile number, used to log in (your password is stored only as a scrambled hash)',
+    textTl: 'Ang email o mobile number mo na ginagamit sa pag-log in (naka-store lang ang password mo bilang scrambled hash)',
+  },
+  { icon: 'fa-id-card', text: 'My details: name, email and delivery details', textTl: 'Mga detalye ko: pangalan, email at detalye ng delivery' },
+  { icon: 'fa-user-group', text: 'Patients and delivery addresses you add', textTl: 'Mga pasyente at delivery address na idinagdag mo' },
+  { icon: 'fa-heart', text: 'Saved medicines, saved guides and refill reminders', textTl: 'Mga naka-save na gamot, guide at refill reminder' },
+  { icon: 'fa-file-prescription', text: 'Prescriptions in your wallet', textTl: 'Mga reseta sa wallet mo' },
+  { icon: 'fa-clock-rotate-left', text: 'Requests you have sent', textTl: 'Mga request na naipadala mo' },
+  {
+    icon: 'fa-star',
+    text: 'Getmeds Points, rewards and Patient Assistance applications',
+    textTl: 'Getmeds Points, rewards at mga Patient Assistance application',
+  },
 ];
 
 const ON_PHONE = [
-  { icon: 'fa-image', text: 'Your profile picture' },
-  { icon: 'fa-list-check', text: 'Your request list, until you send it' },
+  { icon: 'fa-image', text: 'Your profile picture', textTl: 'Ang profile picture mo' },
+  { icon: 'fa-list-check', text: 'Your request list, until you send it', textTl: 'Ang request list mo, hanggang maipadala mo ito' },
 ];
 
 export default function PrivacyScreen({ onClose, onSignedOut }: { onClose: () => void; onSignedOut: () => void }) {
+  const { tr } = useLang();
   const [busy, setBusy] = useState<'export' | null>(null);
   const [failure, setFailure] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -53,9 +63,14 @@ export default function PrivacyScreen({ onClose, onSignedOut }: { onClose: () =>
       a.remove();
       // Give the download a moment to start before the link is released.
       window.setTimeout(() => URL.revokeObjectURL(url), 4000);
-      showToast('Your data is downloading');
+      showToast(tr('Your data is downloading', 'Dina-download na ang data mo'));
     } catch (e) {
-      setFailure(`${(e as Error)?.message || 'Could not prepare your data.'} Check your connection and try again.`);
+      setFailure(
+        tr(
+          `${(e as Error)?.message || 'Could not prepare your data.'} Check your connection and try again.`,
+          `${(e as Error)?.message || 'Hindi maihanda ang data mo.'} Tingnan ang iyong connection at subukan ulit.`
+        )
+      );
     }
     setBusy(null);
   };
@@ -66,43 +81,65 @@ export default function PrivacyScreen({ onClose, onSignedOut }: { onClose: () =>
   };
 
   return (
-    <Screen title="Privacy and data" subtitle="What we keep and how to remove it" onClose={onClose}>
-      <Card title="Kept with your Getmeds account" note="So it is there on any phone you sign in on.">
+    <Screen
+      title={tr('Privacy and data', 'Privacy at data')}
+      subtitle={tr('What we keep and how to remove it', 'Ano ang itinatabi namin at paano ito alisin')}
+      onClose={onClose}
+    >
+      <Card
+        title={tr('Kept with your Getmeds account', 'Nakatabi sa iyong Getmeds account')}
+        note={tr('So it is there on any phone you sign in on.', 'Para nandiyan ito sa kahit anong phone na pag-sign in-an mo.')}
+      >
         {KEPT.map((k) => (
-          <ListRow key={k.text} icon={k.icon} title={<span className="text-[13px] font-normal text-gray-700">{k.text}</span>} />
+          <ListRow key={k.text} icon={k.icon} title={<span className="text-[13px] font-normal text-gray-700">{tr(k.text, k.textTl)}</span>} />
         ))}
       </Card>
 
-      <Card title="Only on this phone" note="Never sent to Getmeds, and not on your other devices.">
+      <Card
+        title={tr('Only on this phone', 'Sa phone na ito lang')}
+        note={tr('Never sent to Getmeds, and not on your other devices.', 'Hindi ipinapadala sa Getmeds, at wala sa iba mo pang device.')}
+      >
         {ON_PHONE.map((k) => (
-          <ListRow key={k.text} icon={k.icon} title={<span className="text-[13px] font-normal text-gray-700">{k.text}</span>} />
+          <ListRow key={k.text} icon={k.icon} title={<span className="text-[13px] font-normal text-gray-700">{tr(k.text, k.textTl)}</span>} />
         ))}
       </Card>
 
       <p className="flex gap-2 px-1 text-[11.5px] leading-relaxed text-gray-500">
         <i className="fa-solid fa-scale-balanced mt-[3px] text-[10px] text-gray-400" />
         <span>
-          Getmeds processes your data in accordance with the Data Privacy Act of 2012. Read the{' '}
+          {tr(
+            'Getmeds processes your data in accordance with the Data Privacy Act of 2012. Read the',
+            'Pinoproseso ng Getmeds ang data mo alinsunod sa Data Privacy Act of 2012. Basahin ang'
+          )}{' '}
           <a href="/privacy-policy" className="font-semibold underline" style={{ color: BRAND }}>
-            Privacy Policy
+            {tr('Privacy Policy', 'Privacy Policy')}
           </a>
           .
         </span>
       </p>
 
-      <Card title="Your choices">
+      <Card title={tr('Your choices', 'Mga puwede mong gawin')}>
         <ListRow
           icon="fa-download"
-          title="Download my data"
-          detail={busy === 'export' ? 'Preparing your file…' : 'A copy of everything above, as a JSON file'}
+          title={tr('Download my data', 'I-download ang data ko')}
+          detail={
+            busy === 'export'
+              ? tr('Preparing your file…', 'Inihahanda ang file mo…')
+              : tr('A copy of everything above, as a JSON file', 'Kopya ng lahat ng nasa itaas, bilang JSON file')
+          }
           onClick={busy ? undefined : download}
         />
-        <ListRow icon="fa-arrow-right-from-bracket" title="Sign out" detail="Your account stays. Sign in again any time." onClick={leave} />
+        <ListRow
+          icon="fa-arrow-right-from-bracket"
+          title={tr('Sign out', 'Mag-sign out')}
+          detail={tr('Your account stays. Sign in again any time.', 'Mananatili ang account mo. Mag-sign in ulit anumang oras.')}
+          onClick={leave}
+        />
         <ListRow
           icon="fa-trash-can"
           tone="danger"
-          title="Delete my account"
-          detail="Erases your points, prescriptions and history"
+          title={tr('Delete my account', 'Burahin ang account ko')}
+          detail={tr('Erases your points, prescriptions and history', 'Mabubura ang iyong points, reseta at history')}
           onClick={() => setDeleting(true)}
         />
       </Card>
@@ -117,6 +154,7 @@ export default function PrivacyScreen({ onClose, onSignedOut }: { onClose: () =>
 
 /** The customer types DELETE to confirm, so it cannot happen by a stray tap. */
 function DeleteSheet({ onClose, onDeleted }: { onClose: () => void; onDeleted: () => void }) {
+  const { tr } = useLang();
   const [typed, setTyped] = useState('');
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState('');
@@ -130,25 +168,35 @@ function DeleteSheet({ onClose, onDeleted }: { onClose: () => void; onDeleted: (
       await deleteAccount();
       onDeleted();
     } catch (e) {
-      setFailure(`${(e as Error)?.message || 'Could not delete your account.'} Nothing was erased. Check your connection and try again.`);
+      setFailure(
+        tr(
+          `${(e as Error)?.message || 'Could not delete your account.'} Nothing was erased. Check your connection and try again.`,
+          `${(e as Error)?.message || 'Hindi mabura ang account mo.'} Walang nabura. Tingnan ang iyong connection at subukan ulit.`
+        )
+      );
       setBusy(false);
     }
   };
 
   return (
-    <Sheet title="Delete your account?" onClose={busy ? () => undefined : onClose}>
+    <Sheet title={tr('Delete your account?', 'Burahin ang account mo?')} onClose={busy ? () => undefined : onClose}>
       <div className="rounded-[20px] border border-red-100 bg-white p-4">
         <p className="text-[13px] leading-relaxed text-gray-700">
-          This permanently erases your Getmeds account: your points and rewards, the prescriptions in your wallet, your
-          patients, addresses, saved medicines, reminders and request history.
+          {tr(
+            'This permanently erases your Getmeds account: your points and rewards, the prescriptions in your wallet, your patients, addresses, saved medicines, reminders and request history.',
+            'Permanente nitong buburahin ang iyong Getmeds account: ang points at rewards mo, ang mga reseta sa wallet mo, ang mga pasyente, address, naka-save na gamot, reminder at history ng request.'
+          )}
         </p>
-        <p className="mt-2 text-[13px] font-semibold leading-relaxed text-red-600">It cannot be undone.</p>
+        <p className="mt-2 text-[13px] font-semibold leading-relaxed text-red-600">{tr('It cannot be undone.', 'Hindi na ito maibabalik.')}</p>
         <p className="mt-2 text-[12px] leading-relaxed text-gray-500">
-          Download your data first if you want a copy. You will be signed out on this phone.
+          {tr(
+            'Download your data first if you want a copy. You will be signed out on this phone.',
+            'I-download muna ang data mo kung gusto mo ng kopya. Masa-sign out ka sa phone na ito.'
+          )}
         </p>
       </div>
       <Card>
-        <Field id="delete-confirm" label="Type DELETE to confirm">
+        <Field id="delete-confirm" label={tr('Type DELETE to confirm', 'I-type ang DELETE para kumpirmahin')}>
           <input
             id="delete-confirm"
             className={`${inputClass} uppercase tracking-wider`}
@@ -163,10 +211,10 @@ function DeleteSheet({ onClose, onDeleted }: { onClose: () => void; onDeleted: (
       </Card>
       <ErrorNote text={failure} />
       <PrimaryButton tone="danger" onClick={confirm} disabled={!ready || busy}>
-        {busy ? 'Deleting…' : 'Delete my account'}
+        {busy ? tr('Deleting…', 'Binubura…') : tr('Delete my account', 'Burahin ang account ko')}
       </PrimaryButton>
       <button id="delete-cancel" type="button" disabled={busy} onClick={onClose} className="w-full py-2 text-[13px] font-semibold text-gray-500 disabled:opacity-50">
-        Keep my account
+        {tr('Keep my account', 'Huwag burahin ang account ko')}
       </button>
     </Sheet>
   );

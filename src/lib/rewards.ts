@@ -15,6 +15,7 @@
  * sign-in card and the header.
  */
 import { isAppMode } from './cart';
+import { translate } from './i18n';
 
 const SESSION_KEY = 'getmeds_points_session';
 const PENDING_REFERRAL_KEY = 'getmeds_pending_referral';
@@ -122,11 +123,17 @@ export async function call<T>(path: string, init: RequestInit = {}): Promise<T> 
       headers: { 'Content-Type': 'application/json', ...(init.headers || {}) },
     });
   } catch {
-    throw new RewardsError('You appear to be offline. Try again once you are connected.', 0);
+    throw new RewardsError(
+      translate('You appear to be offline. Try again once you are connected.', 'Mukhang offline ka. Subukan ulit kapag may connection na.'),
+      0,
+    );
   }
   const body = await response.json().catch(() => null);
   if (!response.ok) {
-    const detail = typeof body?.detail === 'string' ? body.detail : 'Something went wrong. Please try again.';
+    const detail =
+      typeof body?.detail === 'string'
+        ? body.detail
+        : translate('Something went wrong. Please try again.', 'May nangyaring mali. Pakisubukan ulit.');
     throw new RewardsError(detail, response.status);
   }
   return body as T;
@@ -155,7 +162,13 @@ function keepSession(result: { token: string; account: PointsAccount }): PointsA
   try {
     window.localStorage.setItem(SESSION_KEY, result.token);
   } catch {
-    throw new RewardsError('This phone is blocking storage, so it cannot stay signed in.', 0);
+    throw new RewardsError(
+      translate(
+        'This phone is blocking storage, so it cannot stay signed in.',
+        'Naka-block ang storage sa phone na ito, kaya hindi ito makakapanatiling naka-log in.',
+      ),
+      0,
+    );
   }
   changed();
   return result.account;
@@ -252,7 +265,7 @@ export const inviteLink = (code: string) => `https://getmeds.ph/profile?ref=${en
 /** A call to an /api/account endpoint as the signed-in customer. Signs out on 401. */
 export async function authedCall<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = readSession();
-  if (!token) throw new RewardsError('Please sign in first.', 401);
+  if (!token) throw new RewardsError(translate('Please sign in first.', 'Mag-log in muna.'), 401);
   try {
     return await call<T>(path, { ...init, headers: { ...(init.headers || {}), Authorization: `Bearer ${token}` } });
   } catch (e) {

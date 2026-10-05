@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import AuthForm, { type AuthMode } from './AuthForm';
+import { translate, useLang } from '@/lib/i18n';
 import {
   REWARDS_CHANGED_EVENT,
   RewardsError,
@@ -30,7 +31,7 @@ const when = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString('en-PH', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
 const message = (e: unknown) =>
-  e instanceof RewardsError ? e.message : 'Something went wrong. Please try again.';
+  e instanceof RewardsError ? e.message : translate('Something went wrong. Please try again.', 'May nangyaring mali. Pakisubukan ulit.');
 
 /**
  * Referral codes: share your own, or add a friend's before your first
@@ -38,6 +39,7 @@ const message = (e: unknown) =>
  * said plainly so nobody expects points the moment a code is typed.
  */
 function Referral({ summary }: { summary: PointsSummary }) {
+  const { tr } = useLang();
   const r = summary.referral;
   const code = summary.account.referralCode;
   const [friendCode, setFriendCode] = useState(pendingReferral);
@@ -49,7 +51,10 @@ function Referral({ summary }: { summary: PointsSummary }) {
 
   const share = async () => {
     const link = inviteLink(code);
-    const text = `Get the Getmeds app and add my code ${code} under My account > Getmeds Points. You get ${r.refereePoints} points with your first request.`;
+    const text = tr(
+      `Get the Getmeds app and add my code ${code} under My account > Getmeds Points. You get ${r.refereePoints} points with your first request.`,
+      `I-download ang Getmeds app at ilagay ang code kong ${code} sa My account > Getmeds Points. Makakakuha ka ng ${r.refereePoints} points sa una mong request.`,
+    );
     try {
       if (navigator.share) {
         await navigator.share({ title: 'Getmeds', text, url: link });
@@ -77,10 +82,14 @@ function Referral({ summary }: { summary: PointsSummary }) {
   return (
     <div className="mt-3 space-y-3">
       <div className="rounded-xl bg-[#F1F6FC] p-3.5">
-        <p className="text-[12.5px] font-semibold text-gray-900">Invite friends, earn {r.referrerPoints} points</p>
+        <p className="text-[12.5px] font-semibold text-gray-900">
+          {tr(`Invite friends, earn ${r.referrerPoints} points`, `Mag-imbita ng kaibigan, kumita ng ${r.referrerPoints} points`)}
+        </p>
         <p className="mt-1 text-[11.5px] leading-relaxed text-gray-500">
-          When a friend adds your code and sends their first request, you get {r.referrerPoints} points and they get{' '}
-          {r.refereePoints}.
+          {tr(
+            `When a friend adds your code and sends their first request, you get ${r.referrerPoints} points and they get ${r.refereePoints}.`,
+            `Kapag inilagay ng kaibigan mo ang code mo at nagpadala siya ng unang request, makakakuha ka ng ${r.referrerPoints} points at siya ng ${r.refereePoints}.`,
+          )}
         </p>
         <div className="mt-2.5 flex items-center gap-2">
           <span className="flex-1 rounded-lg border border-dashed border-[#1D9FDA] bg-white py-2 text-center text-[16px] font-bold tracking-[0.2em] text-gray-900">
@@ -93,12 +102,15 @@ function Referral({ summary }: { summary: PointsSummary }) {
             style={{ background: GRADIENT }}
           >
             <i className="fa-solid fa-share-nodes mr-1.5 text-[11px]" />
-            {copied ? 'Copied' : 'Share'}
+            {copied ? tr('Copied', 'Nakopya na') : tr('Share', 'I-share')}
           </button>
         </div>
         {r.friendsJoined > 0 && (
           <p className="mt-2 text-[11.5px] text-gray-500">
-            {r.friendsJoined} {r.friendsJoined === 1 ? 'friend has' : 'friends have'} joined with your code.
+            {tr(
+              `${r.friendsJoined} ${r.friendsJoined === 1 ? 'friend has' : 'friends have'} joined with your code.`,
+              `${r.friendsJoined} kaibigan na ang sumali gamit ang code mo.`,
+            )}
           </p>
         )}
       </div>
@@ -112,10 +124,13 @@ function Referral({ summary }: { summary: PointsSummary }) {
           }}
         >
           <label htmlFor="friend-code" className="text-[12.5px] font-semibold text-gray-900">
-            Have a friend&rsquo;s code?
+            {tr('Have a friend’s code?', 'May code ka ba ng kaibigan?')}
           </label>
           <p className="mt-0.5 text-[11.5px] leading-relaxed text-gray-500">
-            Add it before your first request and get {r.refereePoints} welcome points when you send it.
+            {tr(
+              `Add it before your first request and get ${r.refereePoints} welcome points when you send it.`,
+              `Ilagay ito bago ang una mong request at makakuha ng ${r.refereePoints} welcome points pagkapadala mo.`,
+            )}
           </p>
           <div className="mt-2.5 flex gap-2">
             <input
@@ -133,7 +148,7 @@ function Referral({ summary }: { summary: PointsSummary }) {
               className="rounded-full px-4 text-[12.5px] font-semibold text-white disabled:opacity-50"
               style={{ background: BRAND }}
             >
-              {busy ? 'Adding…' : 'Add'}
+              {busy ? tr('Adding…', 'Idinadagdag…') : tr('Add', 'Idagdag')}
             </button>
           </div>
           {error && <p className="mt-2 text-[12px] text-red-500">{error}</p>}
@@ -143,7 +158,10 @@ function Referral({ summary }: { summary: PointsSummary }) {
       {r.welcomePending && (
         <p className="rounded-xl bg-[#ECFAF0] px-3.5 py-2.5 text-[11.5px] text-[#357A3F]">
           <i className="fa-solid fa-gift mr-1.5" />
-          Friend&rsquo;s code added. Your {r.refereePoints} welcome points arrive with your first request.
+          {tr(
+            `Friend’s code added. Your ${r.refereePoints} welcome points arrive with your first request.`,
+            `Naidagdag na ang code ng kaibigan. Darating ang ${r.refereePoints} welcome points mo kasabay ng una mong request.`,
+          )}
         </p>
       )}
     </div>
@@ -207,6 +225,7 @@ export default function PointsCard({
   /** Replaces the sign-up form's opening line, e.g. to say why an account is needed here. */
   intro?: string;
 }) {
+  const { tr } = useLang();
   const { signedIn, summary, loadError } = points;
 
   // ── Signed in ──────────────────────────────────────────────────────────────
@@ -230,8 +249,11 @@ export default function PointsCard({
           {account && (
             <p className="text-[12px] leading-relaxed text-gray-500">
               {summary.pointsPerRequest > 0
-                ? `You earn ${summary.pointsPerRequest} points for every request you send from this app.`
-                : 'Points are paused for now. Your balance is kept.'}
+                ? tr(
+                    `You earn ${summary.pointsPerRequest} points for every request you send from this app.`,
+                    `Kumikita ka ng ${summary.pointsPerRequest} points sa bawat request na ipinapadala mo mula sa app na ito.`,
+                  )
+                : tr('Points are paused for now. Your balance is kept.', 'Naka-pause muna ang points. Nananatili ang balance mo.')}
             </p>
           )}
 
@@ -255,14 +277,17 @@ export default function PointsCard({
           )}
           {summary && summary.history.length === 0 && (
             <p className="mt-3 rounded-xl bg-[#F1F6FC] px-3.5 py-3 text-[12px] text-gray-500">
-              No points yet. Send a request for a medicine and they will show up here.
+              {tr(
+                'No points yet. Send a request for a medicine and they will show up here.',
+                'Wala ka pang points. Magpadala ng request para sa gamot at lalabas sila rito.',
+              )}
             </p>
           )}
 
           <div className="mt-3 flex items-center justify-between border-t border-gray-50 pt-3">
             <span className="text-[11.5px] text-gray-400">{account?.login || account?.mobile}</span>
             <button type="button" onClick={signOut} className="text-[12px] font-semibold text-gray-400">
-              Log out
+              {tr('Log out', 'Mag-log out')}
             </button>
           </div>
         </div>

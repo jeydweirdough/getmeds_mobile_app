@@ -4,7 +4,6 @@ import React, { useEffect, useLayoutEffect, useState, useRef, useMemo } from 're
 import { createPortal } from 'react-dom';
 import { useProducts, useCategories, useImageMapper } from '@/lib/useSanity';
 import { AddToCart } from '@/lib/AddToCart';
-import { needsPrescription } from '@/lib/cart';
 import { urlFor } from '@/lib/sanity';
 import type { Product as SanityProduct, Category } from '@/types/sanity';
 import { sortByFeaturedOrder } from '@/lib/categoryImageKey';
@@ -13,6 +12,8 @@ import { folderDisplayName } from '@/lib/queries';
 import { usePageReady } from '@/lib/handoff';
 import './CatalogClient.css';
 import { goTo } from '@/platform/navigation';
+import { CatalogueRow, cartItemFor, displayName, productImage, productUrl, rxRequired, specLine } from '@/lib/catalogueItem';
+import { useLang } from '@/lib/i18n';
 
 
 interface ProductWithCategory extends Omit<SanityProduct, 'category'> {
@@ -134,8 +135,73 @@ const getProductConditions = (p: { conditions?: string[]; subCategory?: string }
 const conditionHeading = (name: string) =>
   /\b(medicines?|media)$/i.test(name.trim()) ? name.trim() : `${name.trim()} Medicines`;
 
+// The visible <h1> in Tagalog. The English conditionHeading() stays the SEO heading.
+const conditionHeadingTl = (name: string) =>
+  /\b(medicines?|media)$/i.test(name.trim()) ? name.trim() : `Mga Gamot sa ${name.trim()}`;
+
+/**
+ * One product in the two-across mobile grid. The same card as the home screen's
+ * featured products — packshot over a soft brand wash, Rx / stock pills on the
+ * image, frosted Inquire + request-list buttons — scaled down to half a screen.
+ * The whole card opens the product page, which is where the inquiry form is.
+ */
+function ProductGridCard({ p }: { p: CatalogueRow }) {
+  const { tr } = useLang();
+  const needsRx = rxRequired(p);
+  const inStock = p.availability !== false;
+  return (
+    <a
+      href={productUrl(p)}
+      className="relative flex flex-col overflow-hidden rounded-[20px] border border-gray-100 bg-white p-1.5 transition active:scale-[0.98]"
+    >
+      <div
+        className="relative h-[132px] overflow-hidden rounded-[15px]"
+        style={{ background: 'linear-gradient(135deg,#E6F4FC 0%,#F3F8FB 50%,#EEF7E9 100%)' }}
+      >
+        <span aria-hidden="true" className="pointer-events-none absolute -left-8 -top-8 h-28 w-28 rounded-full blur-2xl" style={{ background: 'rgba(29,159,218,.18)' }} />
+        <span aria-hidden="true" className="pointer-events-none absolute -bottom-10 -right-6 h-28 w-28 rounded-full blur-2xl" style={{ background: 'rgba(97,166,68,.16)' }} />
+        <img
+          src={productImage(p)}
+          alt=""
+          loading="lazy"
+          className="relative h-full w-full object-contain p-3 mix-blend-multiply"
+          onError={(e) => { const i = e.currentTarget; i.onerror = null; i.src = '/assets/no-image.png'; }}
+        />
+        <div className="absolute left-2 top-2 flex flex-wrap items-center gap-1">
+          {needsRx && (
+            <span className="rounded-full bg-[#E8F5FC] px-1.5 py-[1px] text-[9px] font-semibold text-[#1D9FDA]">Rx</span>
+          )}
+          {inStock ? (
+            <span className="rounded-full bg-[#EEF6EA] px-1.5 py-[1px] text-[9px] font-semibold text-[#4E8F35]">{tr('In stock', 'In stock')}</span>
+          ) : (
+            <span className="rounded-full bg-red-50 px-1.5 py-[1px] text-[9px] font-semibold text-red-500">{tr('Out of stock', 'Wala nang stock')}</span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col px-1.5 pb-1 pt-2.5">
+        <h3 className="line-clamp-2 text-[13px] font-semibold leading-snug text-gray-900">{displayName(p)}</h3>
+        <p className="mt-0.5 line-clamp-1 text-[11px] text-gray-400">{specLine(p)}</p>
+
+        {/* Small and flat: a quiet text pill plus the round request-list icon, so
+            two cards side by side don't turn into a wall of buttons. */}
+        <div className="mt-auto flex items-center gap-1.5 pt-2.5">
+          <span className="inline-flex h-8 flex-1 items-center justify-center gap-1 rounded-full bg-primary text-[11px] font-semibold text-white">
+            {tr('Inquire', 'Magtanong')}
+            <i className="fa-solid fa-arrow-right text-[9px]" />
+          </span>
+          <span className="contents [&>button]:h-8 [&>button]:w-8 [&_i]:text-[11px]">
+            <AddToCart item={cartItemFor(p)} />
+          </span>
+        </div>
+      </div>
+    </a>
+  );
+}
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function CatalogClient(_props: { initialFolder?: string } = {}) {
+  const { tr, lang } = useLang();
   const { getImage, categoryImages } = useImageMapper('product-range');
   const { data: productsDataRaw, loading: productsLoading } = useProducts();
   const productsData = productsDataRaw as ProductWithCategory[] | null;
@@ -180,8 +246,6 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeFlyoutCat, setActiveFlyoutCat] = useState<any | null>(null);
   const [flyoutVisible, setFlyoutVisible] = useState(false);
-  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
-  const filterPanelRef = useRef<HTMLDivElement>(null);
   const [inquiryDropdown, setInquiryDropdown] = useState<{
     rowId: string;
     product: ProductWithCategory;
@@ -194,10 +258,10 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
   // is what lands you there — the label must not change under you on the way.
   // The values are the ?userType= that page reads, so they stay as they are.
   const USER_TYPE_OPTIONS = [
-    { label: 'Patient / Family',                      value: 'patient'  },
-    { label: 'Doctor / Healthcare Professional',      value: 'doctor'   },
-    { label: 'Distributor / Pharmacy',                value: 'pharmacy' },
-    { label: 'Hospital / Institution',                value: 'hospital' },
+    { label: 'Patient / Family',                      labelTl: 'Pasyente / Pamilya',                value: 'patient'  },
+    { label: 'Doctor / Healthcare Professional',      labelTl: 'Doktor / Healthcare Professional',  value: 'doctor'   },
+    { label: 'Distributor / Pharmacy',                labelTl: 'Distributor / Botika',              value: 'pharmacy' },
+    { label: 'Hospital / Institution',                labelTl: 'Ospital / Institusyon',             value: 'hospital' },
   ];
 
   const navigateWithUserType = (p: ProductWithCategory, userType: string) => {
@@ -259,9 +323,6 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
     const handleClick = (e: MouseEvent) => {
       if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
-      }
-      if (filterPanelRef.current && !filterPanelRef.current.contains(e.target as Node)) {
-        setFilterPanelOpen(false);
       }
       // Close inquiry dropdown if click is outside the trigger wrapper or the portaled menu itself
       const target = e.target as HTMLElement;
@@ -541,8 +602,6 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
       return conditions.some(part => part.toLowerCase() === cleanCategory);
     });
   };
-
-  const activeFilterCount = selectedCategory.category !== 'All' ? 1 : 0;
 
   const sorted = useMemo(() => {
     const categoryFiltered = getFiltered(selectedCategory);
@@ -938,17 +997,6 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
   const displayCategory = selectedCategory.subCategory !== 'All' ? selectedCategory.subCategory : selectedCategory.category;
   const conditionName = selectedCategory.subCategory !== 'All' ? selectedCategory.subCategory : '';
 
-  // Drives the breadcrumb slide direction: drilling into a category/condition (depth
-  // increasing) slides the new crumb in from the right; stepping back out (depth
-  // decreasing) slides the remaining crumbs in from the left.
-  const breadcrumbDepthRef = useRef(0);
-  const [breadcrumbDirection, setBreadcrumbDirection] = useState<'forward' | 'backward'>('forward');
-  useEffect(() => {
-    const depth = (selectedCategory.category !== 'All' ? 1 : 0) + (selectedCategory.subCategory !== 'All' ? 1 : 0);
-    setBreadcrumbDirection(depth >= breadcrumbDepthRef.current ? 'forward' : 'backward');
-    breadcrumbDepthRef.current = depth;
-  }, [selectedCategory]);
-
   // The layout renders the navbar above this page; size the h-screen shell to the
   // space below it (the original rendered the navbar inside the same shell).
   const rootRef = useRef<HTMLDivElement>(null);
@@ -994,11 +1042,11 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
           style={{ width: sidebarOpen ? '256px' : '0px', minWidth: 0, transition: 'width 0.3s ease', overflow: sidebarOpen ? 'auto' : 'hidden' }}
         >
           <div className="px-5 py-4 border-b border-gray-100 whitespace-nowrap flex items-center justify-between">
-            <p className="text-[15px] font-semibold text-gray-500">Categories</p>
+            <p className="text-[15px] font-semibold text-gray-500">{tr('Categories', 'Mga Kategorya')}</p>
             <button
               onClick={() => setSidebarOpen(false)}
               className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors shrink-0"
-              title="Collapse sidebar"
+              title={tr('Collapse sidebar', 'Isara ang sidebar')}
             >
               <i className="fa-solid fa-chevron-left text-[15px] text-gray-500" />
             </button>
@@ -1011,7 +1059,7 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                 ? { background: 'linear-gradient(to right, #61A644, #1D9FDA)', color: '#fff' }
                 : { color: '#374151' }}
             >
-              <span>All Products</span>
+              <span>{tr('All Products', 'Lahat ng Produkto')}</span>
             </button>
             {categoriesLoading ? (
               <SidebarSkeleton />
@@ -1091,91 +1139,21 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
         {/* MAIN CONTENT COLUMN */}
         <div ref={scrollContainerRef} className="flex-1 min-w-0 overflow-y-auto product-range-scroll" style={{ transition: 'all 0.3s ease' }}>
 
-          {/* Hero Banner */}
-          <section className="w-full px-4 md:px-6 pt-5 pb-4">
-            <div
-              className="relative rounded-[15px] overflow-hidden flex items-center px-8 md:px-12"
-              style={{ background: 'linear-gradient(135deg, #3aaf5c 0%, #1ab8c4 45%, #1a99d6 100%)', minHeight: '130px' }}
-            >
-              {/* Glassy circles */}
-              <div className="absolute pointer-events-none" style={{ width: 160, height: 160, borderRadius: '50%', bottom: '-55px', left: '28%', background: 'radial-gradient(circle at 40% 35%, rgba(100,240,200,0.55), rgba(30,180,210,0.30))', backdropFilter: 'blur(2px)', border: '1px solid rgba(255,255,255,0.25)' }} />
-              <div className="absolute pointer-events-none" style={{ width: 130, height: 130, borderRadius: '50%', bottom: '-42px', left: '45%', background: 'radial-gradient(circle at 38% 30%, rgba(120,100,240,0.55), rgba(60,80,220,0.35))', backdropFilter: 'blur(2px)', border: '1px solid rgba(255,255,255,0.20)' }} />
-              <div className="absolute pointer-events-none hidden md:block" style={{ width: 180, height: 180, borderRadius: '50%', bottom: '-70px', right: '8%', background: 'radial-gradient(circle at 42% 38%, rgba(130,230,230,0.45), rgba(60,190,210,0.22))', backdropFilter: 'blur(2px)', border: '1px solid rgba(255,255,255,0.22)' }} />
-              <div className="absolute pointer-events-none hidden md:block" style={{ width: 90, height: 90, borderRadius: '50%', bottom: '-20px', left: '18%', background: 'radial-gradient(circle at 35% 30%, rgba(160,240,120,0.60), rgba(40,210,130,0.35))', backdropFilter: 'blur(2px)', border: '1px solid rgba(255,255,255,0.25)' }} />
-              <div className="absolute pointer-events-none hidden md:block" style={{ width: 52, height: 52, borderRadius: '50%', top: '10px', right: '28%', background: 'radial-gradient(circle at 35% 30%, rgba(170,110,240,0.70), rgba(100,60,210,0.45))', backdropFilter: 'blur(2px)', border: '1px solid rgba(255,255,255,0.25)' }} />
-              <div className="absolute pointer-events-none hidden md:block" style={{ width: 85, height: 85, borderRadius: '50%', top: '-15px', right: '38%', background: 'radial-gradient(circle at 38% 32%, rgba(80,220,210,0.55), rgba(30,170,200,0.30))', backdropFilter: 'blur(2px)', border: '1px solid rgba(255,255,255,0.22)' }} />
-              <div className="absolute pointer-events-none" style={{ width: 280, height: 80, borderRadius: '50%', bottom: '-48px', left: '22%', background: 'radial-gradient(ellipse at 50% 40%, rgba(40,160,230,0.38), rgba(20,130,210,0.18))', backdropFilter: 'blur(2px)' }} />
-              <div className="relative z-10 transition-all duration-300">
-                {/* A condition page's main heading is the condition ("Breast Cancer Medicines"),
-                    with its category as a label above it. Before, every condition shared its
-                    category's heading, so e.g. all 18 oncology condition pages read "Oncology". */}
-                {conditionName ? (
-                  <>
-                    {selectedCategory.category !== 'All' && (
-                      <p className="text-white/80 text-[11px] sm:text-xs font-semibold uppercase tracking-widest mb-1">{selectedCategory.category}</p>
-                    )}
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-white tracking-tight leading-tight">
-                      {conditionHeading(conditionName)}
-                    </h1>
-                  </>
-                ) : (
-                  <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-white tracking-tight leading-tight">
-                    {selectedCategory.category !== 'All' ? selectedCategory.category : 'Products'}
-                  </h1>
-                )}
-                <p className="text-white/75 text-[12px] sm:text-[13px] mt-1 font-medium">Comprehensive catalog of pharmaceutical solutions. Browse categories and send inquiries directly.</p>
-              </div>
-            </div>
-          </section>
-
-          {/* Breadcrumb — All Products > Category > Condition, each level linking
-              to its own step so stepping back doesn't skip the parent category */}
-          <nav className="px-4 sm:px-6 lg:px-8 pb-2 pt-1" aria-label="Breadcrumb">
-            <ol className="flex items-center gap-1.5 text-[12px] text-gray-400 flex-wrap">
-              <li>
-                <button
-                  onClick={() => selectCategory('All', 'All')}
-                  className="hover:text-primary transition-colors font-medium"
-                >
-                  All Products
-                </button>
-              </li>
-              {selectedCategory.category !== 'All' && (
-                <React.Fragment key={`cat-${selectedCategory.category}`}>
-                  <li className="text-gray-300"><i className="fa-solid fa-chevron-right text-[9px]" /></li>
-                  <li className={breadcrumbDirection === 'forward' ? 'breadcrumb-forward' : 'breadcrumb-backward'}>
-                    {selectedCategory.subCategory !== 'All' ? (
-                      <button
-                        onClick={() => selectCategory(selectedCategory.category, 'All')}
-                        className="hover:text-primary transition-colors font-medium"
-                      >
-                        {selectedCategory.category}
-                      </button>
-                    ) : (
-                      <span className="font-semibold text-gray-700">{selectedCategory.category}</span>
-                    )}
-                  </li>
-                </React.Fragment>
-              )}
-              {selectedCategory.subCategory !== 'All' && (
-                <React.Fragment key={`sub-${selectedCategory.subCategory}`}>
-                  <li className="text-gray-300"><i className="fa-solid fa-chevron-right text-[9px]" /></li>
-                  <li className={`font-semibold text-gray-700 ${breadcrumbDirection === 'forward' ? 'breadcrumb-forward' : 'breadcrumb-backward'}`}>
-                    {selectedCategory.subCategory}
-                  </li>
-                </React.Fragment>
-              )}
-            </ol>
-          </nav>
-
           {/* PRODUCTS LIST */}
-          <section className="px-4 sm:px-6 lg:px-8 mb-24">
+          <section className="px-4 sm:px-6 lg:px-8 pt-4 mb-24">
             {/* Toolbar */}
-            <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-start sm:justify-between sm:mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 leading-snug sm:max-w-[55%]">
-                {displayCategory === 'All' ? 'All Products' : displayCategory}{' '}
-                <span className="text-gray-400 font-normal text-sm ml-1 whitespace-nowrap">({sorted.length} Items)</span>
-              </h2>
+            <div className="flex flex-col gap-3 mb-3 sm:flex-row sm:items-start sm:justify-between">
+              {/* The page's h1 — it used to live in the gradient banner, which is gone.
+                  A condition page is headed by the condition ("Breast Cancer Medicines")
+                  with its category as a label above it, as before. */}
+              <div className="sm:max-w-[55%]">
+                {conditionName && selectedCategory.category !== 'All' && (
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-0.5">{selectedCategory.category}</p>
+                )}
+                <h1 className="text-xl font-semibold text-gray-900 leading-snug tracking-tight">
+                  {conditionName ? (lang === 'tl' ? conditionHeadingTl(conditionName) : conditionHeading(conditionName)) : displayCategory === 'All' ? tr('Products', 'Mga Produkto') : displayCategory}
+                </h1>
+              </div>
 
               {/* Check Products */}
               {!sidebarOpen && (
@@ -1184,18 +1162,18 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                   className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-primary hover:bg-blue-600 text-white text-[13px] font-bold transition-all whitespace-nowrap shadow-sm"
                 >
                   <i className="fa-solid fa-list text-[12px]" />
-                  Check Products
+                  {tr('Check Products', 'Tingnan ang Produkto')}
                 </button>
               )}
 
               {/* Search Bar */}
               <div className="relative w-full sm:flex-1 sm:min-w-0" ref={searchWrapperRef}>
-                <div className="bg-white rounded-full py-1 px-1.5 border border-gray-200 flex items-center">
+                <div className="rounded-full py-1.5 px-1.5 border border-transparent focus-within:border-primary flex items-center" style={{ background: '#F6F7F9' }}>
                   <div className="relative flex-grow flex items-center ml-3">
                     <i className="fa-solid fa-magnifying-glass text-gray-400 text-[13px]" />
                     <input
                       type="text"
-                      placeholder="Search by brand, generic name, category, or disease..."
+                      placeholder={tr('Search by brand, generic name, category, or disease...', 'Maghanap ayon sa brand, generic name, kategorya, o sakit...')}
                       value={searchTerm}
                       onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                       onFocus={() => setShowSuggestions(true)}
@@ -1212,67 +1190,10 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                       <button
                         onClick={() => { setSearchTerm(''); setCurrentPage(1); }}
                         className="mr-2 text-gray-300 hover:text-gray-500 transition flex-shrink-0"
-                        aria-label="Clear search"
+                        aria-label={tr('Clear search', 'I-clear ang search')}
                       >
                         <i className="fa-solid fa-xmark text-[11px]" />
                       </button>
-                    )}
-                  </div>
-                  <div className="relative flex-shrink-0" ref={filterPanelRef}>
-                    <button
-                      onClick={e => { e.stopPropagation(); setFilterPanelOpen(v => !v); setShowSuggestions(false); }}
-                      className="relative h-8 w-8 bg-primary rounded-full flex items-center justify-center text-white hover:bg-blue-600 transition-colors duration-300 active:scale-95"
-                    >
-                      <i className="fa-solid fa-sliders text-[11px]" />
-                      {activeFilterCount > 0 && (
-                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold flex items-center justify-center leading-none">
-                          {activeFilterCount}
-                        </span>
-                      )}
-                    </button>
-
-                    {/* Filter Panel — pick a therapeutic area/category to filter the
-                        table, the same selection the sidebar drives */}
-                    {filterPanelOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50 max-h-80 overflow-y-auto sidebar-scroll">
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="text-[13px] font-semibold text-gray-800">Therapeutic Areas</h4>
-                          {activeFilterCount > 0 && (
-                            <button
-                              onClick={() => { selectCategory('All', 'All'); setFilterPanelOpen(false); }}
-                              className="text-[11px] font-semibold text-primary hover:text-blue-700 transition"
-                            >
-                              Clear all
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <button
-                            onClick={() => { selectCategory('All', 'All'); setFilterPanelOpen(false); }}
-                            className={`w-full px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-all text-center leading-tight ${
-                              selectedCategory.category === 'All'
-                                ? 'bg-primary text-white border-primary'
-                                : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
-                            }`}
-                          >
-                            All
-                          </button>
-                          {processedCats.map(cat => (
-                            <button
-                              key={cat.slug}
-                              onClick={() => { selectCategory(cat.category, 'All'); setFilterPanelOpen(false); }}
-                              className={`w-full px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-all text-center leading-tight ${
-                                selectedCategory.category === cat.category
-                                  ? 'bg-primary text-white border-primary'
-                                  : 'bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary'
-                              }`}
-                            >
-                              {cat.category.replace(/(\w)-(\w)/g, '$1‑$2')}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
                     )}
                   </div>
                 </div>
@@ -1281,13 +1202,13 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                 {showSuggestions && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50">
                     <div className="flex items-center justify-between mb-3 px-1">
-                      <h4 className="text-[12px] font-medium text-gray-500">Recent Searches</h4>
+                      <h4 className="text-[12px] font-medium text-gray-500">{tr('Recent Searches', 'Mga Huling Hinanap')}</h4>
                       {searchHistory.length > 0 && (
                         <button
                           onClick={() => clearSearchHistory()}
                           className="text-[11px] font-bold text-primary hover:text-blue-700 transition"
                         >
-                          Clear All
+                          {tr('Clear All', 'I-clear Lahat')}
                         </button>
                       )}
                     </div>
@@ -1312,6 +1233,7 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                             <button
                               onClick={e => { e.stopPropagation(); removeSearchHistoryItem(term); }}
                               className="p-1"
+                              aria-label={tr(`Remove ${term}`, `Alisin ang ${term}`)}
                             >
                               <i className="fa-solid fa-xmark text-gray-300 hover:text-red-500 text-[10px] transition opacity-0 group-hover:opacity-100" />
                             </button>
@@ -1320,12 +1242,12 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                       ) : (
                         <div className="col-span-full py-8 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100">
                           <i className="fa-solid fa-ghost text-gray-300 text-2xl mb-3 block" />
-                          <p className="text-xs font-semibold text-gray-400">No search history found</p>
+                          <p className="text-xs font-semibold text-gray-400">{tr('No search history found', 'Wala pang search history')}</p>
                         </div>
                       )}
                     </div>
                     <div className="flex items-center justify-between mb-3 px-1">
-                      <h4 className="text-[12px] font-medium text-gray-500">Suggested</h4>
+                      <h4 className="text-[12px] font-medium text-gray-500">{tr('Suggested', 'Mungkahi')}</h4>
                     </div>
                     <div className="grid grid-cols-1 gap-2 max-h-[280px] overflow-y-auto">
                       {suggestedProducts.map(sp => (
@@ -1344,7 +1266,7 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                             <img
                               src={getProductImage(sp, 80)}
                               className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition duration-300"
-                              alt={sp.brandName || sp.name || 'Product'}
+                              alt={sp.brandName || sp.name || tr('Product', 'Produkto')}
                               onError={(e) => { const img = e.currentTarget; img.onerror = null; img.src = '/assets/no-image.png'; }}
                             />
                           </div>
@@ -1359,23 +1281,73 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                 )}
               </div>
 
-              <div className="flex items-center gap-2 whitespace-nowrap">
-                <span className="text-[13px] text-gray-500 font-medium">Sort by:</span>
-                <div className="relative">
-                  <select
-                    value={sortBy}
-                    onChange={e => { setSortBy(e.target.value); setCurrentPage(1); scrollToTable(); }}
-                    className="appearance-none bg-white border border-blue-200 hover:border-primary rounded-full pl-4 pr-8 py-1.5 text-[13px] font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer shadow-sm"
+            </div>
+
+            {/* Category pills — the filter, out in the open where a thumb can reach it,
+                instead of behind a button. Bleeds to the screen edge so the next pill
+                peeks in and says "swipe". */}
+            <div className="no-scrollbar -mx-4 sm:-mx-6 lg:-mx-8 flex gap-2 overflow-x-auto px-4 sm:px-6 lg:px-8 pb-1">
+              {[{ key: 'All', label: tr('All', 'Lahat') }, ...processedCats.map(cat => ({ key: cat.category, label: cat.category }))].map(pill => {
+                const active = selectedCategory.category === pill.key;
+                return (
+                  <button
+                    key={pill.key}
+                    onClick={() => selectCategory(pill.key, 'All')}
+                    className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[12.5px] font-semibold transition active:scale-95 ${
+                      active ? 'bg-primary text-white shadow-sm' : 'bg-[#F6F7F9] text-gray-600'
+                    }`}
                   >
-                    <option>Default</option>
-                    <option>Name: A → Z</option>
-                    <option>Name: Z → A</option>
-                    <option>In Stock First</option>
-                    <option>Form: A → Z</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-600">
-                    <i className="fa-solid fa-chevron-down text-[10px]" />
-                  </div>
+                    {pill.label}
+                  </button>
+                );
+              })}
+              {categoriesLoading && Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-[34px] w-24 shrink-0 animate-pulse rounded-full bg-[#F6F7F9]" />
+              ))}
+            </div>
+
+            {/* A chosen category's conditions, one level down — smaller and outlined so
+                the two rows never read as the same control. */}
+            {(() => {
+              const cat = processedCats.find(c => c.category === selectedCategory.category);
+              if (!cat || cat.subcategory.length === 0) return null;
+              return (
+                <div className="no-scrollbar -mx-4 sm:-mx-6 lg:-mx-8 mt-2 flex gap-1.5 overflow-x-auto px-4 sm:px-6 lg:px-8 pb-1">
+                  {['All', ...cat.subcategory].map(sub => {
+                    const active = selectedCategory.subCategory === sub;
+                    return (
+                      <button
+                        key={sub}
+                        onClick={() => selectCategory(cat.category, sub)}
+                        className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-[11.5px] font-medium transition active:scale-95 ${
+                          active ? 'border-primary bg-[#EFF8FF] text-primary' : 'border-gray-200 bg-white text-gray-500'
+                        }`}
+                      >
+                        {sub === 'All' ? tr(`All ${cat.category}`, `Lahat ng ${cat.category}`) : sub}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            <div className="mt-4 mb-4 flex items-center justify-between gap-2">
+              <span className="text-[12.5px] text-gray-400">{sorted.length} {tr(sorted.length === 1 ? 'item' : 'items', 'item')}</span>
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={e => { setSortBy(e.target.value); setCurrentPage(1); scrollToTable(); }}
+                  aria-label={tr('Sort products', 'Ayusin ang mga produkto')}
+                  className="appearance-none bg-white border border-gray-200 hover:border-primary rounded-full pl-3.5 pr-8 py-1.5 text-[12px] font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+                >
+                  <option value="Default">{tr('Default', 'Default')}</option>
+                  <option value="Name: A → Z">{tr('Name: A → Z', 'Pangalan: A → Z')}</option>
+                  <option value="Name: Z → A">{tr('Name: Z → A', 'Pangalan: Z → A')}</option>
+                  <option value="In Stock First">{tr('In Stock First', 'Unahin ang In Stock')}</option>
+                  <option value="Form: A → Z">{tr('Form: A → Z', 'Anyo: A → Z')}</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500">
+                  <i className="fa-solid fa-arrow-down-wide-short text-[10px]" />
                 </div>
               </div>
             </div>
@@ -1383,86 +1355,41 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
             {/* Product List */}
             <div ref={tableRef}>
               {productsLoading ? (
-                <TableSkeleton />
+                <>
+                  <div className="lg:hidden grid grid-cols-2 gap-3">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="h-[268px] animate-pulse rounded-[20px] bg-[#F6F7F9]" />
+                    ))}
+                  </div>
+                  <div className="hidden lg:block"><TableSkeleton /></div>
+                </>
               ) : paginated.length === 0 ? (
                 <div className="flex flex-col items-center justify-center text-center bg-white rounded-2xl border border-gray-100 shadow-sm py-16 px-6">
                   <img
                     src="/assets/noproductsfound.png"
-                    alt="No products found"
+                    alt={tr('No products found', 'Walang nahanap na produkto')}
                     className="w-44 sm:w-56 object-contain mb-6"
                   />
-                  <h3 className="text-lg font-bold text-gray-900 mb-1.5">No Products Found</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1.5">{tr('No Products Found', 'Walang Nahanap na Produkto')}</h3>
                   <p className="text-sm text-gray-500 max-w-sm">
                     {searchTerm.trim() && displayCategory !== 'All' ? (
-                      <>No products found for <span className="font-semibold text-gray-700">"{searchTerm.trim()}"</span> in <span className="font-semibold text-gray-700">{displayCategory}</span>.</>
+                      <>{tr('No products found for', 'Walang nahanap na produkto para sa')} <span className="font-semibold text-gray-700">"{searchTerm.trim()}"</span> {tr('in', 'sa')} <span className="font-semibold text-gray-700">{displayCategory}</span>.</>
                     ) : searchTerm.trim() ? (
-                      <>No products found for <span className="font-semibold text-gray-700">"{searchTerm.trim()}"</span>.</>
+                      <>{tr('No products found for', 'Walang nahanap na produkto para sa')} <span className="font-semibold text-gray-700">"{searchTerm.trim()}"</span>.</>
                     ) : displayCategory !== 'All' ? (
-                      <>No products found in <span className="font-semibold text-gray-700">{displayCategory}</span>.</>
+                      <>{tr('No products found in', 'Walang nahanap na produkto sa')} <span className="font-semibold text-gray-700">{displayCategory}</span>.</>
                     ) : (
-                      "We couldn't find any products matching your search or filters."
+                      tr("We couldn't find any products matching your search or filters.", 'Walang produktong tumugma sa iyong search o mga filter.')
                     )}
                   </p>
                 </div>
               ) : (
                 <>
-                  {/* MOBILE CARDS */}
-                  <div className="lg:hidden space-y-3">
-                    {paginated.map((p, i) => {
-                      const displayName = getProductDisplayName(p);
-                      const rowId = `${p._id || 'idx'}-${i}`;
-                      return (
-                        <div key={rowId} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex gap-3">
-                          <div className="w-14 h-14 bg-gray-50 rounded-xl overflow-hidden flex-shrink-0 border border-gray-100 p-1">
-                            <img
-                              src={getProductImage(p, 120)}
-                              alt={displayName}
-                              className="w-full h-full object-contain mix-blend-multiply"
-                              onError={(e) => { const img = e.currentTarget; img.onerror = null; img.src = '/assets/no-image.png'; }}
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <span
-                                className="text-[14px] font-semibold text-gray-900 leading-snug cursor-pointer hover:text-primary transition-colors"
-                                onClick={() => openModal(p)}
-                              >
-                                {displayName}
-                              </span>
-                              {p.availability === false
-                                ? <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-500 border border-red-100">Out of Stock</span>
-                                : <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-green-600 border border-green-100">In Stock</span>
-                              }
-                            </div>
-                            <p className="text-[11px] text-primary font-medium mb-2">{getCategorizationDisplay(p)}</p>
-                            <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3">
-                              {p.strength && <span className="text-[11px] text-gray-500"><span className="font-semibold text-gray-400 uppercase tracking-wide">Strength</span> · {formatFieldWithLineBreaks(p.strength)}</span>}
-                              {p.form && <span className="text-[11px] text-gray-500"><span className="font-semibold text-gray-400 uppercase tracking-wide">Form</span> · {formatFieldWithLineBreaks(p.form)}</span>}
-                            </div>
-                            <div className="relative inquiry-dropdown-wrapper flex items-center gap-2">
-                              <AddToCart
-                                item={{
-                                  id: String(p._id || getProductDetailUrl(p)),
-                                  name: displayName,
-                                  strength: p.strength,
-                                  form: p.form,
-                                  url: getProductDetailUrl(p),
-                                  needsRx: needsPrescription((p as any).Prescription),
-                                }}
-                              />
-                              <button
-                                onClick={e => toggleInquiryDropdown(e, rowId, p, 'fill')}
-                                className="flex-1 justify-center bg-primary hover:bg-blue-600 text-white text-[12px] font-bold px-4 py-2.5 rounded-full transition-all duration-300 shadow-sm inline-flex items-center gap-1.5"
-                              >
-                                <i className="fa-solid fa-paper-plane text-[11px]" />
-                                Send Inquiry
-                                <i className="fa-solid fa-chevron-down text-[9px] ml-0.5" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  {/* MOBILE GRID — two across, in the home screen's featured-card style */}
+                  <div className="lg:hidden grid grid-cols-2 gap-3">
+                    {paginated.map((p, i) => (
+                      <ProductGridCard key={`${p._id || 'idx'}-${i}`} p={p as unknown as CatalogueRow} />
+                    ))}
                   </div>
 
                   {/* DESKTOP TABLE */}
@@ -1470,12 +1397,12 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-gray-50/50 border-b border-gray-100">
-                          <th className="px-6 py-4 text-[14px] font-semibold text-gray-900 capitalize">Product</th>
-                          <th className="px-6 py-4 text-[14px] font-semibold text-gray-900 capitalize">Category</th>
-                          <th className="px-6 py-4 text-[14px] font-semibold text-gray-900 capitalize">Strength</th>
-                          <th className="px-6 py-4 text-[14px] font-semibold text-gray-900 capitalize">Form</th>
-                          <th className="px-6 py-4 text-[14px] font-semibold text-gray-900 capitalize text-center">Availability</th>
-                          <th className="px-6 py-4 text-[14px] font-semibold text-gray-900 capitalize text-center">Action</th>
+                          <th className="px-6 py-4 text-[14px] font-semibold text-gray-900 capitalize">{tr('Product', 'Produkto')}</th>
+                          <th className="px-6 py-4 text-[14px] font-semibold text-gray-900 capitalize">{tr('Category', 'Kategorya')}</th>
+                          <th className="px-6 py-4 text-[14px] font-semibold text-gray-900 capitalize">{tr('Strength', 'Lakas')}</th>
+                          <th className="px-6 py-4 text-[14px] font-semibold text-gray-900 capitalize">{tr('Form', 'Anyo')}</th>
+                          <th className="px-6 py-4 text-[14px] font-semibold text-gray-900 capitalize text-center">{tr('Availability', 'Availability')}</th>
+                          <th className="px-6 py-4 text-[14px] font-semibold text-gray-900 capitalize text-center">{tr('Action', 'Aksyon')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
@@ -1513,8 +1440,8 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                               </td>
                               <td className="px-6 py-4 text-center">
                                 {p.availability === false
-                                  ? <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-red-50 text-red-500 border border-red-100">Out of Stock</span>
-                                  : <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-green-50 text-green-600 border border-green-100">In Stock</span>
+                                  ? <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-red-50 text-red-500 border border-red-100">{tr('Out of Stock', 'Wala nang Stock')}</span>
+                                  : <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-green-50 text-green-600 border border-green-100">{tr('In Stock', 'In Stock')}</span>
                                 }
                               </td>
                               <td className="px-6 py-4 text-center">
@@ -1524,7 +1451,7 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                                     className="bg-primary hover:bg-blue-600 text-white text-[12px] font-semibold px-4 py-1.5 rounded-full transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 inline-flex items-center justify-center gap-1.5 whitespace-nowrap"
                                   >
                                     <i className="fa-solid fa-paper-plane text-[10px]" />
-                                    Send Inquiry
+                                    {tr('Send Inquiry', 'Magtanong')}
                                     <i className="fa-solid fa-chevron-down text-[9px]" />
                                   </button>
                                 </div>
@@ -1545,6 +1472,7 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                 <button
                   onClick={() => { if (currentPage > 1) { setCurrentPage(p => p - 1); scrollToTable(); } }}
                   disabled={currentPage === 1}
+                  aria-label={tr('Previous page', 'Nakaraang page')}
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition cursor-pointer select-none ${currentPage === 1 ? 'border border-gray-100 text-gray-300 cursor-not-allowed' : 'border border-gray-200 text-gray-400 hover:border-primary hover:text-primary'}`}
                 >
                   <i className="fa-solid fa-chevron-left text-xs" />
@@ -1565,6 +1493,7 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                 <button
                   onClick={() => { if (currentPage < totalPages) { setCurrentPage(p => p + 1); scrollToTable(); } }}
                   disabled={currentPage === totalPages}
+                  aria-label={tr('Next page', 'Susunod na page')}
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition cursor-pointer select-none ${currentPage === totalPages ? 'border border-gray-100 text-gray-300 cursor-not-allowed' : 'border border-gray-200 text-gray-400 hover:border-primary hover:text-primary'}`}
                 >
                   <i className="fa-solid fa-chevron-right text-xs" />
@@ -1592,7 +1521,7 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                   className="w-full text-left px-4 py-2.5 text-[12px] text-gray-700 hover:bg-blue-50 hover:text-primary transition-colors font-medium flex items-center gap-2"
                 >
                   <i className="fa-solid fa-user-tag text-[10px] text-primary/60" />
-                  {opt.label}
+                  {tr(opt.label, opt.labelTl ?? opt.label)}
                 </button>
               ))}
             </div>,
@@ -1605,6 +1534,7 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
             <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
               <div className="bg-white w-full max-w-[400px] rounded-2xl shadow-2xl relative overflow-hidden">
                 <button onClick={() => setSuccessModalOpen(false)}
+                  aria-label={tr('Close', 'Isara')}
                   className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition z-10">
                   <i className="fa-solid fa-xmark text-base"></i>
                 </button>
@@ -1614,9 +1544,12 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                       <i className="fa-solid fa-check text-white text-xl"></i>
                     </div>
                   </div>
-                  <h2 className="text-[19px] font-semibold text-gray-900 mb-4 leading-snug">Thank you for your inquiry.</h2>
+                  <h2 className="text-[19px] font-semibold text-gray-900 mb-4 leading-snug">{tr('Thank you for your inquiry.', 'Salamat sa iyong pagtatanong.')}</h2>
                   <p className="text-[13px] text-gray-500 leading-relaxed">
-                    Our team will contact you shortly to discuss your pharmaceutical product needs. For urgent concerns, please call{' '}
+                    {tr(
+                      'Our team will contact you shortly to discuss your pharmaceutical product needs. For urgent concerns, please call',
+                      'Kokontakin ka agad ng aming team para pag-usapan ang mga gamot na kailangan mo. Para sa agarang tanong, tumawag sa',
+                    )}{' '}
                     <a href="tel:+639190769105" className="text-[#1D9FDA] font-semibold hover:underline">+63 919 076 9105</a>.
                   </p>
                 </div>
@@ -1624,7 +1557,7 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                   <button onClick={() => setSuccessModalOpen(false)}
                     className="text-[13px] font-semibold hover:underline"
                     style={{ background: 'linear-gradient(to right,#61A644,#1D9FDA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                    Close
+                    {tr('Close', 'Isara')}
                   </button>
                 </div>
               </div>

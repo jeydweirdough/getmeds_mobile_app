@@ -5,6 +5,7 @@ import { shortDate, useAccountData, type ServerRequest } from '@/lib/accountApi'
 import { usePoints } from '@/lib/PointsCard';
 import { BRAND, GRADIENT, GROUND } from '@/lib/ui/Screen';
 import { goBack as goBackInApp } from '@/platform/navigation';
+import { useLang } from '@/lib/i18n';
 
 /**
  * chat.tsx
@@ -90,6 +91,7 @@ function describeRequest(r: ServerRequest) {
 type LoadState = 'loading' | 'ready' | 'failed';
 
 function Chat() {
+  const { tr } = useLang();
   const requestId = useMemo(() => new URLSearchParams(window.location.search).get('request') || '', []);
   const { data } = useAccountData();
   const { signedIn, summary } = usePoints();
@@ -190,9 +192,14 @@ function Chat() {
     if (!context) return;
     try {
       await navigator.clipboard.writeText(context.text);
-      setCopied('Copied. Paste it into the chat.');
+      setCopied(tr('Copied. Paste it into the chat.', 'Nakopya na. I-paste ito sa chat.'));
     } catch {
-      setCopied('This phone did not allow copying. Type the request details into the chat instead.');
+      setCopied(
+        tr(
+          'This phone did not allow copying. Type the request details into the chat instead.',
+          'Hindi pinayagan ng phone na ito ang pagkopya. I-type na lang ang detalye ng request sa chat.',
+        ),
+      );
     }
     window.setTimeout(() => setCopied(''), 3000);
   };
@@ -203,19 +210,19 @@ function Chat() {
         className="sticky top-0 z-40 flex items-center gap-2 border-b border-[#E7ECF2] bg-white px-2 pb-2.5"
         style={{ paddingTop: '10px' /* the screen (App.tsx) already clears the status bar */ }}
       >
-        <button type="button" onClick={goBack} aria-label="Back" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700">
+        <button type="button" onClick={goBack} aria-label={tr('Back', 'Bumalik')} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700">
           <i className="fa-solid fa-arrow-left text-[16px]" />
         </button>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[16px] font-semibold text-gray-900">Chat with Getmeds</h1>
-          <p className="truncate text-[11.5px] text-gray-500">Our assistant answers right away; a pharmacist follows up</p>
+          <h1 className="truncate text-[16px] font-semibold text-gray-900">{tr('Chat with Getmeds', 'Mag-chat sa Getmeds')}</h1>
+          <p className="truncate text-[11.5px] text-gray-500">{tr('Our assistant answers right away; a pharmacist follows up', 'Sasagot agad ang assistant namin; susunod ang isang pharmacist')}</p>
         </div>
       </header>
 
       <main className="mx-auto max-w-xl space-y-4 px-4 pb-8 pt-5">
         {/* The request this chat is about */}
         {requestId && signedIn && (
-          <section className="rounded-[20px] border border-[#EEF1F5] bg-white p-4" aria-label="Request you are asking about">
+          <section className="rounded-[20px] border border-[#EEF1F5] bg-white p-4" aria-label={tr('Request you are asking about', 'Ang request na itinatanong mo')}>
             {!data ? (
               <div className="space-y-2" aria-busy="true">
                 <div className="h-4 w-1/2 animate-pulse rounded bg-gray-100" />
@@ -223,7 +230,7 @@ function Chat() {
               </div>
             ) : context ? (
               <>
-                <p className="text-[11.5px] font-medium text-gray-500">Asking about</p>
+                <p className="text-[11.5px] font-medium text-gray-500">{tr('Asking about', 'Tungkol sa')}</p>
                 <p className="mt-0.5 text-[14px] font-semibold text-gray-900">
                   {context.type} <span className="font-normal text-gray-500">· {context.date}</span>
                 </p>
@@ -236,7 +243,7 @@ function Chat() {
                     className="rounded-full bg-[#F1F8FE] px-3.5 py-1.5 text-[12.5px] font-semibold text-[#1D9FDA]"
                   >
                     <i className="fa-solid fa-copy mr-1.5 text-[11px]" />
-                    Copy details
+                    {tr('Copy details', 'Kopyahin ang detalye')}
                   </button>
                   {state === 'ready' && !chatOpen && (
                     <button
@@ -246,7 +253,7 @@ function Chat() {
                       className="rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold text-white"
                       style={{ background: GRADIENT }}
                     >
-                      Open chat
+                      {tr('Open chat', 'Buksan ang chat')}
                     </button>
                   )}
                 </div>
@@ -258,7 +265,10 @@ function Chat() {
               </>
             ) : (
               <p className="text-[12.5px] leading-snug text-gray-500">
-                We could not find that request on your account. Tell us in the chat which medicine it was for.
+                {tr(
+                  'We could not find that request on your account. Tell us in the chat which medicine it was for.',
+                  'Hindi namin makita ang request na iyon sa account mo. Sabihin sa amin sa chat kung para saang gamot ito.',
+                )}
               </p>
             )}
           </section>
@@ -268,7 +278,7 @@ function Chat() {
         {state === 'loading' && (
           <div className="flex items-center gap-3 rounded-[20px] border border-[#EEF1F5] bg-white p-4" aria-busy="true">
             <i className="fa-solid fa-circle-notch fa-spin text-[16px]" style={{ color: BRAND }} />
-            <p className="text-[13px] text-gray-600">Opening the chat…</p>
+            <p className="text-[13px] text-gray-600">{tr('Opening the chat…', 'Binubuksan ang chat…')}</p>
           </div>
         )}
 
@@ -277,9 +287,12 @@ function Chat() {
             <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F6FC]">
               <i className="fa-solid fa-comments text-[18px]" style={{ color: BRAND }} />
             </span>
-            <p className="text-[14px] font-semibold text-gray-900">Ask us anything about a medicine</p>
+            <p className="text-[14px] font-semibold text-gray-900">{tr('Ask us anything about a medicine', 'Magtanong tungkol sa kahit anong gamot')}</p>
             <p className="mx-auto mt-1.5 max-w-[300px] text-[12.5px] leading-relaxed text-gray-500">
-              Availability, strengths, or a request you already sent. Tap below to open the chat again.
+              {tr(
+                'Availability, strengths, or a request you already sent. Tap below to open the chat again.',
+                'Availability, strength, o request na naipadala mo na. I-tap sa ibaba para buksan ulit ang chat.',
+              )}
             </p>
             <button
               id="chat-open"
@@ -288,7 +301,7 @@ function Chat() {
               className="mx-auto mt-4 block w-full max-w-[240px] rounded-full py-3.5 text-[14px] font-semibold text-white"
               style={{ background: GRADIENT }}
             >
-              Open chat
+              {tr('Open chat', 'Buksan ang chat')}
             </button>
           </div>
         )}
@@ -298,17 +311,19 @@ function Chat() {
             <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F6FC]">
               <i className="fa-solid fa-comment-slash text-[18px]" style={{ color: BRAND }} />
             </span>
-            <p className="text-[14px] font-semibold text-gray-900">The chat did not load</p>
+            <p className="text-[14px] font-semibold text-gray-900">{tr('The chat did not load', 'Hindi nag-load ang chat')}</p>
             <p className="mx-auto mt-1.5 max-w-[300px] text-[12.5px] leading-relaxed text-gray-500">
-              Your connection may be slow, or a blocker may be stopping it. Send us a message instead and our team will
-              reply.
+              {tr(
+                'Your connection may be slow, or a blocker may be stopping it. Send us a message instead and our team will reply.',
+                'Baka mabagal ang connection mo, o may blocker na pumipigil dito. Magpadala na lang ng mensahe at sasagot ang aming team.',
+              )}
             </p>
             <a
               href="/contact-us"
               className="mx-auto mt-4 block w-full max-w-[240px] rounded-full py-3.5 text-[14px] font-semibold text-white"
               style={{ background: GRADIENT }}
             >
-              Contact us
+              {tr('Contact us', 'Makipag-ugnayan')}
             </a>
             <button
               id="chat-retry"
@@ -316,7 +331,7 @@ function Chat() {
               onClick={() => window.location.reload()}
               className="mt-2 w-full py-2 text-[13px] font-semibold text-gray-500"
             >
-              Try again
+              {tr('Try again', 'Subukan ulit')}
             </button>
           </div>
         )}
