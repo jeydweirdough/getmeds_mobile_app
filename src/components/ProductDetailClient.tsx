@@ -17,6 +17,8 @@ import AlertModal from '@/lib/AlertModal';
 import { PortableText } from '@portabletext/react';
 import { usePageReady } from '@/lib/handoff';
 import { goBack, goTo } from '@/platform/navigation';
+import { RatingLine, ReviewsSection, useReviews } from '@/lib/ProductReviews';
+import StrengthPicker from '@/lib/StrengthPicker';
 import './ProductDetailClient.css';
 
 interface ProductWithCategory extends Omit<SanityProduct, 'category'> {
@@ -90,6 +92,9 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
   // (website layout). The layout effect corrects it before the first paint.
   const [app, setApp] = useState(false);
   useLayoutEffect(() => { setApp(isAppMode()); }, []);
+  // Ratings and reviews (app only): keyed by the product's slug, the last part of its address.
+  const reviewSlug = app && product ? product.slug?.current || location.pathname.split('/').filter(Boolean).pop() : undefined;
+  const reviews = useReviews(reviewSlug);
 
   const [zoomedImageOpen, setZoomedImageOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -843,6 +848,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                     <h1 className="text-[21px] font-bold leading-tight text-gray-900">
                       {getProductDisplayName(product)}
                     </h1>
+                    <RatingLine data={reviews.data} />
 
                     {/* Where a storefront would link to the seller's shop. The
                         nearest true thing here is the section this product was
@@ -867,17 +873,15 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                           <i className="fa-solid fa-file-prescription text-[9px]" /> Prescription required
                         </span>
                       )}
-                      {product.strength && (
-                        <span className="rounded-full bg-[#F1F6FC] px-2.5 py-1 text-[11px] font-semibold text-gray-600">
-                          {product.strength}
-                        </span>
-                      )}
                       {product.form && (
                         <span className="rounded-full bg-[#F1F6FC] px-2.5 py-1 text-[11px] font-semibold capitalize text-gray-600">
                           {product.form}
                         </span>
                       )}
                     </div>
+
+                    {/* Where a shop offers sizes: this medicine's other strengths. */}
+                    <StrengthPicker current={product} />
 
                     {/* Account actions: a stock alert when it is out, and a
                         refill reminder. Signed-out taps explain sign-in. */}
@@ -1523,6 +1527,15 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                 competing with the category listing that is one click away in
                 the breadcrumb; in the app there is no breadcrumb, so this is
                 the only sideways move on the screen. */}
+            {app && reviewSlug && (
+              <ReviewsSection
+                slug={reviewSlug}
+                productName={[getProductDisplayName(product), product.strength].filter(Boolean).join(' ')}
+                data={reviews.data}
+                reload={reviews.reload}
+              />
+            )}
+
             {app && similar.length > 0 && (
               /* White like the rest of the screen; a hairline above marks the
                  break between "this product" and "other products", and the
