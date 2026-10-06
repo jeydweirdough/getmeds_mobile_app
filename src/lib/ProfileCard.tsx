@@ -93,7 +93,7 @@ export function GuestCard({ onSignIn }: { onSignIn: (mode: 'signup' | 'login') =
   ];
   return (
     <section
-      className="mb-5 rounded-[28px] border border-[#EEF1F5] bg-white p-2 pb-5"
+      className="mb-5 rounded-[28px] bg-white p-2 pb-5"
       aria-label={tr('Sign in', 'Mag-log in')}
     >
       <div className="h-[92px] rounded-[22px]" style={{ background: SKY }} />
@@ -147,7 +147,7 @@ export function GuestCard({ onSignIn }: { onSignIn: (mode: 'signup' | 'login') =
 export function GuestList({ rows }: { rows: Array<{ icon: string; label: string; hint?: string; onClick: () => void }> }) {
   const { tr } = useLang();
   return (
-    <section className="mb-5 overflow-hidden rounded-[22px] border border-[#EEF1F5] bg-white" aria-label={tr('More', 'Iba pa')}>
+    <section className="mb-5 overflow-hidden rounded-[22px] bg-white" aria-label={tr('More', 'Iba pa')}>
       <p className="px-4 pb-1 pt-3.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">{tr('More', 'Iba pa')}</p>
       {rows.map((r) => (
         <button
@@ -166,28 +166,29 @@ export function GuestList({ rows }: { rows: Array<{ icon: string; label: string;
   );
 }
 
-/** Bottom sheet above the tab bar (which sits at z-index 9999). */
+/** Full-screen sign-up / log-in page above the tab bar (which sits at z-index 9999).
+ *  Its child (AuthForm in `screen` layout) draws the tinted header and the card. */
 export function SignInSheet({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
   const { tr } = useLang();
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[10050] flex items-end" role="dialog" aria-modal="true" aria-label={tr('Sign in', 'Mag-log in')}>
-      <button type="button" aria-label={tr('Close', 'Isara')} onClick={onClose} className="absolute inset-0 bg-[rgba(15,23,42,.45)]" />
-      <div
-        className="relative max-h-[90vh] w-full overflow-y-auto rounded-t-[28px] bg-white px-5 pt-3"
-        style={{ paddingBottom: 'calc(20px + var(--gm-safe-bottom))' }}
+    <div
+      className="fixed inset-0 z-[10050] overflow-y-auto bg-[#F4F7FA]"
+      role="dialog"
+      aria-modal="true"
+      aria-label={tr('Sign in', 'Mag-log in')}
+      style={{ paddingBottom: 'var(--gm-safe-bottom)' }}
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label={tr('Close', 'Isara')}
+        className="absolute left-4 z-10 flex h-9 w-9 items-center justify-center rounded-full text-white"
+        style={{ top: 'calc(10px + var(--gm-safe-top))', background: 'rgba(10,42,67,.3)', backdropFilter: 'blur(8px)' }}
       >
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={tr('Close', 'Isara')}
-          className="absolute right-4 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500"
-        >
-          <i className="fa-solid fa-xmark text-[13px]" />
-        </button>
-        {children}
-      </div>
+        <i className="fa-solid fa-chevron-left text-[14px]" />
+      </button>
+      {children}
     </div>
   );
 }
@@ -199,7 +200,7 @@ export default function ProfileCard({ name, subtitle, avatar, completeness, onEd
 
   return (
     <section
-      className="mb-5 rounded-[28px] border border-[#EEF1F5] bg-white p-2 pb-3"
+      className="mb-5 rounded-[28px] bg-white p-2 pb-3"
       aria-label={tr('Your profile', 'Ang profile mo')}
     >
       {/* Cover: a soft sky, drawn in CSS so it costs no download. */}
@@ -251,7 +252,7 @@ export default function ProfileCard({ name, subtitle, avatar, completeness, onEd
 
       {/* Numbers, in an inset panel. */}
       <div
-        className="mx-2 mt-4 grid grid-cols-3 rounded-[20px] border border-[#EEF1F5] bg-[#F7F9FC] py-3.5"
+        className="mx-2 mt-4 grid grid-cols-3 rounded-[20px] bg-[#F7F9FC] py-3.5"
         style={{ boxShadow: 'inset 0 1px 2px rgba(23,43,77,.04)' }}
       >
         {stats.map((s) => {

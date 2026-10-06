@@ -182,11 +182,11 @@ export function AddToCart({
           type="button"
           onClick={toggle}
           aria-label={label}
-          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full border px-4 py-2.5 text-[12.5px] font-semibold backdrop-blur-md transition active:scale-95"
+          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full border px-4 py-2.5 text-[12.5px] font-semibold transition active:scale-95"
           style={
             saved
-              ? { borderColor: 'rgba(97,166,68,.35)', color: '#4E8F35', background: 'rgba(97,166,68,.14)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.7)' }
-              : { borderColor: 'rgba(29,159,218,.28)', color: '#1D9FDA', background: 'rgba(29,159,218,.10)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.7)' }
+              ? { borderColor: 'rgba(97,166,68,.35)', color: '#4E8F35', background: 'rgba(97,166,68,.10)' }
+              : { borderColor: 'rgba(29,159,218,.28)', color: '#1D9FDA', background: 'rgba(29,159,218,.08)' }
           }
         >
           <i className={`fa-solid ${saved ? 'fa-check' : 'fa-cart-plus'} text-[12px]`} />

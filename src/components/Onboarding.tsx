@@ -10,13 +10,13 @@ import { useLang } from '@/lib/i18n';
  * install, and never again on that phone. Each slide pairs a photo layout with
  * one line about what Getmeds does:
  *
- *   1  one large photo fading into brand blue  — who we are
+ *   1  a fanned stack of photo cards on white   — who we are
  *   2  a tilted collage of real Getmeds photos — the people we serve
  *   3  a collage of patient portraits           — how to request
  *
  * The slides swipe (native scroll-snap); the footer — dots, "Let's explore"
  * and the round next button — stays put. "Skip", "Let's explore" and the
- * round button on the last slide all lead to the sign-up / log-in screen,
+ * round button on the last slide all lead to the log-in screen,
  * which is where onboarding finishes: by signing in, or as a guest.
  *
  * "Seen" is a localStorage flag. The app's web view keeps it across launches
@@ -53,12 +53,14 @@ function Sparkle({ className, color, size = 14 }: { className: string; color: st
   );
 }
 
-/** Shared photo tile: rounded, soft shadow, and a white frame unless `frameless`. */
+/** Shared photo tile: rounded, with a white frame and soft shadow unless `frameless`.
+ *  Frameless tiles sit close together on white, where the shadows would pool
+ *  in the gaps and turn them grey, so they go without. */
 function Tile({ src, className = '', style, frameless = false }: { src: string; className?: string; style?: React.CSSProperties; frameless?: boolean }) {
   return (
     <div
-      className={`overflow-hidden rounded-[22px] bg-[#EAF4FB] ${frameless ? '' : 'border-[3px] border-white'} ${className}`}
-      style={{ boxShadow: '0 10px 26px rgba(23,43,77,.14)', ...style }}
+      className={`overflow-hidden rounded-[22px] bg-white ${frameless ? '' : 'border-[3px] border-white'} ${className}`}
+      style={{ boxShadow: frameless ? 'none' : '0 10px 26px rgba(23,43,77,.14)', ...style }}
     >
       <img src={src} alt="" className="h-full w-full object-cover" draggable={false} />
     </div>
@@ -66,11 +68,11 @@ function Tile({ src, className = '', style, frameless = false }: { src: string; 
 }
 
 /** Brand-blue fade at the bottom of every visual, so the photos melt into the text. */
-function Fade() {
+function Fade({ height = 'h-[42%]' }: { height?: string }) {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%]"
+      className={`pointer-events-none absolute inset-x-0 bottom-0 ${height}`}
       style={{ background: `linear-gradient(180deg, rgba(${GROUND_RGB},0) 0%, rgba(${GROUND_RGB},.85) 55%, ${GROUND} 100%)` }}
     />
   );
@@ -78,11 +80,77 @@ function Fade() {
 
 /* ── Slide visuals ─────────────────────────────────────────────────────── */
 
-function HeroVisual() {
+/** A round photo with a soft white ring, placed by percentages inside a card. */
+function Bubble({ src, className, position = 'center' }: { src: string; className: string; position?: string }) {
   return (
-    <div className="absolute inset-0">
-      <img src={`${IMG}/hero.webp`} alt="" className="h-full w-full object-cover" style={{ objectPosition: 'center 30%' }} draggable={false} />
-      <Fade />
+    <span className={`absolute aspect-square overflow-hidden rounded-full border-[3px] border-white/60 bg-white/30 ${className}`}>
+      <img src={src} alt="" className="h-full w-full object-cover" style={{ objectPosition: position }} draggable={false} />
+    </span>
+  );
+}
+
+/** Slide 1: three cards fanned over a soft circle, the front one a cluster of photo bubbles. */
+function StackVisual() {
+  const { tr } = useLang();
+  return (
+    <div className="absolute inset-0 overflow-hidden bg-white">
+      <span
+        aria-hidden="true"
+        className="absolute left-1/2 top-[48%] aspect-square w-[130%] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{ background: '#EEF6FB' }}
+      />
+
+      <div className="absolute left-1/2 top-[51%] aspect-[3/4] w-[70%] max-w-[300px] -translate-x-1/2 -translate-y-1/2">
+        {/* Back left */}
+        <div
+          className="absolute inset-0 overflow-hidden rounded-[28px]"
+          style={{ background: 'linear-gradient(160deg,#FFD98A 0%,#F59E0B 100%)', transform: 'translateX(-30%) rotate(-10deg) scale(.9)' }}
+        >
+          <Bubble src={`${IMG}/image2.webp`} className="left-[6%] top-[30%] w-[38%]" />
+        </div>
+        {/* Back right */}
+        <div
+          className="absolute inset-0 overflow-hidden rounded-[28px]"
+          style={{ background: 'linear-gradient(160deg,#D8C8FF 0%,#7C3AED 100%)', transform: 'translateX(30%) rotate(10deg) scale(.9)' }}
+        >
+          <Bubble src={`${IMG}/image3.webp`} className="right-[6%] top-[38%] w-[34%]" />
+        </div>
+        {/* Front */}
+        <div
+          className="absolute inset-0 overflow-hidden rounded-[28px]"
+          style={{ background: 'linear-gradient(160deg,#FF9A8B 0%,#F0568C 50%,#A445B2 100%)', boxShadow: '0 18px 40px rgba(164,69,178,.25)' }}
+        >
+          <Bubble src={`${IMG}/hero.webp`} className="left-[8%] top-[9%] w-[56%]" position="center 30%" />
+          <Bubble src={`${IMG}/collage-4.webp`} className="right-[10%] top-[7%] w-[24%]" />
+          <Bubble src={`${IMG}/image4.webp`} className="right-[6%] top-[30%] w-[36%]" />
+          <Bubble src={`${IMG}/image1.webp`} className="left-[18%] top-[47%] w-[34%]" />
+          <div className="absolute bottom-4 left-4 text-left">
+            <p className="text-[15px] font-medium leading-tight text-white">Getmeds</p>
+            <p className="text-[10.5px] text-white/80">{tr('Patient community', 'Komunidad ng pasyente')}</p>
+          </div>
+          <span className="absolute bottom-4 right-3.5 rounded-full bg-white/25 px-2.5 py-1 text-[9.5px] font-medium text-white">
+            {tr('Join now', 'Sumali na')}
+          </span>
+        </div>
+
+        {/* Floating accents */}
+        <span
+          aria-hidden="true"
+          className="absolute -right-[16%] top-[2%] flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-white text-white"
+          style={{ background: BRAND_GREEN }}
+        >
+          <i className="fa-solid fa-plus text-[11px]" />
+        </span>
+        <span
+          aria-hidden="true"
+          className="absolute -bottom-[9%] left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full border-[3px] border-white text-white"
+          style={{ background: '#F0568C' }}
+        >
+          <i className="fa-solid fa-location-arrow text-[11px]" />
+        </span>
+      </div>
+      {/* A little shorter than the other slides' fade: the card bottoms melt into the blue, the photos stay clear. */}
+      <Fade height="h-[34%]" />
     </div>
   );
 }
@@ -131,7 +199,7 @@ function PatientsVisual() {
 
 const SLIDES = [
   {
-    Visual: HeroVisual,
+    Visual: StackVisual,
     title: ['Your Compassionate', 'Health Ally'],
     titleTl: ['Ang Iyong Maalagang', 'Kasama sa Kalusugan'],
     body: 'Specialty medicines for cancer, heart, blood disorders and more, all in one app.',
@@ -156,67 +224,26 @@ const SLIDES = [
 /* ── Sign up / log in ──────────────────────────────────────────────────── */
 
 /**
- * The last step. Sign up and Log in open the same sheet (AuthForm), each on
- * its own form; the form links to the other and to "Forgot password". Its own
- * component so the points hook only runs once someone gets this far, not on
- * every launch.
+ * The last step: the log-in page, which links to Create account and Forgot
+ * password. Back returns to the slides; "Continue as guest" skips signing in.
+ * Its own component so the points hook only runs once someone gets this far,
+ * not on every launch.
  */
-function AuthStep({ onDone }: { onDone: () => void }) {
-  const { tr } = useLang();
+function AuthStep({ onDone, onBack }: { onDone: () => void; onBack: () => void }) {
   const points = usePoints();
-  const [mode, setMode] = useState<'signup' | 'login' | null>(null);
 
   // Signing up or logging in flips signedIn; that is the end of onboarding.
   const done = useRef(false);
   useEffect(() => {
-    if (!mode || !points.signedIn || done.current) return;
+    if (!points.signedIn || done.current) return;
     done.current = true;
     onDone();
-  }, [mode, points.signedIn, onDone]);
+  }, [points.signedIn, onDone]);
 
   return (
-    <>
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-8 text-center">
-        <span className="mb-6 flex h-[88px] w-[88px] items-center justify-center rounded-full bg-white/15">
-          <span className="flex h-[64px] w-[64px] items-center justify-center rounded-full bg-white">
-            <i className="fa-solid fa-user text-[24px]" style={{ color: BRAND }} />
-          </span>
-        </span>
-        <h1 className="text-[26px] font-medium leading-[1.18] text-white">{tr('Welcome to Getmeds', 'Welcome sa Getmeds')}</h1>
-        <p className="mx-auto mt-3 max-w-[300px] text-[13px] leading-relaxed text-white/85">
-          {tr(
-            'Create an account with your email or mobile number to earn points on every request.',
-            'Gumawa ng account gamit ang email o mobile number mo para makakuha ng points sa bawat request.',
-          )}
-        </p>
-      </div>
-
-      <div className="space-y-3 px-6 pt-4" style={{ paddingBottom: 'calc(22px + var(--gm-safe-bottom))' }}>
-        <button
-          type="button"
-          onClick={() => setMode('signup')}
-          className="h-[54px] w-full rounded-full bg-white text-[15px] font-semibold"
-          style={{ color: BRAND }}
-        >
-          {tr('Sign up', 'Mag-sign up')}
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode('login')}
-          className="h-[54px] w-full rounded-full border-[1.5px] border-white/70 text-[15px] font-semibold text-white"
-        >
-          {tr('Log in', 'Mag-log in')}
-        </button>
-        <button type="button" onClick={onDone} className="w-full py-2 text-[13px] font-medium text-white/85">
-          {tr('Continue as guest', 'Magpatuloy bilang guest')}
-        </button>
-      </div>
-
-      <SignInSheet open={mode !== null} onClose={() => setMode(null)}>
-        {/* Keyed so each button opens its own form fresh. */}
-        <PointsCard key={mode ?? 'closed'} points={points} bare initialMode={mode ?? 'signup'} />
-      </SignInSheet>
-    </>
+    <SignInSheet open onClose={onBack}>
+      <PointsCard points={points} bare initialMode="login" onGuest={onDone} />
+    </SignInSheet>
   );
 }
 
@@ -263,15 +290,6 @@ export default function Onboarding() {
       aria-modal="true"
       aria-label={tr('Welcome to Getmeds', 'Welcome sa Getmeds')}
     >
-      {/* The regular logo turned white with a filter (it is a transparent PNG),
-          so there is no second file to keep in step with it. */}
-      <img
-        src="/assets/getmeds-logo-sm.png"
-        alt="Getmeds"
-        className="absolute left-4 z-20 h-[38px] w-auto"
-        style={{ top: 'calc(8px + var(--gm-safe-top))', filter: 'brightness(0) invert(1)' }}
-        draggable={false}
-      />
 
       {step === 'slides' && (
       <button
@@ -285,7 +303,7 @@ export default function Onboarding() {
       )}
 
       {step === 'auth' ? (
-        <AuthStep onDone={finish} />
+        <AuthStep onDone={finish} onBack={() => { setIndex(0); setStep('slides'); }} />
       ) : (
       <>
 
@@ -304,7 +322,8 @@ export default function Onboarding() {
             <div className="relative min-h-0 flex-1">
               <Visual />
             </div>
-            <div className="relative px-8 pb-2 pt-1 text-center">
+            {/* Solid ground, pulled up 2px over the photo's fade, so no seam shows above the title. */}
+            <div className="relative -mt-[2px] px-8 pb-2 pt-[6px] text-center" style={{ background: GROUND }}>
               <Sparkle className="left-6 top-0" color="#FFFFFF" size={16} />
               <Sparkle className="right-7 top-14" color={BRAND_GREEN} size={13} />
               <h1 className="text-[26px] font-medium leading-[1.18] text-white">

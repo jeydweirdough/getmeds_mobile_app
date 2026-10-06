@@ -48,7 +48,7 @@ export default function StrengthPicker({ current }: { current: CatalogueRow }) {
 
   return (
     <div className="mt-4">
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+      <p className="mb-2 text-[12px] font-semibold text-gray-400">
         {options.length > 1 ? tr('Select strength', 'Pumili ng strength') : tr('Strength', 'Strength')}
       </p>
       <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={tr('Strength', 'Strength')}>

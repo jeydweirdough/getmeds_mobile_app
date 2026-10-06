@@ -1,5 +1,6 @@
 'use client';
 
+import ProductName from '@/lib/ProductName';
 import { createPortal } from 'react-dom';
 import React, { useEffect, useLayoutEffect, useMemo, useState, useRef } from 'react';
 import { useProducts, useCategories, useImageMapper } from '@/lib/useSanity';
@@ -897,7 +898,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                     })()}
 
                     <h1 className="text-[21px] font-bold leading-tight text-gray-900">
-                      {getProductDisplayName(product)}
+                      <ProductName name={getProductDisplayName(product)} />
                     </h1>
                     <RatingLine data={reviews.data} />
 
@@ -945,7 +946,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                         empty space, and it sets the expectation the inquiry
                         form below then meets. */}
                     <div className="mt-4 rounded-[16px] bg-[#F6F8FC] p-4">
-                      <p className="text-[10.5px] font-bold uppercase tracking-wider text-gray-400">{tr('Price', 'Presyo')}</p>
+                      <p className="text-[12px] font-semibold text-gray-400">{tr('Price', 'Presyo')}</p>
                       <p className="mt-0.5 text-[15px] font-bold text-gray-900">{tr('Quoted on request', 'May quote kapag nag-request')}</p>
                       <p className="mt-1 text-[11.5px] leading-relaxed text-gray-500">
                         {tr(
@@ -976,7 +977,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                       )}
                     </div>
                     <h1 className="text-xl font-bold text-gray-900 mb-4 leading-tight">
-                      {getProductDisplayName(product)}
+                      <ProductName name={getProductDisplayName(product)} />
                     </h1>
                     <div className="flex flex-wrap gap-x-6 gap-y-2">
                       {product.strength && (

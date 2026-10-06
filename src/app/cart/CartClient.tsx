@@ -32,6 +32,7 @@ import { useLang } from '@/lib/i18n';
 import PatientsScreen from '@/lib/account/PatientsScreen';
 import AddressesScreen from '@/lib/account/AddressesScreen';
 import { WalletPicker, prepareForWallet } from '@/lib/account/RxWalletScreen';
+import EmptyListIllustration from '@/components/EmptyListIllustration';
 
 /**
  * cart.tsx
@@ -924,10 +925,7 @@ function Cart({
               </div>
             ) : empty ? (
               <div className="flex flex-1 flex-col items-center justify-center py-16 text-center">
-                <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full"
-                  style={{ background: 'linear-gradient(135deg,#eaf6fd,#eef7ea)' }}>
-                  <i className="fa-solid fa-cart-shopping text-2xl" style={{ color: '#1D9FDA' }}></i>
-                </div>
+                <EmptyListIllustration />
                 <h2 className="text-base font-semibold text-gray-800">{tr('Nothing saved yet', 'Wala pang naka-save')}</h2>
                 <p className="mt-2 max-w-sm text-[13.5px] leading-relaxed text-gray-500">
                   {tr(

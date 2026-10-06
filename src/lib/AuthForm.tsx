@@ -19,10 +19,15 @@ import { translate, useLang } from '@/lib/i18n';
  *
  * Signing in fires REWARDS_CHANGED_EVENT (rewards.ts), which is what every
  * screen waiting on a sign-in listens for, so this form has no onDone of its own.
+ *
+ * `screen` lays it out as a full page (inside SignInSheet): the heading sits on
+ * a photo tinted brand blue, and the form in a white card overlapping it.
  */
 
 const BRAND = '#1D9FDA';
-const GRADIENT = 'linear-gradient(135deg,#1D9FDA,#61A644)';
+const HERO = '/assets/onboarding/hero.webp';
+// Brand blue over the photo: strong enough for white text, light enough to see the people.
+const TINT = 'linear-gradient(180deg, rgba(29,159,218,.80) 0%, rgba(29,159,218,.88) 100%)';
 const MIN_PASSWORD = 8;
 /** Neither SMS (Movider) nor email will send a second code sooner than this. */
 const RESEND_SECONDS = 60;
@@ -36,9 +41,9 @@ const message = (e: unknown) =>
 const looksLikeLogin = (v: string) => /\S@\S+\.\S/.test(v.trim()) || v.replace(/\D/g, '').length >= 10;
 
 const field =
-  'w-full rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-[14px] text-gray-800 outline-none focus:border-[#1D9FDA]';
-const label = 'mb-1.5 block text-[12px] font-medium text-gray-500';
-const primary = 'mt-4 w-full rounded-full py-3.5 text-[14px] font-semibold text-white disabled:opacity-50';
+  'w-full rounded-xl border border-transparent bg-[#F3F6F9] px-3.5 py-3 text-[14px] text-gray-800 outline-none placeholder:text-gray-400 focus:border-[#1D9FDA] focus:bg-white';
+const label = 'mb-1.5 block text-[12.5px] font-medium text-gray-800';
+const primary = 'mt-5 w-full rounded-full py-3.5 text-[14px] font-semibold text-white disabled:opacity-50';
 
 function PasswordInput({
   id,
@@ -95,7 +100,19 @@ function LoginInput({ id, value, onChange }: { id: string; value: string; onChan
   );
 }
 
-export default function AuthForm({ initialMode = 'signup', intro }: { initialMode?: AuthMode; intro?: string }) {
+export default function AuthForm({
+  initialMode = 'signup',
+  intro,
+  screen = false,
+  onGuest,
+}: {
+  initialMode?: AuthMode;
+  intro?: string;
+  /** Full-page layout: heading on a tinted photo, form in a card below it. */
+  screen?: boolean;
+  /** Adds "Continue as guest" under Log in, for when signing in is optional (onboarding). */
+  onGuest?: () => void;
+}) {
   const { tr } = useLang();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   // Forgot password only: who the account is, then the code and new password.
@@ -226,11 +243,10 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
               `Nagpadala kami ng 6-digit code ${via === 'mobile' ? 'sa text' : 'sa email'} sa ${sentTo}. Ilagay ito sa ibaba at pumili ng bagong password.`,
             );
 
-  return (
-    <div>
-      <h2 className="pr-10 text-[18px] font-semibold text-gray-900">{heading}</h2>
-      <p className="mt-1 text-[12.5px] leading-relaxed text-gray-500">{subtitle}</p>
+  const view = mode === 'reset' ? `reset-${resetStep}` : mode;
 
+  const forms = (
+    <>
       {/* ── Create account ── */}
       {mode === 'signup' && (
         <form
@@ -279,7 +295,7 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
               busy || !name.trim() || !looksLikeLogin(login) || !password || !confirm || (turnstile.enabled && !turnstile.token)
             }
             className={primary}
-            style={{ background: GRADIENT }}
+            style={{ background: BRAND }}
           >
             {busy ? tr('Creating account…', 'Ginagawa ang account…') : tr('Create account', 'Gumawa ng account')}
           </button>
@@ -305,24 +321,34 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
             {tr('Email or mobile number', 'Email o mobile number')}
           </label>
           <LoginInput id="auth-login" value={login} onChange={setLogin} />
-          <div className="mb-1.5 mt-3 flex items-center justify-between">
-            <label className="text-[12px] font-medium text-gray-500" htmlFor="auth-password">
-              Password
-            </label>
+          <label className={`${label} mt-3`} htmlFor="auth-password">
+            Password
+          </label>
+          <PasswordInput id="auth-password" value={password} onChange={setPassword} autoComplete="current-password" />
+          <div className="mt-2 text-right">
             <button type="button" onClick={() => switchTo('reset')} className="text-[12px] font-semibold" style={{ color: BRAND }}>
               {tr('Forgot password?', 'Nakalimutan ang password?')}
             </button>
           </div>
-          <PasswordInput id="auth-password" value={password} onChange={setPassword} autoComplete="current-password" />
           {error && <p className="mt-2 text-[12px] text-red-500">{error}</p>}
           <button
             type="submit"
             disabled={busy || !looksLikeLogin(login) || !password}
             className={primary}
-            style={{ background: GRADIENT }}
+            style={{ background: BRAND }}
           >
             {busy ? tr('Logging in…', 'Nagla-log in…') : tr('Log in', 'Mag-log in')}
           </button>
+          {onGuest && (
+            <button
+              type="button"
+              onClick={onGuest}
+              className="mt-3 w-full rounded-full border-[1.5px] py-3.5 text-[14px] font-semibold"
+              style={{ borderColor: BRAND, color: BRAND }}
+            >
+              {tr('Continue as guest', 'Magpatuloy bilang guest')}
+            </button>
+          )}
           <p className="mt-4 text-center text-[12.5px] text-gray-500">
             {tr('New to Getmeds?', 'Bago sa Getmeds?')}{' '}
             <button type="button" onClick={() => switchTo('signup')} className="font-semibold" style={{ color: BRAND }}>
@@ -351,7 +377,7 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
             type="submit"
             disabled={busy || !looksLikeLogin(login) || (turnstile.enabled && !turnstile.token)}
             className={primary}
-            style={{ background: GRADIENT }}
+            style={{ background: BRAND }}
           >
             {busy ? tr('Sending…', 'Ipinapadala…') : tr('Send code', 'Ipadala ang code')}
           </button>
@@ -405,7 +431,7 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
             type="submit"
             disabled={busy || code.length !== 6 || !password || !confirm}
             className={primary}
-            style={{ background: GRADIENT }}
+            style={{ background: BRAND }}
           >
             {busy ? tr('Saving…', 'Sine-save…') : tr('Save password and log in', 'I-save ang password at mag-log in')}
           </button>
@@ -436,6 +462,50 @@ export default function AuthForm({ initialMode = 'signup', intro }: { initialMod
           </div>
         </form>
       )}
+    </>
+  );
+
+  if (!screen) {
+    return (
+      <div>
+        <h2 className="pr-10 text-[18px] font-semibold text-gray-900">{heading}</h2>
+        <p className="mt-1 text-[12.5px] leading-relaxed text-gray-500">{subtitle}</p>
+        {forms}
+      </div>
+    );
+  }
+
+  return (
+    <div className="pb-6">
+      <header
+        className="relative flex flex-col justify-center overflow-hidden px-8 text-center"
+        style={{ minHeight: '50vh', paddingTop: 'calc(56px + var(--gm-safe-top))', paddingBottom: 92 }}
+      >
+        <img
+          src={HERO}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ objectPosition: 'center 30%' }}
+          draggable={false}
+        />
+        <div aria-hidden="true" className="absolute inset-0" style={{ background: TINT }} />
+        {/* Keyed on the form shown, so switching replays the ease-in. */}
+        <div key={view} className="gm-auth-in relative">
+          <h2 className="text-[24px] font-semibold leading-tight text-white">{heading}</h2>
+          <p className="mx-auto mt-2 max-w-[300px] text-[12.5px] leading-relaxed text-white/85">{subtitle}</p>
+        </div>
+      </header>
+      <div
+        className="relative mx-4 -mt-16 rounded-[24px] bg-white px-5 pb-6 pt-2"
+        style={{ boxShadow: '0 4px 14px rgba(23,43,77,.05)' }}
+      >
+        <div key={view} className="gm-auth-in-late">
+          {mode === 'login' && (
+            <img src="/assets/getmeds-logo-sm.png" alt="Getmeds" className="mx-auto mt-5 h-[60px] w-auto" draggable={false} />
+          )}
+          {forms}
+        </div>
+      </div>
     </div>
   );
 }

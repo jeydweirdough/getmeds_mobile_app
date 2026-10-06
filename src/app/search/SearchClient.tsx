@@ -1,5 +1,6 @@
 'use client';
 
+import ProductName from '@/lib/ProductName';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useProducts } from '@/lib/useSanity';
 import { hasConsent } from '@/lib/cart';
@@ -112,7 +113,7 @@ function FeaturedCard({ p }: { p: CatalogueRow }) {
           <span className="absolute left-2 top-2 rounded-full bg-[#E8F5FC] px-1.5 py-[1px] text-[9px] font-semibold text-[#1D9FDA]">Rx</span>
         )}
       </div>
-      <h3 className="mt-2 line-clamp-1 text-[12.5px] font-semibold text-gray-900">{displayName(p)}</h3>
+      <h3 className="mt-2 line-clamp-2 text-[12.5px] font-semibold leading-snug text-gray-900"><ProductName name={displayName(p)} /></h3>
       <p className="mt-0.5 line-clamp-1 text-[11px] text-gray-400">{specLine(p)}</p>
     </a>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import ProductName from '@/lib/ProductName';
 import React, { useEffect, useLayoutEffect, useState, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useProducts, useCategories, useImageMapper } from '@/lib/useSanity';
@@ -180,7 +181,7 @@ function ProductGridCard({ p }: { p: CatalogueRow }) {
       </div>
 
       <div className="flex flex-1 flex-col px-1.5 pb-1 pt-2.5">
-        <h3 className="line-clamp-2 text-[13px] font-semibold leading-snug text-gray-900">{displayName(p)}</h3>
+        <h3 className="line-clamp-2 text-[13px] font-semibold leading-snug text-gray-900"><ProductName name={displayName(p)} /></h3>
         <p className="mt-0.5 line-clamp-1 text-[11px] text-gray-400">{specLine(p)}</p>
 
         {/* Small and flat: a quiet text pill plus the round request-list icon, so

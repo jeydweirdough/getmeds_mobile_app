@@ -1,5 +1,6 @@
 'use client';
 
+import ProductName from '@/lib/ProductName';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useProducts } from '@/lib/useSanity';
 import { AddToCart } from '@/lib/AddToCart';
@@ -9,6 +10,7 @@ import { usePoints } from '@/lib/PointsCard';
 import { CategoryCard, useCatalogueCategories } from '@/lib/CategoryCard';
 import { typeByValue } from '@/lib/audienceTypes';
 import { useLang } from '@/lib/i18n';
+import { HealthArticles, QuickActions } from './HomeSections';
 import {
   CatalogueRow,
   cartItemFor,
@@ -60,7 +62,6 @@ import {
 const GROUND = '#F3F6FB';
 const BRAND = '#1D9FDA';
 const BRAND_GREEN = '#61A644';
-const CARD_SHADOW = '0 2px 10px rgba(23,43,77,.055)';
 
 /**
  * Who the greeting is for, from what is on the device: the saved details win
@@ -213,7 +214,7 @@ const PROMO_INTERVAL_MS = 5000;
  * The featured card, one per row. Image on top the way a storefront card reads,
  * because a medicine box is recognisable at a glance in a way its name often is
  * not — people recognise the packaging of something they have taken for months.
- * The buttons are frosted glass over a soft brand wash; the Rx and In stock
+ * Plain white with a hairline border and no shadows; the Rx and In stock
  * pills match the search results.
  */
 
@@ -224,19 +225,9 @@ function ProductCard({ p }: { p: CatalogueRow }) {
   return (
     <a
       href={productUrl(p)}
-      className="group relative block overflow-hidden rounded-[24px] border border-white/70 p-2 transition active:scale-[0.99]"
-      style={{
-        background: 'linear-gradient(160deg, rgba(255,255,255,.95) 0%, rgba(244,249,253,.9) 100%)',
-        boxShadow: '0 10px 30px rgba(23,43,77,.08), inset 0 1px 0 rgba(255,255,255,.9)',
-      }}
+      className="group relative block overflow-hidden rounded-[24px] border border-[#EEF1F5] bg-white p-2 transition active:scale-[0.99]"
     >
-      <div
-        className="relative h-[200px] overflow-hidden rounded-[18px]"
-        style={{ background: 'linear-gradient(135deg,#E6F4FC 0%,#F3F8FB 50%,#EEF7E9 100%)' }}
-      >
-        {/* Soft colour behind the glass, so the frost has something to blur. */}
-        <span aria-hidden="true" className="pointer-events-none absolute -left-10 -top-10 h-40 w-40 rounded-full blur-2xl" style={{ background: 'rgba(29,159,218,.18)' }} />
-        <span aria-hidden="true" className="pointer-events-none absolute -bottom-12 -right-6 h-40 w-40 rounded-full blur-2xl" style={{ background: 'rgba(97,166,68,.16)' }} />
+      <div className="relative h-[200px] overflow-hidden rounded-[18px] bg-white">
         <img
           src={productImage(p)}
           alt=""
@@ -259,18 +250,14 @@ function ProductCard({ p }: { p: CatalogueRow }) {
 
       <div className="px-2.5 pb-2 pt-3">
         <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-gray-900">
-          {displayName(p)}
+          <ProductName name={displayName(p)} />
         </h3>
         <p className="mt-1 line-clamp-1 text-[12px] text-gray-400">{specLine(p)}</p>
 
         <div className="mt-3.5 flex items-center gap-2">
           <span
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-[12.5px] font-semibold text-white backdrop-blur-md"
-            style={{
-              background: 'linear-gradient(135deg, rgba(29,159,218,.92), rgba(47,127,214,.92))',
-              border: '1px solid rgba(255,255,255,.35)',
-              boxShadow: '0 6px 16px rgba(29,159,218,.28), inset 0 1px 0 rgba(255,255,255,.35)',
-            }}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-[12.5px] font-semibold text-white"
+            style={{ background: BRAND }}
           >
             {tr('Inquire', 'Magtanong')}
             <i className="fa-solid fa-arrow-right text-[11px]" />
@@ -534,6 +521,8 @@ function AppHome() {
           </div>
         </div>
 
+        <QuickActions />
+
         <section className="mb-6">
           <SectionHeading title={tr('Categories', 'Mga Kategorya')} href="/categories" />
           {categories.length === 0 ? (
@@ -570,33 +559,7 @@ function AppHome() {
           )}
         </section>
 
-        {/* Below the catalogue rather than above it: a real programme people
-            come looking for, but not what most sessions are for.
-
-            The programme's own logo rather than a generic icon — it is a
-            named thing with its own identity that people are told to ask for
-            by name, and the mark is what they will have been shown. It also
-            carries the words "Patient Assistance Program" itself, so a
-            separate heading would only say it twice; the name lives in alt
-            text instead, where a screen reader still reads it out. */}
-        <a
-          href="/patient-assistance-program"
-          className="mb-5 flex items-center gap-3.5 rounded-[18px] bg-white p-4"
-          style={{ boxShadow: CARD_SHADOW }}
-        >
-          <img
-            src="/assets/pap-logo-sm.png"
-            alt="Patient Assistance Program"
-            loading="lazy"
-            width={400}
-            height={183}
-            className="h-[46px] w-auto shrink-0"
-          />
-          <span className="min-w-0 flex-1 text-[11.5px] leading-snug text-gray-500">
-            {tr('Support programmes for long-course treatment', 'Tulong para sa pangmatagalang gamutan')}
-          </span>
-          <i className="fa-solid fa-chevron-right shrink-0 text-[12px] text-gray-300" />
-        </a>
+        <HealthArticles />
 
         <p className="mb-2 text-center text-[11px] leading-relaxed text-gray-400">
           {tr(

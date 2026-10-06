@@ -546,7 +546,7 @@ function Account() {
           />
         )}
         {!app && (
-        <div className="mb-5 flex items-center gap-3.5 rounded-[18px] border border-[#EEF1F5] bg-white p-4">
+        <div className="mb-5 flex items-center gap-3.5 rounded-[18px] bg-white p-4">
           <span
             className="flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-full text-[20px] font-bold text-white"
             style={{ background: BRAND }}
@@ -704,7 +704,7 @@ function Account() {
         </SignInSheet>
 
         {consented === false && showSections && (
-          <div className="mb-5 rounded-[18px] border border-[#EEF1F5] bg-white p-4">
+          <div className="mb-5 rounded-[18px] bg-white p-4">
             <p className="text-[13.5px] font-semibold text-gray-900">{tr('Keep your details on this phone?', 'I-save ang mga detalye mo sa phone na ito?')}</p>
             <p className="mt-1.5 text-[12px] leading-relaxed text-gray-500">
               {tr(
@@ -761,7 +761,7 @@ function Account() {
                 ))}
               </div>
             ) : inquiries.length === 0 ? (
-              <div className="rounded-[18px] border border-[#EEF1F5] bg-white p-7 text-center">
+              <div className="rounded-[18px] bg-white p-7 text-center">
                 <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#F1F6FC]">
                   <i className="fa-solid fa-file-lines text-[18px]" style={{ color: BRAND }} />
                 </span>
@@ -785,7 +785,7 @@ function Account() {
                 {inquiries.map((q) => {
                   const s = STATUS[q.status];
                   return (
-                    <li key={q.id} className="rounded-[16px] border border-[#EEF1F5] bg-white p-4">
+                    <li key={q.id} className="rounded-[16px] bg-white p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-[13.5px] font-semibold text-gray-900">
@@ -838,7 +838,7 @@ function Account() {
                 app, so there is no status to show and none is implied. */}
             <a
               href="/patient-assistance-program"
-              className="mt-4 flex items-center gap-3.5 rounded-[18px] border border-[#EEF1F5] bg-white p-4"
+              className="mt-4 flex items-center gap-3.5 rounded-[18px] bg-white p-4"
             >
               <img src="/assets/pap-logo-sm.png" alt="Patient Assistance Program" loading="lazy" className="h-[38px] w-auto shrink-0" />
               <span className="min-w-0 flex-1 text-[11.5px] leading-snug text-gray-500">
@@ -851,7 +851,7 @@ function Account() {
 
         {/* ── Details ───────────────────────────────────────────────────── */}
         {tab === 'details' && showSections && !app && (
-          <section className="rounded-[18px] border border-[#EEF1F5] bg-white p-4">
+          <section className="rounded-[18px] bg-white p-4">
             <p className="text-[13.5px] font-semibold text-gray-900">{tr('Your details', 'Mga detalye mo')}</p>
             <p className="mt-1 text-[11.5px] leading-relaxed text-gray-500">
               {tr(

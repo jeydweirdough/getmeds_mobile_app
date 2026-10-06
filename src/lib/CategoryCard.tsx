@@ -102,9 +102,11 @@ export function CategoryCard({
         </span>
       </div>
 
+      {/* Name and count on the left, photo stack on the right. The name keeps to
+          one line (a size down, with smaller photos, so there is room for it). */}
       <div className="relative mt-2.5 flex items-end justify-between gap-2">
-        <div className="min-w-0">
-          <p className="line-clamp-2 text-[19px] font-semibold leading-[1.15]">{name}</p>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[17px] font-semibold leading-[1.2]">{name}</p>
           <p className="mt-1 flex items-center gap-1.5 text-[11.5px] text-white/85">
             <i className="fa-solid fa-capsules text-[10px]" />
             {tr(`${info.count} ${info.count === 1 ? 'medicine' : 'medicines'}`, `${info.count} gamot`)}
@@ -115,7 +117,7 @@ export function CategoryCard({
             {info.images.map((src, j) => (
               <span
                 key={src}
-                className="flex h-[34px] w-[34px] items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white"
+                className="flex h-[30px] w-[30px] items-center justify-center overflow-hidden rounded-full border-2 border-white bg-white"
                 style={{ marginLeft: j === 0 ? 0 : -10 }}
               >
                 <img
@@ -129,7 +131,7 @@ export function CategoryCard({
             ))}
             {extra > 0 && (
               <span
-                className="flex h-[34px] w-[34px] items-center justify-center rounded-full border-2 border-white bg-white/25 text-[11px] font-semibold backdrop-blur"
+                className="flex h-[30px] w-[30px] items-center justify-center rounded-full border-2 border-white bg-white/25 text-[10.5px] font-semibold backdrop-blur"
                 style={{ marginLeft: -10 }}
               >
                 +{extra}

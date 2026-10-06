@@ -19,7 +19,7 @@ import { useLang } from '@/lib/i18n';
  */
 
 const BRAND = '#1D9FDA';
-const GROUND = '#F3F6FB';
+const GROUND = '#FFFFFF';
 const GRADIENT = 'linear-gradient(135deg,#1D9FDA,#61A644)';
 
 type Errors = Partial<Record<keyof SavedDetails, string>>;
