@@ -13,7 +13,7 @@ import { folderDisplayName } from '@/lib/queries';
 import { usePageReady } from '@/lib/handoff';
 import './CatalogClient.css';
 import { goTo } from '@/platform/navigation';
-import { CatalogueRow, cartItemFor, displayName, productImage, productUrl, rxRequired, specLine } from '@/lib/catalogueItem';
+import { CatalogueRow, InquireButton, cartItemFor, displayName, productImage, productUrl, rxRequired, specLine } from '@/lib/catalogueItem';
 import { useLang } from '@/lib/i18n';
 
 
@@ -187,10 +187,11 @@ function ProductGridCard({ p }: { p: CatalogueRow }) {
         {/* Small and flat: a quiet text pill plus the round request-list icon, so
             two cards side by side don't turn into a wall of buttons. */}
         <div className="mt-auto flex items-center gap-1.5 pt-2.5">
-          <span className="inline-flex h-8 flex-1 items-center justify-center gap-1 rounded-full bg-primary text-[11px] font-semibold text-white">
-            {tr('Inquire', 'Magtanong')}
-            <i className="fa-solid fa-arrow-right text-[9px]" />
-          </span>
+          <InquireButton
+            p={p}
+            className="inline-flex h-8 flex-1 items-center justify-center gap-1 rounded-full bg-primary text-[11px] font-semibold text-white"
+            iconClassName="text-[9px]"
+          />
           <span className="contents [&>button]:h-8 [&>button]:w-8 [&_i]:text-[11px]">
             <AddToCart item={cartItemFor(p)} />
           </span>

@@ -93,6 +93,7 @@ export function GuestCard({ onSignIn }: { onSignIn: (mode: 'signup' | 'login') =
   ];
   return (
     <section
+      data-tour="guest"
       className="mb-5 rounded-[28px] bg-white p-2 pb-5"
       aria-label={tr('Sign in', 'Mag-log in')}
     >
@@ -217,6 +218,7 @@ export default function ProfileCard({ name, subtitle, avatar, completeness, onEd
         <button
           type="button"
           onClick={onEdit}
+          data-tour="profile-edit"
           aria-label={tr('Edit profile', 'I-edit ang profile')}
           className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-700 backdrop-blur"
           style={{ boxShadow: '0 2px 8px rgba(23,43,77,.12)' }}
@@ -252,6 +254,7 @@ export default function ProfileCard({ name, subtitle, avatar, completeness, onEd
 
       {/* Numbers, in an inset panel. */}
       <div
+        data-tour="profile-stats"
         className="mx-2 mt-4 grid grid-cols-3 rounded-[20px] bg-[#F7F9FC] py-3.5"
         style={{ boxShadow: 'inset 0 1px 2px rgba(23,43,77,.04)' }}
       >

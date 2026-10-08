@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import PointsCard, { usePoints } from '@/lib/PointsCard';
 import { SignInSheet } from '@/lib/ProfileCard';
 import { useLang } from '@/lib/i18n';
+import { TOUR_START_EVENT } from '@/components/GuidedTour';
 
 /**
  * Onboarding.tsx
@@ -100,30 +101,30 @@ function StackVisual() {
         style={{ background: '#EEF6FB' }}
       />
 
-      <div className="absolute left-1/2 top-[51%] aspect-[3/4] w-[70%] max-w-[300px] -translate-x-1/2 -translate-y-1/2">
+      <div className="absolute left-1/2 top-[51%] aspect-[3/4] w-[70%] max-w-[300px] -translate-x-1/2 -translate-y-1/2 [@media(max-height:620px)]:w-[54%]">
         {/* Back left */}
         <div
           className="absolute inset-0 overflow-hidden rounded-[28px]"
           style={{ background: 'linear-gradient(160deg,#FFD98A 0%,#F59E0B 100%)', transform: 'translateX(-30%) rotate(-10deg) scale(.9)' }}
         >
-          <Bubble src={`${IMG}/image2.webp`} className="left-[6%] top-[30%] w-[38%]" />
+          <Bubble src={`${IMG}/slide1three.jpg`} className="left-[6%] top-[30%] w-[38%]" />
         </div>
         {/* Back right */}
         <div
           className="absolute inset-0 overflow-hidden rounded-[28px]"
           style={{ background: 'linear-gradient(160deg,#D8C8FF 0%,#7C3AED 100%)', transform: 'translateX(30%) rotate(10deg) scale(.9)' }}
         >
-          <Bubble src={`${IMG}/image3.webp`} className="right-[6%] top-[38%] w-[34%]" />
+          <Bubble src={`${IMG}/slide1six.jpg`} className="right-[6%] top-[38%] w-[34%]" />
         </div>
         {/* Front */}
         <div
           className="absolute inset-0 overflow-hidden rounded-[28px]"
           style={{ background: 'linear-gradient(160deg,#FF9A8B 0%,#F0568C 50%,#A445B2 100%)', boxShadow: '0 18px 40px rgba(164,69,178,.25)' }}
         >
-          <Bubble src={`${IMG}/hero.webp`} className="left-[8%] top-[9%] w-[56%]" position="center 30%" />
-          <Bubble src={`${IMG}/collage-4.webp`} className="right-[10%] top-[7%] w-[24%]" />
-          <Bubble src={`${IMG}/image4.webp`} className="right-[6%] top-[30%] w-[36%]" />
-          <Bubble src={`${IMG}/image1.webp`} className="left-[18%] top-[47%] w-[34%]" />
+          <Bubble src={`${IMG}/slide1one.jpg`} className="left-[8%] top-[9%] w-[56%]" />
+          <Bubble src={`${IMG}/slide1two.jpg`} className="right-[10%] top-[7%] w-[24%]" />
+          <Bubble src={`${IMG}/slide1five.jpg`} className="right-[6%] top-[30%] w-[36%]" />
+          <Bubble src={`${IMG}/slide1four.jpg`} className="left-[18%] top-[47%] w-[34%]" />
           <div className="absolute bottom-4 left-4 text-left">
             <p className="text-[15px] font-medium leading-tight text-white">Getmeds</p>
             <p className="text-[10.5px] text-white/80">{tr('Patient community', 'Komunidad ng pasyente')}</p>
@@ -136,7 +137,7 @@ function StackVisual() {
         {/* Floating accents */}
         <span
           aria-hidden="true"
-          className="absolute -right-[16%] top-[2%] flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-white text-white"
+          className="absolute -right-[16%] top-[2%] flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-white text-white [@media(max-height:620px)]:hidden"
           style={{ background: BRAND_GREEN }}
         >
           <i className="fa-solid fa-plus text-[11px]" />
@@ -270,7 +271,11 @@ export default function Onboarding() {
   const finish = () => {
     markSeen();
     setLeaving(true);
-    window.setTimeout(() => setOpen(false), 280);
+    window.setTimeout(() => {
+      setOpen(false);
+      // Hand over to the home-screen tour (GuidedTour), which runs once.
+      window.dispatchEvent(new Event(TOUR_START_EVENT));
+    }, 280);
   };
 
   const goTo = (i: number) => {
@@ -337,7 +342,7 @@ export default function Onboarding() {
         ))}
       </div>
 
-      <div className="px-6 pt-4" style={{ paddingBottom: 'calc(22px + var(--gm-safe-bottom))' }}>
+      <div className="mx-auto w-full max-w-md px-6 pt-4" style={{ paddingBottom: 'calc(22px + var(--gm-safe-bottom))' }}>
         <div className="mb-6 flex justify-center gap-1.5" role="tablist" aria-label={tr('Slides', 'Mga slide')}>
           {SLIDES.map((_, i) => (
             <button

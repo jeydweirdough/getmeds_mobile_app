@@ -209,6 +209,20 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
     };
   }, [inquiryOpen]);
 
+  // "Inquire" on a product card lands here with ?inquire=1: open the sheet
+  // straight away, then drop the flag so Back or a reload does not reopen it.
+  const inquireHandled = useRef(false);
+  useEffect(() => {
+    if (!app || inquireHandled.current) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('inquire') !== '1') return;
+    inquireHandled.current = true;
+    url.searchParams.delete('inquire');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    openInquiry();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [app]);
+
   const [ageDropdownOpen, setAgeDropdownOpen] = useState(false);
   const ageDropdownRef = useRef<HTMLDivElement>(null);
   const [userTypeMenuOpen, setUserTypeMenuOpen] = useState(false);

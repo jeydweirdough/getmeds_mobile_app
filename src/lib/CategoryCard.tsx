@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { CatalogueRow, prettyFolder, productImage } from '@/lib/catalogueItem';
 import { useLang } from '@/lib/i18n';
+import { goTo } from '@/platform/navigation';
 
 /**
  * CategoryCard.tsx
@@ -107,13 +108,13 @@ export function CategoryCard({
       <div className="relative mt-2.5 flex items-end justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="truncate text-[17px] font-semibold leading-[1.2]">{name}</p>
-          <p className="mt-1 flex items-center gap-1.5 text-[11.5px] text-white/85">
+          <p className="mt-1 flex items-center gap-1.5 whitespace-nowrap text-[11.5px] text-white/85">
             <i className="fa-solid fa-capsules text-[10px]" />
             {tr(`${info.count} ${info.count === 1 ? 'medicine' : 'medicines'}`, `${info.count} gamot`)}
           </p>
         </div>
         {info.images.length > 0 && (
-          <div className="flex shrink-0 items-center">
+          <div className="flex shrink-0 items-center max-[339px]:hidden">
             {info.images.map((src, j) => (
               <span
                 key={src}
@@ -142,12 +143,22 @@ export function CategoryCard({
       </div>
 
       <div className="relative mt-auto flex items-center justify-between gap-2 pt-3">
-        <span className="flex min-w-0 items-center gap-2 rounded-full bg-white/15 py-1.5 pl-1.5 pr-3 text-[10.5px] leading-tight text-white/90">
+        {/* Its own button inside the card's link: it goes to the prescription
+            upload, not into the category (the link handler leaves it alone). */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            goTo('/order-medicines/patients');
+          }}
+          className="flex min-w-0 items-center gap-2 rounded-full bg-white/15 py-1.5 pl-1.5 pr-3 text-[10.5px] leading-tight text-white/90 transition active:scale-[0.97] active:bg-white/25"
+        >
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
             <i className="fa-solid fa-file-prescription text-[10px]" />
           </span>
           <span className="truncate">{tr('Request with your Rx', 'Mag-request gamit ang Rx mo')}</span>
-        </span>
+        </button>
         <span
           className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[12px] font-semibold"
           style={{ color: '#172B4D' }}

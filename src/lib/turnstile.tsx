@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useLang } from '@/lib/i18n';
 
 /**
  * turnstile.tsx
@@ -20,6 +21,11 @@ import React, { useEffect, useRef, useState } from 'react';
  * The Vite build put that tag in every HTML shell. Next.js has no per-page
  * shell, so ensureTurnstileScript() injects the same tag on demand (once) the
  * first time a form using the widget mounts.
+ *
+ * Every form keeps its submit button disabled until there is a token. On its
+ * own that reads as a broken button, so the widget says what it is waiting for
+ * underneath itself ("Checking your connection…", "expired, tick it again",
+ * "could not run — Try again"); see TurnstileHandle.status.
  */
 
 declare global {
@@ -56,12 +62,26 @@ export function ensureTurnstileScript(): void {
   s.src = TURNSTILE_SCRIPT_SRC;
   s.async = true;
   s.defer = true;
+  // A download that failed (offline) leaves no tag behind, so "Try again" fetches it afresh.
+  s.onerror = () => s.remove();
   document.head.appendChild(s);
 }
+
+/**
+ * Where the check is, for the line under the widget:
+ *   loading — api.js or the widget is still arriving
+ *   ready   — the widget is up, waiting for the visitor (or solving itself)
+ *   solved  — there is a token; submit can go
+ *   expired — the token or the challenge timed out; it needs ticking again
+ *   error   — Turnstile reported an error
+ *   failed  — the widget never appeared (offline, blocked), after 30s
+ */
+export type TurnstileStatus = 'loading' | 'ready' | 'solved' | 'expired' | 'error' | 'failed';
 
 export interface TurnstileHandle {
   /** Current token, or '' when unsolved. Send this as `turnstileToken`. */
   token: string;
+  status: TurnstileStatus;
   /** Attach to the element the widget should render into. */
   ref: React.RefObject<HTMLDivElement | null>;
   /** Call after every submit — tokens are single-use. */
@@ -76,6 +96,7 @@ export interface TurnstileHandle {
  */
 export function useTurnstile(active: boolean = true): TurnstileHandle {
   const [token, setToken] = useState('');
+  const [status, setStatus] = useState<TurnstileStatus>('loading');
   const ref = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | null>(null);
   // Set by the effect below so reset() can mount a brand-new widget after a
@@ -113,21 +134,38 @@ export function useTurnstile(active: boolean = true): TurnstileHandle {
         // rather than clips, so that panel stays readable when it appears.
         size: 'flexible',
         appearance: 'always', // keep the widget visible rather than interaction-only
-        callback: (t: string) => setToken(t),
-        'expired-callback': () => setToken(''),
-        'timeout-callback': () => setToken(''),
-        'error-callback': () => setToken(''),
+        callback: (t: string) => { setToken(t); setStatus('solved'); },
+        'expired-callback': () => { setToken(''); setStatus('expired'); },
+        'timeout-callback': () => { setToken(''); setStatus('expired'); },
+        'error-callback': () => { setToken(''); setStatus('error'); },
       });
+      setStatus('ready');
       return true;
     };
 
-    const timer = window.setInterval(() => { if (render()) window.clearInterval(timer); }, 150);
-    // 30s rather than 15s: the poll now also waits for a form that appears only
-    // after its data loads, which on a slow connection takes longer than the
-    // script alone ever did.
-    const giveUp = window.setTimeout(() => window.clearInterval(timer), 30000);
-    render();
-    mount.current = render;
+    let timer = 0;
+    let giveUp = 0;
+    // Polls until the widget is drawn. Also what reset() and "Try again" re-run,
+    // so a widget that never appeared (offline, blocked) gets another go.
+    const start = () => {
+      window.clearInterval(timer);
+      window.clearTimeout(giveUp);
+      if (render()) return;
+      setStatus('loading');
+      ensureTurnstileScript();
+      timer = window.setInterval(() => {
+        if (render()) { window.clearInterval(timer); window.clearTimeout(giveUp); }
+      }, 150);
+      // 30s rather than 15s: the poll now also waits for a form that appears only
+      // after its data loads, which on a slow connection takes longer than the
+      // script alone ever did.
+      giveUp = window.setTimeout(() => {
+        window.clearInterval(timer);
+        if (!widgetId.current && !cancelled) setStatus('failed');
+      }, 30000);
+    };
+    start();
+    mount.current = start;
 
     return () => {
       cancelled = true;
@@ -148,6 +186,7 @@ export function useTurnstile(active: boolean = true): TurnstileHandle {
   // returns to its unsolved state instead of staying visually ticked.
   const reset = () => {
     setToken('');
+    setStatus('loading');
     if (widgetId.current) {
       try { window.turnstile?.remove(widgetId.current); } catch { /* already gone */ }
       widgetId.current = null;
@@ -155,7 +194,47 @@ export function useTurnstile(active: boolean = true): TurnstileHandle {
     mount.current?.();
   };
 
-  return { token, ref, reset, enabled: Boolean(TURNSTILE_SITE_KEY) };
+  return { token, status, ref, reset, enabled: Boolean(TURNSTILE_SITE_KEY) };
+}
+
+/** The line under the widget: why submit is not on yet, and what to do about it. */
+function TurnstileHint({ turnstile }: { turnstile: TurnstileHandle }) {
+  const { tr } = useLang();
+  const { status } = turnstile;
+  if (status === 'solved') return null;
+  const problem = status === 'error' || status === 'failed';
+  const text =
+    status === 'loading'
+      ? tr('Checking your connection… Submit turns on in a moment.', 'Sinusuri ang koneksyon mo… Mabubuksan ang Submit sa ilang sandali.')
+      : status === 'ready'
+        ? tr('Complete the security check above to turn on Submit.', 'Kumpletuhin ang security check sa itaas para mabuksan ang Submit.')
+        : status === 'expired'
+          ? tr('The security check expired. Tick it again to continue.', 'Nag-expire ang security check. I-tick ulit para magpatuloy.')
+          : tr(
+              'The security check could not run. Check your internet connection, then try again.',
+              'Hindi tumakbo ang security check. Tingnan ang internet connection mo, saka subukan ulit.',
+            );
+  return (
+    <p
+      role="status"
+      aria-live="polite"
+      className={`mt-1.5 flex items-start gap-1.5 text-[11.5px] leading-snug ${problem ? 'text-red-500' : 'text-gray-500'}`}
+    >
+      {status === 'loading' ? (
+        <span aria-hidden="true" className="mt-[3px] h-2.5 w-2.5 shrink-0 animate-spin rounded-full border-[1.5px] border-current border-t-transparent" />
+      ) : (
+        <i aria-hidden="true" className={`fa-solid ${problem ? 'fa-circle-exclamation' : 'fa-shield-halved'} mt-[2px] shrink-0 text-[10px]`} />
+      )}
+      <span>
+        {text}
+        {problem && (
+          <button type="button" onClick={turnstile.reset} className="ml-1.5 font-semibold underline underline-offset-2">
+            {tr('Try again', 'Subukan ulit')}
+          </button>
+        )}
+      </span>
+    </p>
+  );
 }
 
 /** Renders nothing when no site key is configured. */
@@ -167,5 +246,12 @@ export function Turnstile({
   className?: string;
 }) {
   if (!turnstile.enabled) return null;
-  return <div ref={turnstile.ref} className={className} />;
+  // One wrapper, so a form that lays the widget out in a row beside its
+  // button still sees a single item.
+  return (
+    <div className="min-w-0">
+      <div ref={turnstile.ref} className={className} />
+      <TurnstileHint turnstile={turnstile} />
+    </div>
+  );
 }

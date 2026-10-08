@@ -31,8 +31,15 @@ export function installLinkHandling(): void {
     'click',
     (event) => {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      const anchor = (event.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
+      const target = event.target as Element | null;
+      const anchor = target?.closest?.('a[href]') as HTMLAnchorElement | null;
       if (!anchor || anchor.hasAttribute('download')) return;
+      // A button inside a link (a product card's "Add to list" or "Inquire") is
+      // its own control. This listener runs in the capture phase, before the
+      // button's handler, so following the card's link here would swallow the
+      // tap; leave it to the button.
+      const control = target?.closest?.('button, [role="button"], input, select, textarea, label');
+      if (control && control !== anchor && anchor.contains(control)) return;
       const raw = anchor.getAttribute('href') || '';
       if (!raw || raw.startsWith('#') || raw.startsWith('javascript:')) return;
 

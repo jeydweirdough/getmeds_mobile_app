@@ -11,8 +11,11 @@ import { CategoryCard, useCatalogueCategories } from '@/lib/CategoryCard';
 import { typeByValue } from '@/lib/audienceTypes';
 import { useLang } from '@/lib/i18n';
 import { HealthArticles, QuickActions } from './HomeSections';
+import { WeatherCard } from './WeatherCard';
+import { UploadRxIcon } from '@/lib/BrandIcons';
 import {
   CatalogueRow,
+  InquireButton,
   cartItemFor,
   displayName,
   productImage,
@@ -255,13 +258,12 @@ function ProductCard({ p }: { p: CatalogueRow }) {
         <p className="mt-1 line-clamp-1 text-[12px] text-gray-400">{specLine(p)}</p>
 
         <div className="mt-3.5 flex items-center gap-2">
-          <span
+          <InquireButton
+            p={p}
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-[12.5px] font-semibold text-white"
             style={{ background: BRAND }}
-          >
-            {tr('Inquire', 'Magtanong')}
-            <i className="fa-solid fa-arrow-right text-[11px]" />
-          </span>
+            iconClassName="text-[11px]"
+          />
           <AddToCart item={cartItemFor(p)} variant="glass" />
         </div>
       </div>
@@ -415,6 +417,7 @@ function AppHome() {
               genuinely different destinations. */}
           <a
             href="/search"
+            data-tour="search"
             className="flex h-[46px] w-full items-center rounded-full pl-11 pr-12 text-[13.5px] text-gray-400"
             style={{ background: GROUND }}
           >
@@ -430,7 +433,7 @@ function AppHome() {
             title={tr('Send a photo of your prescription', 'Magpadala ng litrato ng reseta mo')}
             className="absolute right-1.5 top-1/2 flex h-[36px] w-[36px] -translate-y-1/2 items-center justify-center rounded-full bg-white"
           >
-            <i className="fa-solid fa-camera text-[13px]" style={{ color: BRAND }} />
+            <UploadRxIcon size={22} />
           </a>
         </div>
       </div>
@@ -523,7 +526,7 @@ function AppHome() {
 
         <QuickActions />
 
-        <section className="mb-6">
+        <section className="mb-6" data-tour="categories">
           <SectionHeading title={tr('Categories', 'Mga Kategorya')} href="/categories" />
           {categories.length === 0 ? (
             <div className="gm-hscroll -mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
@@ -543,6 +546,8 @@ function AppHome() {
             </div>
           )}
         </section>
+
+        <WeatherCard />
 
         <section className="mb-6">
           <SectionHeading title={tr('Featured products', 'Mga tampok na produkto')} href="/product-range" cta={tr('Browse all', 'Tingnan lahat')} />

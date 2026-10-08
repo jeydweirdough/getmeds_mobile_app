@@ -21,6 +21,8 @@ import AlertModal from '@/lib/AlertModal';
 import { ORDER_AUDIENCES, ORDER_MEDICINES_BASE, audienceBySlug, audiencePath } from '@/lib/orderAudiences';
 import OrderMedicinesHub from '@/lib/OrderMedicinesHub';
 import { useLang } from '@/lib/i18n';
+import { UploadRxIllustration } from '@/lib/UploadRxIllustration';
+import { useConfirm } from '@/lib/ConfirmDialog';
 
 
 // `audienceSlug` comes from the [audience] route segment (undefined on the hub
@@ -250,6 +252,27 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
 
   const [patientIdFile, setPatientIdFile] = useState<File | null>(null);
   const [contactSameAsPatient, setContactSameAsPatient] = useState(false);
+
+  // "Cancel" on the prescription form empties every field and both uploads, so
+  // it asks first: one mis-tap on a five-screen form should not mean starting over.
+  const confirmClear = useConfirm(
+    () => {
+      setFormData({ patientName: '', email: '', phone: '', age: '', dob: '', address: '', contactName: '', contactRelationship: '', terms: false, privacyConsent: false });
+      setUploadedFiles([]);
+      setUploadComplete(false);
+      setPatientIdFile(null);
+      setContactSameAsPatient(false);
+    },
+    {
+      title: ['Clear this form?', 'Burahin ang form na ito?'],
+      body: [
+        'Everything you have entered, your prescription and the patient ID will be removed.',
+        'Mabubura ang lahat ng inilagay mo, pati ang reseta at ID ng pasyente.',
+      ],
+      cancel: ['Keep editing', 'Ituloy ang pag-edit'],
+      confirm: ['Clear form', 'Burahin'],
+    },
+  );
   const [alertModal, setAlertModal] = useState<{ title?: string; message: string | string[] } | null>(null);
   const showAlert = (message: string | string[], title?: string) => setAlertModal({ title, message });
 
@@ -1039,6 +1062,20 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
         @keyframes caFadeRight{from{opacity:0;transform:translateX(44px)}to{opacity:1;transform:translateX(0)}}
         @keyframes caZoomIn{from{opacity:0;transform:scale(0.88)}to{opacity:1;transform:scale(1)}}
         @keyframes caFadeIn{from{opacity:0}to{opacity:1}}
+        /* The step icons, each moving the way its step does: the upload floats
+           up, the phone rings, the check pops. A ripple runs 1 → 2 → 3 on a
+           shared 3.6s loop so the order of the steps reads at a glance. */
+        .om-step-ico{position:relative}
+        .om-step-ico::after{content:'';position:absolute;inset:0;border-radius:9999px;border:2px solid #1D9FDA;opacity:0;animation:omRipple 3.6s ease-out infinite}
+        .om-step-0::after{animation-delay:0s}.om-step-1::after{animation-delay:1.2s}.om-step-2::after{animation-delay:2.4s}
+        .om-step-0 i{animation:omFloat 1.8s ease-in-out infinite}
+        .om-step-1 i{animation:omRing 1.8s ease-in-out infinite;transform-origin:50% 60%}
+        .om-step-2 i{animation:omPop 1.8s ease-in-out infinite}
+        @keyframes omRipple{0%{opacity:.55;transform:scale(1)}70%,100%{opacity:0;transform:scale(1.55)}}
+        @keyframes omFloat{0%,100%{transform:translateY(2px)}50%{transform:translateY(-3px)}}
+        @keyframes omRing{0%,40%,100%{transform:rotate(0)}5%,15%,25%{transform:rotate(-14deg)}10%,20%,30%{transform:rotate(14deg)}}
+        @keyframes omPop{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+        @media (prefers-reduced-motion: reduce){.om-step-ico::after,.om-step-ico i{animation:none}}
       `}</style>
 
 
@@ -1048,66 +1085,56 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
             four audience pages below it. Everything after this point is an audience
             page, and only renders once the URL has named one. */}
         {isHub ? <OrderMedicinesHub /> : (<>
-        {/* ── Hero + Step Cards ── */}
-        <section className="w-full px-4 md:px-6 pt-5 pb-4">
-          <div
-            className="relative rounded-[20px] overflow-hidden px-8 md:px-14 pt-12"
-            style={{ background: 'linear-gradient(135deg, #3aaf5c 0%, #1ab8c4 45%, #1a99d6 100%)' }}
-          >
-            {/* Decorative glassy circles */}
-            <div className="absolute pointer-events-none" style={{ width: 160, height: 160, borderRadius: '50%', bottom: '-55px', left: '28%', background: 'radial-gradient(circle at 40% 35%, rgba(100,240,200,0.55), rgba(30,180,210,0.30))', backdropFilter: 'blur(2px)', border: '1px solid rgba(255,255,255,0.25)' }} />
-            <div className="absolute pointer-events-none" style={{ width: 130, height: 130, borderRadius: '50%', bottom: '-42px', left: '45%', background: 'radial-gradient(circle at 38% 30%, rgba(120,100,240,0.55), rgba(60,80,220,0.35))', backdropFilter: 'blur(2px)', border: '1px solid rgba(255,255,255,0.20)' }} />
-            <div className="absolute pointer-events-none hidden md:block" style={{ width: 180, height: 180, borderRadius: '50%', bottom: '-70px', right: '8%', background: 'radial-gradient(circle at 42% 38%, rgba(130,230,230,0.45), rgba(60,190,210,0.22))', backdropFilter: 'blur(2px)', border: '1px solid rgba(255,255,255,0.22)' }} />
-            <div className="absolute pointer-events-none hidden md:block" style={{ width: 90, height: 90, borderRadius: '50%', bottom: '-20px', left: '18%', background: 'radial-gradient(circle at 35% 30%, rgba(160,240,120,0.60), rgba(40,210,130,0.35))', backdropFilter: 'blur(2px)', border: '1px solid rgba(255,255,255,0.25)' }} />
-            <div className="absolute pointer-events-none hidden md:block" style={{ width: 52, height: 52, borderRadius: '50%', top: '10px', right: '28%', background: 'radial-gradient(circle at 35% 30%, rgba(170,110,240,0.70), rgba(100,60,210,0.45))', backdropFilter: 'blur(2px)', border: '1px solid rgba(255,255,255,0.25)' }} />
-            <div className="absolute pointer-events-none hidden md:block" style={{ width: 85, height: 85, borderRadius: '50%', top: '-15px', right: '38%', background: 'radial-gradient(circle at 38% 32%, rgba(80,220,210,0.55), rgba(30,170,200,0.30))', backdropFilter: 'blur(2px)', border: '1px solid rgba(255,255,255,0.22)' }} />
-
-            <div className="relative z-10">
-              <h1 className="ca-anim ca-up text-xl sm:text-2xl md:text-3xl font-semibold text-white tracking-tight leading-tight mb-1">
-                {heroCopy.title}
-              </h1>
-              {heroCopy.tagline && (
-                <p className="ca-anim ca-up ca-d1 text-white text-[14px] sm:text-[15px] font-semibold leading-snug mt-1">
-                  {heroCopy.tagline}
-                </p>
-              )}
-              <p className={`ca-anim ca-up ca-d2 text-[12px] sm:text-[13px] mt-1 font-medium mb-10 max-w-3xl leading-relaxed ${isPartnerUserType ? 'text-white' : 'text-white/75'}`}>
-                {heroCopy.subtitle}
+        {/* ── Hero + Steps ── */}
+        {/* Plain on white: no gradient panel or decorative circles. The three
+            steps sit in one row, even on a phone, so the whole process reads at
+            a glance before the form. */}
+        <section className="w-full px-4 md:px-6 pt-6 pb-2">
+          <div className="mx-auto max-w-7xl">
+            <h1 className="ca-anim ca-up text-xl sm:text-2xl md:text-3xl font-semibold text-gray-900 tracking-tight leading-tight mb-1">
+              {heroCopy.title}
+            </h1>
+            {heroCopy.tagline && (
+              <p className="ca-anim ca-up ca-d1 text-gray-800 text-[14px] sm:text-[15px] font-semibold leading-snug mt-1">
+                {heroCopy.tagline}
               </p>
+            )}
+            <p className="ca-anim ca-up ca-d2 text-[12px] sm:text-[13px] mt-1 font-medium max-w-3xl leading-relaxed text-gray-500">
+              {heroCopy.subtitle}
+            </p>
 
-              {/* Step Cards — patient prescription flow only */}
-              {!isProfessionalUserType && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-10">
-                  {[
-                    {
-                      icon: 'fa-cloud-arrow-up',
-                      label: tr('1. Upload', '1. Mag-upload'),
-                      desc: tr('Upload your valid prescription and contact details.', 'I-upload ang inyong valid na reseta at contact details.')
-                    },
-                    {
-                      icon: 'fa-phone-volume',
-                      label: tr('2. We reach out', '2. Kokontakin namin kayo'),
-                      desc: tr('Our pharmacists contact you to verify your order.', 'Kokontakin kayo ng aming pharmacist para i-verify ang order.')
-                    },
-                    {
-                      icon: 'fa-circle-check',
-                      label: tr('3. Receive Your Order', '3. Tanggapin ang Order'),
-                      desc: tr('Get your order confirmed and delivered.', 'Makumpirma at ma-deliver ang inyong order.')
-                    }
-                  ].map((step, i) => (
-                    <div key={i} className={`ca-anim ca-zoom ${['ca-d1', 'ca-d3', 'ca-d5'][i]} bg-white/10 backdrop-blur-sm rounded-[15px] border border-white/20 p-4 md:p-6 flex flex-row items-center md:flex-col md:items-center text-left md:text-center cursor-default`}>
-                      <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/20 border border-white/30 flex items-center justify-center flex-shrink-0 mr-4 md:mr-0 md:mb-4">
-                        <i className={`fa-solid ${step.icon} text-white text-lg md:text-xl`}></i>
-                      </div>
-                      <div className="flex flex-col">
-                        <h3 className="text-white font-bold text-[14px] md:text-[15px] mb-1 md:mb-3">{step.label}</h3>
-                        <p className="text-white/80 md:text-white text-[12px] leading-relaxed">{step.desc}</p>
-                      </div>
+            {/* Steps — patient prescription flow only */}
+            {!isProfessionalUserType && (
+              <ol className="relative mt-6 grid grid-cols-3 gap-2 md:gap-6">
+                {/* The line joining the three icons, behind them. */}
+                <span aria-hidden="true" className="absolute top-6 md:top-7 left-[16.6%] right-[16.6%] h-px bg-[#D6E6F2]" />
+                {[
+                  {
+                    icon: 'fa-cloud-arrow-up',
+                    label: tr('1. Upload', '1. Mag-upload'),
+                    desc: tr('Upload your valid prescription and contact details.', 'I-upload ang inyong valid na reseta at contact details.')
+                  },
+                  {
+                    icon: 'fa-phone-volume',
+                    label: tr('2. We reach out', '2. Kokontakin namin kayo'),
+                    desc: tr('Our pharmacists contact you to verify your order.', 'Kokontakin kayo ng aming pharmacist para i-verify ang order.')
+                  },
+                  {
+                    icon: 'fa-circle-check',
+                    label: tr('3. Receive Your Order', '3. Tanggapin ang Order'),
+                    desc: tr('Get your order confirmed and delivered.', 'Makumpirma at ma-deliver ang inyong order.')
+                  }
+                ].map((step, i) => (
+                  <li key={i} className={`ca-anim ca-zoom ${['ca-d1', 'ca-d3', 'ca-d5'][i]} relative flex flex-col items-center text-center`}>
+                    <div className={`om-step-ico om-step-${i} w-12 h-12 md:w-14 md:h-14 rounded-full bg-[#EAF5FC] ring-4 ring-white flex items-center justify-center mb-2.5`}>
+                      <i className={`fa-solid ${step.icon} text-[#1D9FDA] text-lg md:text-xl`}></i>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    <h3 className="text-gray-900 font-semibold text-[12.5px] md:text-[15px] leading-tight mb-1">{step.label}</h3>
+                    <p className="text-gray-500 text-[11px] md:text-[12px] leading-snug">{step.desc}</p>
+                  </li>
+                ))}
+              </ol>
+            )}
           </div>
         </section>
 
@@ -1157,9 +1184,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                 <label className="group cursor-pointer block mb-3">
                   <input type="file" multiple accept={ALLOWED_FILE_TYPES_ACCEPT} className="hidden" onChange={handleFileChange} />
                   <div className="border-2 border-dashed border-gray-200 rounded-[15px] p-5 flex flex-col items-center justify-center text-center transition-all group-hover:border-primary/40 group-hover:bg-blue-50/20">
-                    <div className="text-gray-300 group-hover:text-primary transition-colors duration-200 mb-3">
-                      <i className="fa-solid fa-cloud-arrow-up text-4xl"></i>
-                    </div>
+                    <UploadRxIllustration className="w-[150px] h-auto mb-2" />
                     <p className="text-[13px] text-gray-400 mb-3">{tr('Click to browse — multiple files allowed', 'I-click para pumili — puwede ang maraming file')}</p>
                     <span className="inline-block bg-dark group-hover:bg-primary text-white text-[13px] font-semibold px-5 py-2 rounded-[10px] transition-colors duration-200">
                       {tr('Browse files', 'Pumili ng file')}
@@ -1214,7 +1239,8 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
             </div>
 
             {/* ── Customer Validation Form ── */}
-            <div className="ca-anim ca-up bg-white rounded-[15px] border border-gray-100 p-8 md:p-12 shadow-sm">
+            {/* No card: the form sits straight on the page, with lighter side padding than the old card. */}
+            <div className="ca-anim ca-up bg-white px-4 py-4 md:px-8 md:py-8">
               <div className="mb-8">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-1">{tr('Customer Information', 'Impormasyon ng Customer')}</h2>
                 <p className="text-gray-400 text-[13px]">{tr('Please provide accurate information so our pharmacists can process your order.', 'Pakibigay ang tamang impormasyon para ma-process ng aming pharmacist ang inyong order.')}</p>
@@ -1456,13 +1482,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
                     {/* Action Buttons */}
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <button type="button"
-                        onClick={() => {
-                          setFormData({ patientName: '', email: '', phone: '', age: '', dob: '', address: '', contactName: '', contactRelationship: '', terms: false, privacyConsent: false });
-                          setUploadedFiles([]);
-                          setUploadComplete(false);
-                          setPatientIdFile(null);
-                          setContactSameAsPatient(false);
-                        }}
+                        onClick={confirmClear.ask}
                         className="shadow-none px-5 py-2 rounded-[15px] text-[13px] font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition">
                         {tr('Cancel', 'Kanselahin')}
                       </button>
@@ -2185,6 +2205,7 @@ export default function OrderMedicinesClient({ audienceSlug }: { audienceSlug?: 
         title={alertModal?.title}
         message={alertModal?.message ?? ''}
       />
+      {confirmClear.dialog}
 
     </div>
   );

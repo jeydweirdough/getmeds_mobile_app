@@ -2,6 +2,7 @@ import React from 'react';
 import { urlFor } from './sanity';
 import { AddToCart } from './AddToCart';
 import { translate, useLang } from './i18n';
+import { goTo } from '@/platform/navigation';
 
 /**
  * catalogueItem.tsx
@@ -60,6 +61,43 @@ export const productUrl = (p: CatalogueRow) => {
   }
   return `/${p.categoryFolder || 'product-range'}/${p.slug?.current || ''}`;
 };
+
+/** The product page with its inquiry sheet already open (see ProductDetailClient). */
+export const inquiryUrl = (p: CatalogueRow) => {
+  const url = productUrl(p);
+  return `${url}${url.includes('?') ? '&' : '?'}inquire=1`;
+};
+
+/**
+ * "Inquire" on a product card. The card around it is a link to the product
+ * page; this goes one step further and opens that page's inquiry form, so the
+ * button does what it says. Like AddToCart, it sits inside the card's link and
+ * stops the tap from also following it.
+ */
+export function InquireButton({ p, className, style, iconClassName }: {
+  p: CatalogueRow;
+  className: string;
+  style?: React.CSSProperties;
+  iconClassName: string;
+}) {
+  const { tr } = useLang();
+  return (
+    <button
+      type="button"
+      className={className}
+      style={style}
+      aria-label={tr(`Inquire about ${displayName(p)}`, `Magtanong tungkol sa ${displayName(p)}`)}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        goTo(inquiryUrl(p));
+      }}
+    >
+      {tr('Inquire', 'Magtanong')}
+      <i className={`fa-solid fa-arrow-right ${iconClassName}`} />
+    </button>
+  );
+}
 
 export const prettyFolder = (folder: string) =>
   folder.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());

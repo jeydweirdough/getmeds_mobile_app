@@ -3,6 +3,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useLang } from '@/lib/i18n';
+import { ChatIcon } from '@/lib/BrandIcons';
+import { replayTour } from '@/components/GuidedTour';
 import './pwa-tabbar.css';
 
 /**
@@ -18,12 +20,17 @@ import './pwa-tabbar.css';
  * URL, the "More" sheet (backdrop, Escape, body scroll lock) and the cart badge
  * read straight from IndexedDB ('getmeds-cart', the same stores cart.ts
  * creates) and repainted on getmeds:cart-changed.
+ *
+ * The second tab is Products, not Search: home already has a search bar at
+ * the top, so a Search tab was a second door to the same room, while the
+ * full product list was buried in "More". The raised middle button is Chat:
+ * uploading a prescription already has its own card at the top of home.
  */
 
 const TABS: Array<{ href: string; match: string }> = [
   { href: '/app-home', match: '/app-home,/' },
-  { href: '/search', match: '/search' },
-  { href: '/order-medicines/patients', match: '/order-medicines' },
+  { href: '/product-range', match: '/product-range' },
+  { href: '/chat', match: '/chat' },
   { href: '/cart', match: '/cart' },
 ];
 
@@ -102,11 +109,12 @@ export default function PwaTabbar() {
     <>
       <nav className="gm-tabbar" aria-label={tr('Primary', 'Pangunahing menu')}>
         <a href="/app-home" data-match="/app-home,/" className={cls(0)}><i className="fa-solid fa-house"></i><span>{tr('Home', 'Home')}</span></a>
-        <a href="/search" data-match="/search" className={cls(1)}><i className="fa-solid fa-magnifying-glass"></i><span>{tr('Search', 'Maghanap')}</span></a>
-        <a href="/order-medicines/patients" className={`gm-mid${cls(2) ? ' is-active' : ''}`} data-match="/order-medicines">
-          <span className="gm-mid-btn"><i className="fa-solid fa-file-prescription"></i></span>
+        <a href="/product-range" data-match="/product-range" className={cls(1)}><i className="fa-solid fa-capsules"></i><span>{tr('Products', 'Produkto')}</span></a>
+        <a href="/chat" data-tour="chat" aria-label={tr('Chat with us', 'Mag-chat sa amin')} className={`gm-mid${cls(2) ? ' is-active' : ''}`} data-match="/chat">
+          <span className="gm-mid-btn"><ChatIcon size={34} /></span>
+          <span className="gm-label">{tr('Chat', 'Chat')}</span>
         </a>
-        <a href="/cart" data-match="/cart" aria-label={tr('Your request list', 'Ang iyong request list')} className={cls(3)}>
+        <a href="/cart" data-match="/cart" data-tour="requests" aria-label={tr('Your request list', 'Ang iyong request list')} className={cls(3)}>
           <i className="fa-solid fa-cart-shopping"></i>
           <span className="gm-cart-badge" data-count={String(count)}>{count > 99 ? '99+' : String(count)}</span>
           <span>{tr('Requests', 'Requests')}</span>
@@ -120,10 +128,17 @@ export default function PwaTabbar() {
       <div className="gm-sheet" data-open={open ? '1' : '0'} role="dialog" aria-modal="true" aria-label={tr('More', 'Iba pa')} aria-hidden={open ? 'false' : 'true'}>
         <span className="gm-sheet-grip" aria-hidden="true"></span>
         <a href="/profile"><Ico><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></Ico><span>{tr('My account', 'Aking account')}</span><Go /></a>
-        <a href="/product-range"><Ico><path d="M10.5 20.5 20 11a5 5 0 0 0-7-7l-9.5 9.5a5 5 0 0 0 7 7Z" /><path d="m8.5 8.5 7 7" /></Ico><span>{tr('Browse all products', 'Tingnan lahat ng produkto')}</span><Go /></a>
         <a href="/patient-assistance-program"><Ico><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /><path d="M3.5 12.5h4l1-2 2.5 5 2-8 1.7 5h5.8" /></Ico><span>{tr('Patient Assistance', 'Patient Assistance')}</span><Go /></a>
         <a href="/profile#guides"><Ico><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z" /><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z" /></Ico><span>{tr('Health guides', 'Mga gabay sa kalusugan')}</span><Go /></a>
         <a href="/chat"><Ico><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /><path d="M8 12h.01" /><path d="M12 12h.01" /><path d="M16 12h.01" /></Ico><span>{tr('Chat with us', 'Mag-chat sa amin')}</span><Go /></a>
+        <a
+          href="/app-home"
+          onClick={() => {
+            setSheet(false);
+            // Home may already be open; the tour starts once it is.
+            window.setTimeout(replayTour, 50);
+          }}
+        ><Ico><circle cx="12" cy="12" r="9" /><path d="m15.5 8.5-2 5-5 2 2-5z" /></Ico><span>{tr('App tour', 'Tour ng app')}</span><Go /></a>
         <a href="/contact-us"><Ico><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" /></Ico><span>{tr('Contact us', 'Makipag-ugnayan')}</span><Go /></a>
         <a href="/about-us"><Ico><circle cx="12" cy="12" r="9" /><path d="M12 16v-4.5" /><path d="M12 8.2h.01" /></Ico><span>{tr('About Getmeds', 'Tungkol sa Getmeds')}</span><Go /></a>
         <a href="/policy"><Ico><path d="M20 12.5c0 5-3.5 7.5-7.68 8.95a1 1 0 0 1-.63 0C7.5 20 4 17.5 4 12.5V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z" /></Ico><span>{tr('Privacy & policies', 'Privacy at mga patakaran')}</span><Go /></a>

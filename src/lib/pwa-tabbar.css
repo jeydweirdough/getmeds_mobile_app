@@ -257,16 +257,10 @@ body:not(:has([data-page="chat"])) .tawk-min-container {
   left: 50%;
   margin-left: -27px;
   width: 54px; height: 54px;
-  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, #1D9FDA, #61A644);
-  color: #fff;
-  /* Concentric rings rather than a single drop shadow: the halo is what
-     makes this read as lit from within instead of merely raised. */
-  box-shadow:
-    0 0 0 5px rgba(29, 159, 218, .10),
-    0 0 0 11px rgba(29, 159, 218, .05),
-    0 10px 22px rgba(29, 159, 218, .40);
+  /* No circle behind it: the Chat icon carries its own blue-to-green colour
+     and is the whole button (see BrandIcons.tsx). */
+  background: none;
 }
 .gm-tabbar .gm-mid .gm-mid-btn i { font-size: 20px; }
 

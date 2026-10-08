@@ -33,6 +33,7 @@ import GuidesScreen from '@/lib/account/GuidesScreen';
 import PrivacyScreen from '@/lib/account/PrivacyScreen';
 import { captureReferralFromUrl, inviteLink, signOut as signOutOfPoints } from '@/lib/rewards';
 import { goTo } from '@/platform/navigation';
+import { useConfirmLogout } from '@/lib/LogoutConfirm';
 
 /**
  * account.tsx
@@ -416,6 +417,7 @@ function Account() {
     if (typeof w.logoutUser === 'function') w.logoutUser();
     window.location.href = '/';
   };
+  const confirmLogout = useConfirmLogout(logout);
 
   /** Shares the invite link, or sends a guest to sign in first. */
   const invite = async () => {
@@ -536,7 +538,7 @@ function Account() {
                 ? [
                     { icon: 'fa-share-nodes', label: tr('Invite a friend', 'Mag-imbita'), onClick: invite },
                     { icon: 'fa-headset', label: tr('Contact us', 'Kontakin kami'), onClick: () => { goTo('/contact-us'); } },
-                    { icon: 'fa-arrow-right-from-bracket', label: tr('Log out', 'Mag-log out'), onClick: logout, tone: 'danger' },
+                    { icon: 'fa-arrow-right-from-bracket', label: tr('Log out', 'Mag-log out'), onClick: confirmLogout.ask, tone: 'danger' },
                   ]
                 : [
                     { icon: 'fa-right-to-bracket', label: tr('Sign in', 'Mag-log in'), onClick: () => { scrollTo('points'); document.getElementById('points-mobile')?.focus({ preventScroll: true }); } },
@@ -588,12 +590,14 @@ function Account() {
         {app && !guest && <PointsCard points={points} />}
         {app && !guest && (
           <div className="mb-6 space-y-5">
+            <div data-tour="account-list">
             <Card title={tr('My account', 'Account ko')}>
               <ListRow icon="fa-id-card" title={tr('My details', 'Mga detalye ko')} detail={tr('Used to fill in your requests', 'Ginagamit para punan ang mga request mo')} hint={completeness >= 100 ? tr('Complete', 'Kumpleto') : `${Math.round(completeness)}%`} onClick={() => setDetailsOpen(true)} />
               <ListRow icon="fa-user-group" title={tr('Patients', 'Mga pasyente')} detail={tr('People you request medicines for', 'Mga taong pinagre-request-an mo ng gamot')} hint={acct?.patients.length || undefined} onClick={() => open('patients')} />
               <ListRow icon="fa-location-dot" title={tr('Delivery addresses', 'Mga delivery address')} hint={acct?.addresses.length || undefined} onClick={() => open('addresses')} />
               <ListRow icon="fa-file-prescription" title={tr('Prescription wallet', 'Wallet ng reseta')} detail={tr('Upload once, attach to any request', 'Isang upload lang, magagamit sa kahit anong request')} hint={rxAttention ? <span className="font-semibold text-amber-600">{tr(`${rxAttention} expiring`, `${rxAttention} malapit nang mag-expire`)}</span> : acct?.rx.length || undefined} onClick={() => open('wallet')} />
             </Card>
+            </div>
             <Card title={tr('Medicines', 'Mga gamot')}>
               <ListRow icon="fa-bookmark" title={tr('Saved medicines', 'Mga naka-save na gamot')} detail={tr('Get a text when one is back in stock', 'Ite-text ka namin kapag may stock na ulit')} hint={acct?.savedProducts.length || undefined} onClick={() => open('saved')} />
               <ListRow icon="fa-bell" title={tr('Refill reminders', 'Mga paalala sa refill')} detail={tr('We text you the day before', 'Ite-text ka namin isang araw bago')} hint={remindersDue ? <span className="font-semibold text-[#1D9FDA]">{tr(`${remindersDue} due`, `${remindersDue} kailangan na`)}</span> : acct?.refillReminders.length || undefined} onClick={() => open('reminders')} />
@@ -1043,6 +1047,7 @@ function Account() {
       </main>
 
       <AlertModal open={!!alert} onClose={() => setAlert(null)} title={alert?.title} message={alert?.message ?? ''} />
+      {confirmLogout.dialog}
     </>
   );
 }

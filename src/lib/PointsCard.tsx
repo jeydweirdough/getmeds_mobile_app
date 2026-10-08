@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import AuthForm, { type AuthMode } from './AuthForm';
 import { translate, useLang } from '@/lib/i18n';
+import { useConfirmLogout } from '@/lib/LogoutConfirm';
 import {
   REWARDS_CHANGED_EVENT,
   RewardsError,
@@ -81,7 +82,7 @@ function Referral({ summary }: { summary: PointsSummary }) {
 
   return (
     <div className="mt-3 space-y-3">
-      <div className="rounded-xl bg-[#F1F6FC] p-3.5">
+      <div className="rounded-xl bg-[#F1F6FC] p-3.5" data-tour="referral">
         <p className="text-[12.5px] font-medium text-gray-900">
           {tr(`Invite friends, earn ${r.referrerPoints} points`, `Mag-imbita ng kaibigan, kumita ng ${r.referrerPoints} points`)}
         </p>
@@ -230,13 +231,14 @@ export default function PointsCard({
 }) {
   const { tr } = useLang();
   const { signedIn, summary, loadError } = points;
+  const confirmLogout = useConfirmLogout(signOut);
 
   // ── Signed in ──────────────────────────────────────────────────────────────
   if (signedIn) {
     const account = summary?.account;
     return (
       <section id="points" className="mb-5 scroll-mt-4 rounded-[24px] bg-white p-4" aria-label="Getmeds Points">
-        <div className="mb-3 flex items-center gap-3">
+        <div className="mb-3 flex items-center gap-3" data-tour="points">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white" style={{ background: GRADIENT }}>
             <i className="fa-solid fa-star text-[13px]" />
           </span>
@@ -287,12 +289,19 @@ export default function PointsCard({
             </p>
           )}
 
-          <div className="mt-3 flex items-center justify-between border-t border-gray-50 pt-3">
-            <span className="text-[11.5px] text-gray-400">{account?.login || account?.mobile}</span>
-            <button type="button" onClick={signOut} className="text-[12px] font-medium text-gray-400">
+          <div className="mt-3 border-t border-gray-50 pt-3">
+            <p className="truncate text-center text-[11.5px] text-gray-400">{account?.login || account?.mobile}</p>
+            {/* A real button, full width and red so it reads as leaving; it asks before it acts. */}
+            <button
+              type="button"
+              onClick={confirmLogout.ask}
+              className="mt-2.5 flex h-[46px] w-full items-center justify-center gap-2 rounded-full border border-[#F6C9CB] bg-[#FDF1F1] text-[13.5px] font-semibold text-[#D63B40] transition active:scale-[0.98]"
+            >
+              <i className="fa-solid fa-arrow-right-from-bracket text-[12px]" />
               {tr('Log out', 'Mag-log out')}
             </button>
           </div>
+          {confirmLogout.dialog}
         </div>
       </section>
     );

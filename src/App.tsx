@@ -10,6 +10,7 @@ import CatalogClient from '@/components/CatalogClient';
 import ProductDetailClient from '@/components/ProductDetailClient';
 import ChromeExtras from '@/components/ChromeExtras';
 import Onboarding from '@/components/Onboarding';
+import GuidedTour from '@/components/GuidedTour';
 import PwaTabbar from '@/lib/PwaTabbar';
 import { QueuedInquiryNotice } from '@/lib/QueuedInquiryNotice';
 import { useCategories } from '@/lib/useSanity';
@@ -135,6 +136,7 @@ export default function App() {
       <PwaTabbar />
       <ChromeExtras />
       <Onboarding />
+      <GuidedTour />
     </>
   );
 }

@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react';
 import { call } from '@/lib/rewards';
 import { getBlogListingImageUrl } from '@/lib/sanity';
 import { useLang } from '@/lib/i18n';
+import { UploadRxIcon } from '@/lib/BrandIcons';
 
 /**
  * HomeSections.tsx
  * ─────────────────────────────────────────────
  * Two home-screen rows:
  *
- * - QuickActions, under the promo slider: four one-tap shortcuts to the
- *   errands people come for, each a white card like the PAP card (which is
+ * - QuickActions, under the promo slider: one-tap shortcuts to the errands
+ *   people come for (chat lives in the tab bar instead), each a white card like the PAP card (which is
  *   one of them now, rather than sitting at the bottom of the page).
  * - HealthArticles, under the featured products: the latest Getmeds blog
  *   articles (the same source as Health guides) in a left-right slider. Each
@@ -21,15 +22,16 @@ const BRAND = '#1D9FDA';
 
 const CARD_SHADOW = '0 2px 10px rgba(23,43,77,.055)';
 
-type Action = { href: string; title: string; titleTl: string; sub: string; subTl: string } & (
-  | { icon: string; logo?: undefined }
-  | { logo: string; icon?: undefined }
+type Action = { href: string; tour: string; title: string; titleTl: string; sub: string; subTl: string } & (
+  | { Icon: typeof UploadRxIcon; logo?: undefined }
+  | { logo: string; Icon?: undefined }
 );
 
 const ACTIONS: Action[] = [
   {
     href: '/order-medicines/patients',
-    icon: 'fa-file-prescription',
+    tour: 'upload-rx',
+    Icon: UploadRxIcon,
     title: 'Upload Rx',
     titleTl: 'Mag-upload ng Rx',
     sub: 'Send a photo of your prescription for a quote',
@@ -40,27 +42,12 @@ const ACTIONS: Action[] = [
     // are told to ask for, and the mark already says "Patient Assistance
     // Program", so the name lives in alt text instead of a heading.
     href: '/patient-assistance-program',
+    tour: 'pap',
     logo: '/assets/pap-logo-sm.png',
     title: 'Patient Assistance Program',
     titleTl: 'Patient Assistance Program',
     sub: 'Support programmes for long-course treatment',
     subTl: 'Tulong para sa pangmatagalang gamutan',
-  },
-  {
-    href: '/chat',
-    icon: 'fa-comment-medical',
-    title: 'Chat with us',
-    titleTl: 'Mag-chat sa amin',
-    sub: 'Ask our team about a medicine or your request',
-    subTl: 'Magtanong sa team tungkol sa gamot o request mo',
-  },
-  {
-    href: '/profile#guides',
-    icon: 'fa-book-medical',
-    title: 'Health guides',
-    titleTl: 'Mga gabay sa kalusugan',
-    sub: 'Articles on conditions and treatments',
-    subTl: 'Mga artikulo tungkol sa sakit at gamutan',
   },
 ];
 
@@ -73,14 +60,15 @@ export function QuickActions() {
         <a
           key={a.href}
           href={a.href}
+          data-tour={a.tour}
           className="flex items-center gap-3.5 rounded-[18px] bg-white p-4 transition active:scale-[0.99]"
           style={{ boxShadow: CARD_SHADOW }}
         >
           {a.logo ? (
-            <img src={a.logo} alt={a.title} width={400} height={183} className="h-[46px] w-auto shrink-0" />
+            <img src={a.logo} alt={a.title} width={400} height={183} className="h-[46px] w-auto shrink-0 max-[359px]:h-[34px]" />
           ) : (
             <span className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[14px] bg-[#EAF5FC]">
-              <i className={`fa-solid ${a.icon} text-[17px]`} style={{ color: BRAND }} />
+              {a.Icon && <a.Icon size={30} />}
             </span>
           )}
           <span className="min-w-0 flex-1">
