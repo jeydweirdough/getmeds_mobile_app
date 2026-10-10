@@ -467,6 +467,56 @@ function AppHome() {
 
         <WeatherCard />
 
+        {/* The PazoGet poster. Full-bleed on purpose — the -mx-4 cancels main's
+            gutter so the artwork runs edge to edge like a storefront banner,
+            and the whole thing is one link to the product page. The artwork is
+            generated at the frame's own 9:10, so nothing is cropped. Words sit
+            straight on the artwork's blue, in the same stack as the brand's
+            campaign posters: eyebrow, headline, claim, spec line. */}
+        <a
+          href="/cancer-medicines/pazoget-400-pazopanib-400mg-tablet"
+          className="relative -mx-4 mb-6 block aspect-[9/10] overflow-hidden"
+          aria-label={tr(
+            'PazoGet, Pazopanib — first branded generic in the Philippines. View product.',
+            'PazoGet, Pazopanib — unang branded generic sa Pilipinas. Tingnan ang produkto.',
+          )}
+        >
+          <img
+            src="/assets/pazopanib.webp"
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          {/* A light wash at the foot — just enough to seat the words. */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-[45%]"
+            style={{ background: 'linear-gradient(180deg, rgba(10,42,67,0) 0%, rgba(10,42,67,.18) 45%, rgba(10,42,67,.45) 100%)' }}
+          />
+          <div className="absolute inset-x-0 bottom-0 px-5 pb-6 text-white">
+            <p className="text-[15px] leading-snug text-white">
+              Getmeds
+              <br />
+              {tr('Featured Medicine', 'Tampok na Gamot')}
+            </p>
+            <h2 className="mt-1.5 text-[22px] font-semibold leading-tight">
+              PazoGet <span className="font-medium">(Pazopanib)</span>
+            </h2>
+            <p className="mt-1 text-[14px] font-medium text-white">
+              {tr('First Branded Generic in the Philippines', 'Unang Branded Generic sa Pilipinas')}
+            </p>
+            <p className="mt-2 text-[12px] text-white">
+              200 mg &amp; 400 mg {tr('Tablets', 'Tableta')} &nbsp;·&nbsp; {tr('Oncology', 'Oncology')} &nbsp;·&nbsp; Rx
+            </p>
+          </div>
+          <span
+            aria-hidden="true"
+            className="absolute bottom-6 right-5 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm"
+          >
+            <i className="fa-solid fa-plus text-[14px]" />
+          </span>
+        </a>
+
         <section className="mb-6">
           <SectionHeading title={tr('Featured products', 'Mga tampok na produkto')} href="/product-range" cta={tr('Browse all', 'Tingnan lahat')} />
           {featured.length === 0 ? (
