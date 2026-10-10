@@ -45,6 +45,49 @@ main.gm-screen .sticky.top-0 {
   pointer-events: none;
 }
 
+/* ── Touch polish ─────────────────────────────────────────────────────────
+   Android's WebView draws a focus rectangle (amber on many phones) on
+   whatever was last tapped — and since screens swap in place without a
+   reload, the rectangle just stayed there. A pointer tap needs no focus
+   ring; text fields keep their own focus styling, and keyboard navigation
+   still gets the browser's ring through :focus-visible on form controls. */
+a:focus, button:focus, [role="button"]:focus, summary:focus, label:focus, [tabindex]:focus,
+a:focus-visible, button:focus-visible, [role="button"]:focus-visible, summary:focus-visible {
+  outline: none;
+}
+
+/* Waiting to rule out a double-tap zoom is what makes taps feel late;
+   nothing in the app zooms by double-tap. */
+html { touch-action: manipulation; }
+
+/* Native-style press feedback: a control dims the instant it is held and
+   eases back on release — the same cue Instagram/Facebook give instead of a
+   border. The element selectors lose to any component's own transition or
+   opacity classes, so this only fills in where nothing else is defined. */
+a, button, [role="button"] {
+  transition: opacity 180ms ease;
+}
+a:active, button:active, [role="button"]:active {
+  opacity: .62;
+  transition-duration: 40ms;
+}
+
+/* The tab bar's own press cue: the whole tab gives slightly under the
+   finger. Safe here — transforms on these anchors contain no fixed-position
+   descendants (the cart badge is absolute, anchored to the tab itself). */
+.gm-tabbar a, .gm-tabbar button {
+  transition: opacity 180ms ease, transform 180ms cubic-bezier(.2, .8, .4, 1);
+}
+.gm-tabbar a:active, .gm-tabbar button:active {
+  opacity: 1;
+  transform: scale(.9);
+  transition-duration: 40ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a, button, [role="button"], .gm-tabbar a, .gm-tabbar button { transition: none; }
+}
+
 /* Screen change (platform/router.ts): a quick fade so the swap reads as motion
    rather than a flash. Opacity only — a transform here would turn every
    position:fixed sheet and header inside the screen into position:absolute. */

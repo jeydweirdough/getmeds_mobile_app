@@ -15,15 +15,17 @@ import '@/app/globals.css';
 import '@/styles/app.css';
 import '@/styles/consent.css';
 import { installServiceRouting } from '@/platform/http';
-import { installBackButton, installLinkHandling } from '@/platform/navigation';
+import { installBackButton, installLinkHandling, installTouchPolish } from '@/platform/navigation';
 import App from './App';
 
 // Before any screen runs: relative /api and /wp-json calls go to the real services, links
-// to website-only pages open in the in-app browser, and the phone's Back button follows the
-// app's footprints (platform/router.ts).
+// to website-only pages open in the in-app browser, the phone's Back button follows the
+// app's footprints (platform/router.ts), and tapped controls drop their focus so the
+// WebView never leaves its focus rectangle behind.
 installServiceRouting();
 installLinkHandling();
 installBackButton();
+installTouchPolish();
 
 createRoot(document.getElementById('root')!).render(<App />);
 

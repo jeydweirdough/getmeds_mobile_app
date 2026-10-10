@@ -15,6 +15,7 @@ export type Route =
   | { screen: 'categories' }
   | { screen: 'cart' }
   | { screen: 'account' }
+  | { screen: 'notifications' }
   | { screen: 'chat' }
   | { screen: 'order'; audience?: string }
   | { screen: 'catalog' }
@@ -81,6 +82,8 @@ export function resolveRoute(pathname: string): Route {
       return { screen: 'account' };
     case '/edit-profile':
       return { screen: 'redirect', to: '/profile#details' };
+    case '/notifications':
+      return { screen: 'notifications' };
     case '/chat':
       return { screen: 'chat' };
     case '/order-medicines':

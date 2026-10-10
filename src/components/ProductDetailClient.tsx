@@ -22,6 +22,8 @@ import { usePageReady } from '@/lib/handoff';
 import { goBack, goTo } from '@/platform/navigation';
 import { RatingLine, ReviewsSection, useReviews } from '@/lib/ProductReviews';
 import StrengthPicker from '@/lib/StrengthPicker';
+import { ProductGridCard } from '@/components/CatalogClient';
+import type { CatalogueRow } from '@/lib/catalogueItem';
 import { useLang } from '@/lib/i18n';
 import './ProductDetailClient.css';
 
@@ -892,13 +894,17 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                       return (
                         <div
                           onClick={hasImage ? () => setZoomedImageOpen(true) : undefined}
-                          className={`mb-4 flex aspect-[4/3] w-full flex-col items-center justify-center overflow-hidden rounded-[22px] bg-[#F6F8FC] p-6 ${hasImage ? 'cursor-zoom-in' : ''}`}
+                          className={`relative mb-4 flex aspect-[4/3] w-full flex-col items-center justify-center overflow-hidden rounded-[22px] bg-white ${hasImage ? 'cursor-zoom-in' : ''}`}
                         >
                           {hasImage ? (
                             <img
                               src={resolvedImageUrl}
                               alt={product.name}
-                              className="h-full w-full object-contain mix-blend-multiply"
+                              /* cover, not contain: the photo fills the whole box with no
+                                 padding or letterbox bars. The brightness lift washes the
+                                 photo file's own light-gray watermark background toward
+                                 white, so the box reads white rather than gray. */
+                              className="h-full w-full object-cover mix-blend-multiply brightness-[1.06]"
                               onError={(e) => { const img = e.currentTarget; img.onerror = null; img.src = '/assets/no-image.png'; }}
                             />
                           ) : (
@@ -907,6 +913,18 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                               <span className="text-xs font-medium uppercase tracking-wider text-gray-400">{tr('No Image', 'Walang Larawan')}</span>
                             </>
                           )}
+                          {/* Hanging from the box's top-right corner, same tags as the
+                              catalog cards: filled brand colors, white medium text. */}
+                          <div className="absolute right-0 top-0 flex items-start gap-1">
+                            {product.prescription?.toUpperCase() === 'RX' && (
+                              <span className="rounded-b-[6px] bg-[#1D9FDA] px-2 py-[3px] text-[10px] font-medium text-white">Rx</span>
+                            )}
+                            {product.availability !== false ? (
+                              <span className="rounded-bl-[6px] bg-[#61A644] px-2 py-[3px] text-[10px] font-medium text-white">{tr('In stock', 'In stock')}</span>
+                            ) : (
+                              <span className="rounded-bl-[6px] bg-red-500 px-2 py-[3px] text-[10px] font-medium text-white">{tr('Out of stock', 'Wala nang stock')}</span>
+                            )}
+                          </div>
                         </div>
                       );
                     })()}
@@ -928,23 +946,15 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                       <i className="fa-solid fa-chevron-right text-[9px]" />
                     </a>
 
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      {product.availability !== false && (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700">
-                          <i className="fa-solid fa-check text-[9px]" /> {tr('In stock', 'In stock')}
-                        </span>
-                      )}
-                      {product.prescription?.toUpperCase() === 'RX' && (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600">
-                          <i className="fa-solid fa-file-prescription text-[9px]" /> {tr('Prescription required', 'Kailangan ng reseta')}
-                        </span>
-                      )}
-                      {product.form && (
+                    {/* Stock and Rx moved onto the hero image as corner tags (above),
+                        matching the catalog cards; only the form chip stays here. */}
+                    {product.form && (
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
                         <span className="rounded-full bg-[#F1F6FC] px-2.5 py-1 text-[11px] font-semibold capitalize text-gray-600">
                           {product.form}
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     {/* Where a shop offers sizes: this medicine's other strengths. */}
                     <StrengthPicker current={product} />
@@ -1664,54 +1674,19 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
             )}
 
             {app && similar.length > 0 && (
-              /* White like the rest of the screen; a hairline above marks the
-                 break between "this product" and "other products", and the
-                 cards carry a border rather than a shadow. */
+              /* The same two-across cards as the catalog grid (ProductGridCard),
+                 so "Similar products" and the Products tab always look the same;
+                 a hairline above marks the break between "this product" and
+                 "other products". */
               <section className="border-t border-[#EEF1F5] bg-white px-4 pb-8 pt-6">
                 <div className="mb-3 flex items-baseline justify-between">
                   <h2 className="text-[16px] font-medium tracking-tight text-gray-900">{tr('Similar products', 'Mga katulad na produkto')}</h2>
                   <a href={backUrl} className="text-[12px] font-semibold" style={{ color: '#0D99FF' }}>{tr('See all', 'Tingnan lahat')}</a>
                 </div>
-                <div className="space-y-2.5">
-                  {similar.map((s) => {
-                    const img = getProductImage(s, 140);
-                    const hasImg = img && !img.endsWith('no-image.png');
-                    return (
-                      <a
-                        key={s._id}
-                        href={productHref(s)}
-                        className="flex items-center gap-3 rounded-[16px] border border-[#EEF1F5] bg-white p-2.5"
-                      >
-                        <div className="flex h-[56px] w-[56px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#F6F8FC] p-1.5">
-                          {hasImg ? (
-                            <img
-                              src={img}
-                              alt=""
-                              loading="lazy"
-                              className="h-full w-full object-contain mix-blend-multiply"
-                              onError={(e) => { const i = e.currentTarget; i.onerror = null; i.src = '/assets/no-image.png'; }}
-                            />
-                          ) : (
-                            <i className="fa-solid fa-pills text-[16px] text-gray-300" />
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="line-clamp-1 text-[13.5px] font-semibold text-gray-900">
-                            {getProductDisplayName(s)}
-                          </h3>
-                          <p className="mt-0.5 line-clamp-1 text-[11.5px] text-gray-400">
-                            {[s.strength, s.form].filter(Boolean).join(' · ') || s.subCategory || tr('Details on request', 'Detalye kapag nag-request')}
-                          </p>
-                        </div>
-                        {s.prescription?.toUpperCase() === 'RX' && (
-                          <span className="shrink-0 rounded-full bg-[#E8F5FC] px-2 py-[2px] text-[9.5px] font-semibold text-[#1D9FDA]">
-                            Rx
-                          </span>
-                        )}
-                        <i className="fa-solid fa-chevron-right shrink-0 text-[11px] text-gray-300" />
-                      </a>
-                    );
-                  })}
+                <div className="grid grid-cols-2 gap-2">
+                  {similar.map((s) => (
+                    <ProductGridCard key={s._id} p={s as unknown as CatalogueRow} />
+                  ))}
                 </div>
               </section>
             )}
@@ -1733,15 +1708,19 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
       {app && product && (
         <>
         <div
-          className="fixed inset-x-0 z-[9995] flex items-center gap-2.5 border-t border-gray-100 bg-white px-4 py-3"
-          /* Measured from the tab bar's own footprint rather than a copy of
-             its height — pwaTabbar.js publishes --gm-tabbar-space precisely so
-             this cannot fall out of step when the bar changes shape. The
-             fallback is what that variable currently resolves to on a phone
-             with no home indicator. */
-          style={{ bottom: 'calc(var(--gm-tabbar-space, 74px) + 8px)' }}
+          className="fixed z-[9995] flex items-center gap-2.5 rounded-t-[24px] border border-b-0 border-gray-100 bg-white px-4 pt-2.5 pb-6"
+          /* Attached to the tab bar capsule: same side insets, top corners
+             rounded to match, and the bottom edge tucked 16px behind the
+             capsule (which stacks above at z-9997), so the two read as one
+             piece. --gm-tabbar-space and --gm-tabbar-inset are the bar's own
+             published geometry, so this follows it if the bar changes shape. */
+          style={{
+            left: 'var(--gm-tabbar-inset, 12px)',
+            right: 'var(--gm-tabbar-inset, 12px)',
+            bottom: 'calc(var(--gm-tabbar-space, 74px) - 16px)',
+          }}
         >
-          <div className="flex-1">
+          <div className="flex-1 [&>button]:py-2 [&>button]:text-[12px]">
             <AddToCart
               variant="full"
               item={{
@@ -1758,7 +1737,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
           <button
             type="button"
             onClick={openInquiry}
-            className="flex-1 rounded-full py-3 text-[13px] font-semibold text-white"
+            className="flex-1 rounded-full py-2 text-[12px] font-semibold text-white"
             style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
           >
             {tr('Send inquiry', 'Magpadala ng inquiry')}

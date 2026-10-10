@@ -42,13 +42,13 @@ interface ScreenProps {
   children: React.ReactNode;
   /** Stack order when one screen opens another. */
   level?: number;
-  /** Body background; the tinted ground unless a screen asks for another. */
+  /** Body background; full white unless a screen asks for another. */
   ground?: string;
   /** 'chevron' is the thin back chevron from the Categories page. */
   backIcon?: 'arrow' | 'chevron';
 }
 
-export function Screen({ title, subtitle, onClose, footer, headerAction, children, level = 0, ground = GROUND, backIcon = 'arrow' }: ScreenProps) {
+export function Screen({ title, subtitle, onClose, footer, headerAction, children, level = 0, ground = '#FFFFFF', backIcon = 'arrow' }: ScreenProps) {
   const { tr } = useLang();
   const pushed = useRef(false);
   const closeRef = useRef(onClose);

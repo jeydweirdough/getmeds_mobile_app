@@ -67,6 +67,25 @@ export function installLinkHandling(): void {
 }
 
 /**
+ * The WebView keeps a tapped link or button focused, and on many Android
+ * phones it paints an amber focus rectangle around it — which never goes away,
+ * because the app swaps screens in place instead of reloading. app.css removes
+ * the CSS outline; this drops the focus itself right after the tap for the
+ * WebViews that draw their own highlight regardless. Touch only, and never on
+ * form fields: blurring those would dismiss the keyboard, and a keyboard
+ * user's focus ring is left alone.
+ */
+export function installTouchPolish(): void {
+  document.addEventListener('pointerup', (event) => {
+    if (event.pointerType !== 'touch') return;
+    window.setTimeout(() => {
+      const el = document.activeElement as HTMLElement | null;
+      if (el && el.matches('a, button, [role="button"], summary, label')) el.blur();
+    }, 0);
+  });
+}
+
+/**
  * Programmatic counterpart of a link tap: an app screen switches in place, a
  * website page opens in the in-app browser.
  */

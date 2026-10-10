@@ -1,10 +1,7 @@
 'use client';
 
-import ProductName from '@/lib/ProductName';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useProducts } from '@/lib/useSanity';
-import { AddToCart } from '@/lib/AddToCart';
-import { CART_CHANGED_EVENT, countCart } from '@/lib/cart';
 import { ACCOUNT_CHANGED_EVENT, loadDetails, type SavedDetails } from '@/lib/accountStore';
 import { usePoints } from '@/lib/PointsCard';
 import { CategoryCard, useCatalogueCategories } from '@/lib/CategoryCard';
@@ -13,16 +10,8 @@ import { useLang } from '@/lib/i18n';
 import { HealthArticles, QuickActions } from './HomeSections';
 import { WeatherCard } from './WeatherCard';
 import { UploadRxIcon } from '@/lib/BrandIcons';
-import {
-  CatalogueRow,
-  InquireButton,
-  cartItemFor,
-  displayName,
-  productImage,
-  productUrl,
-  rxRequired,
-  specLine,
-} from '@/lib/catalogueItem';
+import { ProductGridCard } from '@/components/CatalogClient';
+import { type CatalogueRow } from '@/lib/catalogueItem';
 
 /**
  * app-home.tsx
@@ -213,63 +202,8 @@ const PROMO_SLIDES: PromoSlide[] = [
 const PROMO_PAUSE_MS = 8000;
 const PROMO_INTERVAL_MS = 5000;
 
-/**
- * The featured card, one per row. Image on top the way a storefront card reads,
- * because a medicine box is recognisable at a glance in a way its name often is
- * not — people recognise the packaging of something they have taken for months.
- * Plain white with a hairline border and no shadows; the Rx and In stock
- * pills match the search results.
- */
-
-function ProductCard({ p }: { p: CatalogueRow }) {
-  const { tr } = useLang();
-  const needsRx = rxRequired(p);
-  const inStock = p.availability !== false;
-  return (
-    <a
-      href={productUrl(p)}
-      className="group relative block overflow-hidden rounded-[24px] border border-[#EEF1F5] bg-white p-2 transition active:scale-[0.99]"
-    >
-      <div className="relative h-[200px] overflow-hidden rounded-[18px] bg-white">
-        <img
-          src={productImage(p)}
-          alt=""
-          loading="lazy"
-          className="relative h-full w-full object-contain p-5 mix-blend-multiply"
-          onError={(e) => { const i = e.currentTarget; i.onerror = null; i.src = '/assets/no-image.png'; }}
-        />
-
-        {(needsRx || inStock) && (
-          <div className="absolute left-3 top-3 flex items-center gap-1.5">
-            {needsRx && (
-              <span className="rounded-full bg-[#E8F5FC] px-2 py-[2px] text-[9.5px] font-semibold text-[#1D9FDA]">Rx</span>
-            )}
-            {inStock && (
-              <span className="rounded-full bg-[#EEF6EA] px-2 py-[2px] text-[9.5px] font-semibold text-[#4E8F35]">{tr('In stock', 'May stock')}</span>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="px-2.5 pb-2 pt-3">
-        <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug text-gray-900">
-          <ProductName name={displayName(p)} />
-        </h3>
-        <p className="mt-1 line-clamp-1 text-[12px] text-gray-400">{specLine(p)}</p>
-
-        <div className="mt-3.5 flex items-center gap-2">
-          <InquireButton
-            p={p}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-[12.5px] font-semibold text-white"
-            style={{ background: BRAND }}
-            iconClassName="text-[11px]"
-          />
-          <AddToCart item={cartItemFor(p)} variant="glass" />
-        </div>
-      </div>
-    </a>
-  );
-}
+// The featured cards are the catalog's own ProductGridCard (CatalogClient.tsx),
+// so "Featured products" here and the Products tab always look the same.
 
 function SectionHeading({ title, href, cta }: { title: string; href: string; cta?: string }) {
   const { tr } = useLang();
@@ -285,7 +219,6 @@ function AppHome() {
   const { tr } = useLang();
   const { data: raw } = useProducts();
   const products = (raw || []) as CatalogueRow[];
-  const [cartCount, setCartCount] = useState(0);
   const [greeted, setGreeted] = useState<Greeted>({ name: '', details: null });
   const points = usePoints();
 
@@ -297,16 +230,6 @@ function AppHome() {
     // The navbar is deliberately not mounted: the tab bar is this screen's
     // navigation, and the drawer it normally hosts is reachable from "More"
     // on every other page.
-  }, []);
-
-  // The header cart badge. Same source of truth as the tab bar's, just read
-  // through the typed helper rather than raw IndexedDB, because this screen
-  // already bundles cart.ts for AddToCart.
-  useEffect(() => {
-    const paint = () => { countCart().then(setCartCount).catch(() => setCartCount(0)); };
-    paint();
-    window.addEventListener(CART_CHANGED_EVENT, paint);
-    return () => window.removeEventListener(CART_CHANGED_EVENT, paint);
   }, []);
 
   useEffect(() => {
@@ -349,7 +272,7 @@ function AppHome() {
   const categories = useCatalogueCategories(products).slice(0, 10);
 
   const featured = useMemo(
-    () => products.filter((p) => p.availability !== false).slice(0, 6),
+    () => products.filter((p) => p.availability !== false).slice(0, 10),
     [products]
   );
 
@@ -365,21 +288,16 @@ function AppHome() {
           </a>
 
           <div className="flex items-center gap-2.5">
+            {/* Notifications — the request list already has its own tab with a
+                count badge in the bar below, so the header slot points
+                somewhere the bar does not. */}
             <a
-              href="/cart"
-              aria-label={tr(`Request list, ${cartCount} item${cartCount === 1 ? '' : 's'}`, `Request list, ${cartCount} item`)}
+              href="/notifications"
+              aria-label={tr('Notifications', 'Mga notification')}
               className="relative flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full"
               style={{ background: GROUND }}
             >
-              <i className="fa-solid fa-cart-shopping text-[14px] text-gray-700" />
-              {cartCount > 0 && (
-                <span
-                  className="absolute -right-0.5 -top-0.5 flex h-[19px] min-w-[19px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
-                  style={{ background: BRAND, boxShadow: '0 0 0 2px #FFFFFF' }}
-                >
-                  {cartCount > 99 ? '99+' : cartCount}
-                </span>
-              )}
+              <i className="fa-regular fa-bell text-[15px] text-gray-700" />
             </a>
 
             <a
@@ -552,14 +470,14 @@ function AppHome() {
         <section className="mb-6">
           <SectionHeading title={tr('Featured products', 'Mga tampok na produkto')} href="/product-range" cta={tr('Browse all', 'Tingnan lahat')} />
           {featured.length === 0 ? (
-            <div className="flex flex-col gap-4">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div key={i} className="h-[320px] animate-pulse rounded-[24px] bg-white" />
+            <div className="grid grid-cols-2 gap-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-[268px] animate-pulse rounded-[14px] bg-white" />
               ))}
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
-              {featured.map((p, i) => <ProductCard key={p._id || i} p={p} />)}
+            <div className="grid grid-cols-2 gap-2">
+              {featured.map((p, i) => <ProductGridCard key={p._id || i} p={p} />)}
             </div>
           )}
         </section>

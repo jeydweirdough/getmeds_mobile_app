@@ -13,7 +13,9 @@ import { folderDisplayName } from '@/lib/queries';
 import { usePageReady } from '@/lib/handoff';
 import './CatalogClient.css';
 import { goTo } from '@/platform/navigation';
-import { CatalogueRow, InquireButton, cartItemFor, displayName, productImage, productUrl, rxRequired, specLine } from '@/lib/catalogueItem';
+import { CatalogueRow, cartItemFor, displayName, productImage, productUrl, rxRequired, specLine } from '@/lib/catalogueItem';
+import { Stars, type ReviewsData } from '@/lib/ProductReviews';
+import { call } from '@/lib/rewards';
 import { useLang } from '@/lib/i18n';
 
 
@@ -141,22 +143,50 @@ const conditionHeadingTl = (name: string) =>
   /\b(medicines?|media)$/i.test(name.trim()) ? name.trim() : `Mga Gamot sa ${name.trim()}`;
 
 /**
- * One product in the two-across mobile grid. The same card as the home screen's
- * featured products — packshot over a soft brand wash, Rx / stock pills on the
- * image, frosted Inquire + request-list buttons — scaled down to half a screen.
- * The whole card opens the product page, which is where the inquiry form is.
+ * One star-summary fetch per product per session, shared across cards and page
+ * flips. undefined = still loading, null = the reviews service was unreachable
+ * (the card simply shows no rating line then).
  */
-function ProductGridCard({ p }: { p: CatalogueRow }) {
+const ratingCache = new Map<string, Promise<{ average: number; count: number } | null>>();
+function useCardRating(slug: string | undefined): { average: number; count: number } | null | undefined {
+  const [rating, setRating] = useState<{ average: number; count: number } | null | undefined>(undefined);
+  useEffect(() => {
+    if (!slug) { setRating(null); return; }
+    if (!ratingCache.has(slug)) {
+      ratingCache.set(
+        slug,
+        call<ReviewsData>(`/reviews/${encodeURIComponent(slug)}`)
+          .then((d) => ({ average: d.average || 0, count: d.count || 0 }))
+          .catch(() => null),
+      );
+    }
+    let on = true;
+    ratingCache.get(slug)!.then((v) => { if (on) setRating(v); });
+    return () => { on = false; };
+  }, [slug]);
+  return rating;
+}
+
+/**
+ * One product in the two-across mobile grid: packshot flush with the card's top
+ * edge, Rx / stock pills hanging off the top-right corner, then name, spec line
+ * and the star rating beside the round request-list button, on a hairline-edged
+ * white card. The whole card opens the product page, which is where the inquiry
+ * form (and the full reviews section) lives. Also the product page's "Similar
+ * products" card, so the two listings always look the same.
+ */
+export function ProductGridCard({ p }: { p: CatalogueRow }) {
   const { tr } = useLang();
   const needsRx = rxRequired(p);
   const inStock = p.availability !== false;
+  const rating = useCardRating(p.slug?.current);
   return (
     <a
       href={productUrl(p)}
-      className="relative flex flex-col overflow-hidden rounded-[20px] border border-gray-100 bg-white p-1.5 transition active:scale-[0.98]"
+      className="relative flex flex-col overflow-hidden rounded-[14px] bg-white shadow-[inset_0_0_0_0.5px_rgba(17,24,39,0.08)] transition active:scale-[0.98]"
     >
       <div
-        className="relative h-[132px] overflow-hidden rounded-[15px]"
+        className="relative h-[132px] overflow-hidden"
         style={{ background: 'linear-gradient(135deg,#E6F4FC 0%,#F3F8FB 50%,#EEF7E9 100%)' }}
       >
         <span aria-hidden="true" className="pointer-events-none absolute -left-8 -top-8 h-28 w-28 rounded-full blur-2xl" style={{ background: 'rgba(29,159,218,.18)' }} />
@@ -168,30 +198,38 @@ function ProductGridCard({ p }: { p: CatalogueRow }) {
           className="relative h-full w-full object-contain p-3 mix-blend-multiply"
           onError={(e) => { const i = e.currentTarget; i.onerror = null; i.src = '/assets/no-image.png'; }}
         />
-        <div className="absolute left-2 top-2 flex flex-wrap items-center gap-1">
+        {/* Hanging from the card's top-right corner, Shopee-discount-tag style:
+            filled brand colors, white text, rounded only at the bottom so they
+            read as attached to the edge rather than floating on the image. */}
+        <div className="absolute right-0 top-0 flex items-start gap-1">
           {needsRx && (
-            <span className="rounded-full bg-[#E8F5FC] px-1.5 py-[1px] text-[9px] font-semibold text-[#1D9FDA]">Rx</span>
+            <span className="rounded-b-[6px] bg-[#1D9FDA] px-2 py-[3px] text-[9px] font-medium text-white">Rx</span>
           )}
           {inStock ? (
-            <span className="rounded-full bg-[#EEF6EA] px-1.5 py-[1px] text-[9px] font-semibold text-[#4E8F35]">{tr('In stock', 'In stock')}</span>
+            <span className="rounded-bl-[6px] bg-[#61A644] px-2 py-[3px] text-[9px] font-medium text-white">{tr('In stock', 'In stock')}</span>
           ) : (
-            <span className="rounded-full bg-red-50 px-1.5 py-[1px] text-[9px] font-semibold text-red-500">{tr('Out of stock', 'Wala nang stock')}</span>
+            <span className="rounded-bl-[6px] bg-red-500 px-2 py-[3px] text-[9px] font-medium text-white">{tr('Out of stock', 'Wala nang stock')}</span>
           )}
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col px-1.5 pb-1 pt-2.5">
+      <div className="flex flex-1 flex-col px-2.5 pb-2.5 pt-2.5">
         <h3 className="line-clamp-2 text-[13px] font-semibold leading-snug text-gray-900"><ProductName name={displayName(p)} /></h3>
         <p className="mt-0.5 line-clamp-1 text-[11px] text-gray-400">{specLine(p)}</p>
 
-        {/* Small and flat: a quiet text pill plus the round request-list icon, so
-            two cards side by side don't turn into a wall of buttons. */}
-        <div className="mt-auto flex items-center gap-1.5 pt-2.5">
-          <InquireButton
-            p={p}
-            className="inline-flex h-8 flex-1 items-center justify-center gap-1 rounded-full bg-primary text-[11px] font-semibold text-white"
-            iconClassName="text-[9px]"
-          />
+        {/* The rating where the Inquire pill used to be — the card itself already
+            opens the product page, so the button only repeated the tap. */}
+        <div className="mt-auto flex items-center justify-between gap-1.5 pt-2.5">
+          {rating === undefined ? (
+            <span className="h-3.5 w-20 animate-pulse rounded bg-gray-100" />
+          ) : rating === null ? (
+            <span />
+          ) : (
+            <span className="flex min-w-0 items-center gap-1">
+              <Stars value={rating.average} size={10} />
+              <span className="truncate text-[10.5px] font-medium text-gray-400">({rating.count})</span>
+            </span>
+          )}
           <span className="contents [&>button]:h-8 [&>button]:w-8 [&_i]:text-[11px]">
             <AddToCart item={cartItemFor(p)} />
           </span>
@@ -1308,34 +1346,37 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
               ))}
             </div>
 
-            {/* A chosen category's conditions, one level down — smaller and outlined so
-                the two rows never read as the same control. */}
-            {(() => {
-              const cat = processedCats.find(c => c.category === selectedCategory.category);
-              if (!cat || cat.subcategory.length === 0) return null;
-              return (
-                <div className="no-scrollbar -mx-4 sm:-mx-6 lg:-mx-8 mt-2 flex gap-1.5 overflow-x-auto px-4 sm:px-6 lg:px-8 pb-1">
-                  {['All', ...cat.subcategory].map(sub => {
-                    const active = selectedCategory.subCategory === sub;
-                    return (
-                      <button
-                        key={sub}
-                        onClick={() => selectCategory(cat.category, sub)}
-                        className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-[11.5px] font-medium transition active:scale-95 ${
-                          active ? 'border-primary bg-[#EFF8FF] text-primary' : 'border-gray-200 bg-white text-gray-500'
-                        }`}
-                      >
-                        {sub === 'All' ? tr(`All ${cat.category}`, `Lahat ng ${cat.category}`) : sub}
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-
             <div className="mt-4 mb-4 flex items-center justify-between gap-2">
-              <span className="text-[12.5px] text-gray-400">{sorted.length} {tr(sorted.length === 1 ? 'item' : 'items', 'item')}</span>
-              <div className="relative">
+              <span className="shrink-0 text-[12.5px] text-gray-400">{sorted.length} {tr(sorted.length === 1 ? 'item' : 'items', 'item')}</span>
+              {/* A chosen category's conditions, one level down — a compact dropdown in
+                  the same pill style as the sort control beside it, sitting in the
+                  space between the count and the sort. */}
+              {(() => {
+                const cat = processedCats.find(c => c.category === selectedCategory.category);
+                if (!cat || cat.subcategory.length === 0) return null;
+                const active = selectedCategory.subCategory !== 'All';
+                return (
+                  <div className="relative min-w-0 flex-1 max-w-[180px]">
+                    <select
+                      value={selectedCategory.subCategory}
+                      onChange={e => selectCategory(cat.category, e.target.value)}
+                      aria-label={tr(`Filter ${cat.category} by condition`, `I-filter ang ${cat.category} ayon sa kondisyon`)}
+                      className={`w-full appearance-none truncate rounded-full border bg-white pl-3 pr-7 py-1.5 text-[12px] font-semibold outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer ${
+                        active ? 'border-primary bg-[#EFF8FF] text-primary' : 'border-gray-200 text-gray-700 hover:border-primary'
+                      }`}
+                    >
+                      <option value="All">{tr(`All ${cat.category}`, `Lahat ng ${cat.category}`)}</option>
+                      {cat.subcategory.map(sub => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                    </select>
+                    <div className={`pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 ${active ? 'text-primary' : 'text-gray-500'}`}>
+                      <i className="fa-solid fa-chevron-down text-[10px]" />
+                    </div>
+                  </div>
+                );
+              })()}
+              <div className="relative shrink-0">
                 <select
                   value={sortBy}
                   onChange={e => { setSortBy(e.target.value); setCurrentPage(1); scrollToTable(); }}
@@ -1358,9 +1399,9 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
             <div ref={tableRef}>
               {productsLoading ? (
                 <>
-                  <div className="lg:hidden grid grid-cols-2 gap-3">
+                  <div className="lg:hidden grid grid-cols-2 gap-2">
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="h-[268px] animate-pulse rounded-[20px] bg-[#F6F7F9]" />
+                      <div key={i} className="h-[268px] animate-pulse rounded-[14px] bg-[#F6F7F9]" />
                     ))}
                   </div>
                   <div className="hidden lg:block"><TableSkeleton /></div>
@@ -1388,7 +1429,7 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
               ) : (
                 <>
                   {/* MOBILE GRID — two across, in the home screen's featured-card style */}
-                  <div className="lg:hidden grid grid-cols-2 gap-3">
+                  <div className="lg:hidden grid grid-cols-2 gap-2">
                     {paginated.map((p, i) => (
                       <ProductGridCard key={`${p._id || 'idx'}-${i}`} p={p as unknown as CatalogueRow} />
                     ))}

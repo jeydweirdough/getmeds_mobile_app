@@ -13,6 +13,15 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- Edge-to-edge: both bars transparent, and no system contrast scrim —
+             on 3-button phones that scrim is an opaque strip that made the
+             floating tab bar look lifted off the bottom. The page's own white
+             shows through behind the buttons instead. The enforce* attributes
+             exist from API 29 and are ignored on older Androids. -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
     </style>
 
 

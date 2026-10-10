@@ -258,9 +258,14 @@ body:not(:has([data-page="chat"])) .tawk-min-container {
   margin-left: -27px;
   width: 54px; height: 54px;
   display: flex; align-items: center; justify-content: center;
-  /* No circle behind it: the Chat icon carries its own blue-to-green colour
-     and is the whole button (see BrandIcons.tsx). */
-  background: none;
+  /* Highlighted: the brand blue-to-green as a filled circle, the Chat icon
+     cut into it in white (mono — see BrandIcons.tsx). The white ring lifts it
+     off the capsule and the halo below makes it read as the bar's one
+     primary action. */
+  background: linear-gradient(45deg, #0A84F0 0%, #1EB3BE 50%, #7AD957 100%);
+  border-radius: 999px;
+  color: #fff;
+  box-shadow: 0 0 0 3px #fff, 0 6px 16px rgba(10, 132, 240, .35);
 }
 .gm-tabbar .gm-mid .gm-mid-btn i { font-size: 20px; }
 

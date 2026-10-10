@@ -111,7 +111,7 @@ export default function PwaTabbar() {
         <a href="/app-home" data-match="/app-home,/" className={cls(0)}><i className="fa-solid fa-house"></i><span>{tr('Home', 'Home')}</span></a>
         <a href="/product-range" data-match="/product-range" className={cls(1)}><i className="fa-solid fa-capsules"></i><span>{tr('Products', 'Produkto')}</span></a>
         <a href="/chat" data-tour="chat" aria-label={tr('Chat with us', 'Mag-chat sa amin')} className={`gm-mid${cls(2) ? ' is-active' : ''}`} data-match="/chat">
-          <span className="gm-mid-btn"><ChatIcon size={34} /></span>
+          <span className="gm-mid-btn"><ChatIcon size={30} mono /></span>
           <span className="gm-label">{tr('Chat', 'Chat')}</span>
         </a>
         <a href="/cart" data-match="/cart" data-tour="requests" aria-label={tr('Your request list', 'Ang iyong request list')} className={cls(3)}>

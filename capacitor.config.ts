@@ -24,10 +24,26 @@ const config: CapacitorConfig = {
       backgroundColor: '#ffffff',
       showSpinner: false,
     },
+    // Edge-to-edge on every Android, with the web layer owning the safe areas
+    // (app.css spaces everything by the insets Capacitor injects). The old
+    // overlaysWebView:false boxed the WebView out of the status bar with a
+    // deprecated API while core's SystemBars was already going edge-to-edge
+    // and injecting real insets — the spacing was applied twice, leaving a
+    // dead white band under the status bar and another above the Android
+    // navigation bar (the tab bar looked lifted off the bottom).
+    // style LIGHT = dark icons, over the app's white status-bar fill; on
+    // Androids older than 15 the same config paints a solid white bar
+    // instead, which looks identical.
     StatusBar: {
-      backgroundColor: '#1D9FDA',
-      style: 'DARK',
-      overlaysWebView: false,
+      overlaysWebView: true,
+      style: 'LIGHT',
+      backgroundColor: '#FFFFFF',
+    },
+    SystemBars: {
+      style: 'LIGHT',
+      // index.html always serves viewport-fit=cover; saying so up front stops
+      // the first layout from shifting once Capacitor detects it.
+      initialViewportFitValueHint: 'cover',
     },
   },
 };

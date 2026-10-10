@@ -1,0 +1,79 @@
+/* The Notifications screen's own motion (NotificationsClient.tsx).
+   The empty-state bell rings every few seconds, its sound arcs flare with the
+   ring, the badge pops, the blob breathes and the dots twinkle. List rows ease
+   in with a short stagger. All of it sits still under prefers-reduced-motion. */
+
+.gmn-stage {
+  width: 230px;
+  height: 210px;
+}
+
+/* The bell swings from its crown, then rests — ringing, not metronoming. */
+.gmn-bell {
+  transform-origin: 110px 40px;
+  transform-box: view-box;
+  animation: gmn-ring 3.6s ease-in-out infinite;
+}
+@keyframes gmn-ring {
+  0%, 50%, 100% { transform: rotate(0deg); }
+  56% { transform: rotate(10deg); }
+  64% { transform: rotate(-9deg); }
+  72% { transform: rotate(6deg); }
+  80% { transform: rotate(-4deg); }
+  88% { transform: rotate(1.5deg); }
+}
+
+/* Sound arcs flare while the bell is moving. */
+.gmn-arc {
+  opacity: .35;
+  animation: gmn-arc 3.6s ease-in-out infinite;
+}
+.gmn-arc-late { animation-delay: .12s; }
+@keyframes gmn-arc {
+  0%, 50%, 100% { opacity: .35; }
+  60%, 84% { opacity: 1; }
+}
+
+/* The red badge pops as the ring starts. */
+.gmn-badge {
+  transform-origin: 150px 62px;
+  transform-box: view-box;
+  animation: gmn-pop 3.6s ease-in-out infinite;
+}
+@keyframes gmn-pop {
+  0%, 50%, 100% { transform: scale(1); }
+  58% { transform: scale(1.25); }
+  70% { transform: scale(1); }
+}
+
+/* The ground breathes slowly, independent of the ring. */
+.gmn-blob {
+  transform-origin: 110px 105px;
+  transform-box: view-box;
+  animation: gmn-breathe 5s ease-in-out infinite;
+}
+@keyframes gmn-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.gmn-dot { animation: gmn-twinkle 2.6s ease-in-out infinite; }
+@keyframes gmn-twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .25; }
+}
+
+/* Rows slide in once, staggered by their inline animation-delay. */
+.gmn-row {
+  opacity: 0;
+  animation: gmn-row-in 320ms cubic-bezier(.22, .8, .36, 1) forwards;
+}
+@keyframes gmn-row-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gmn-bell, .gmn-arc, .gmn-badge, .gmn-blob, .gmn-dot { animation: none; }
+  .gmn-row { animation: none; opacity: 1; }
+}

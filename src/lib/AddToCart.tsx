@@ -112,6 +112,67 @@ function ConsentSheet({
   );
 }
 
+/**
+ * "Fly to the list": on add, a ghost of the whole product card lifts off and
+ * flies into the Requests tab, shrinking steadily along the way until it
+ * disappears into the icon — the storefront cue, at full size. Skipped under
+ * prefers-reduced-motion, and a missing tab bar (web, desktop) simply means
+ * no animation.
+ */
+function flyToRequests(from: HTMLElement) {
+  try {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const target =
+      document.querySelector<HTMLElement>('.gm-tabbar a[data-tour="requests"] i') ||
+      document.querySelector<HTMLElement>('.gm-tabbar a[data-tour="requests"]');
+    if (!target || typeof from.animate !== 'function') return;
+
+    // The whole card the button sits in (the grid/featured/similar cards are
+    // links); the pinned bar on the product page has no card, so the button
+    // itself flies there.
+    const card = (from.closest('a[href]') as HTMLElement | null) || from;
+    const a = card.getBoundingClientRect();
+    const b = target.getBoundingClientRect();
+    if (!a.width || !b.width) return;
+
+    const ghost = card.cloneNode(true) as HTMLElement;
+    ghost.setAttribute('aria-hidden', 'true');
+    ghost.style.cssText =
+      `position:fixed;z-index:10002;left:${a.left}px;top:${a.top}px;` +
+      `width:${a.width}px;height:${a.height}px;margin:0;pointer-events:none;` +
+      `border-radius:${getComputedStyle(card).borderRadius || '14px'};overflow:hidden;` +
+      'background:#fff;box-shadow:0 12px 32px rgba(23,43,77,.25);will-change:transform,opacity;';
+    document.body.appendChild(ghost);
+
+    const dx = b.left + b.width / 2 - (a.left + a.width / 2);
+    const dy = b.top + b.height / 2 - (a.top + a.height / 2);
+    const flight = ghost.animate(
+      [
+        // A small lift first, so the card visibly leaves its slot...
+        { transform: 'translate(0,0) scale(1)', opacity: 1 },
+        { transform: 'translate(0,-14px) scale(1.04)', opacity: 1, offset: 0.16 },
+        // ...then it travels, shrinking step by step the whole way down...
+        { transform: `translate(${dx * 0.45}px, ${dy * 0.35 - 30}px) scale(.55)`, opacity: 0.95, offset: 0.55 },
+        { transform: `translate(${dx * 0.8}px, ${dy * 0.75}px) scale(.22)`, opacity: 0.8, offset: 0.8 },
+        // ...until it is icon-sized and gone.
+        { transform: `translate(${dx}px, ${dy}px) scale(.04)`, opacity: 0.2 },
+      ],
+      { duration: 780, easing: 'cubic-bezier(.3,.65,.3,1)' },
+    );
+    flight.onfinish = () => {
+      ghost.remove();
+      // The Requests icon gives a little bounce as the card lands in it.
+      target.animate(
+        [{ transform: 'scale(1)' }, { transform: 'scale(1.35)' }, { transform: 'scale(1)' }],
+        { duration: 320, easing: 'ease-out' },
+      );
+    };
+    flight.oncancel = () => ghost.remove();
+  } catch {
+    /* decoration only — never let it break the add itself */
+  }
+}
+
 export function AddToCart({
   item,
   variant = 'icon',
@@ -145,11 +206,14 @@ export function AddToCart({
     // These buttons sit inside cards that are themselves links.
     e.preventDefault();
     e.stopPropagation();
+    // Captured before the awaits: React nulls currentTarget after the handler.
+    const button = e.currentTarget as HTMLElement;
 
     if (saved) { await removeFromCart(item.id); return; }
 
     const result = await addToCart(item);
     if (result === 'needs-consent') setAsking(true);
+    else if (result === 'added') flyToRequests(button);
   };
 
   const decide = async (granted: boolean) => {

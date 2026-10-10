@@ -4,6 +4,7 @@ import SearchClient from '@/app/search/SearchClient';
 import CategoriesClient from '@/app/categories/CategoriesClient';
 import CartClient from '@/app/cart/CartClient';
 import AccountClient from '@/app/account/AccountClient';
+import NotificationsClient from '@/app/notifications/NotificationsClient';
 import ChatClient from '@/app/chat/ChatClient';
 import OrderMedicinesClient from '@/app/order-medicines/[audience]/OrderMedicinesClient';
 import CatalogClient from '@/components/CatalogClient';
@@ -28,6 +29,7 @@ const TITLES: Partial<Record<Route['screen'], { en: string; tl: string }>> = {
   categories: { en: 'Categories | Getmeds', tl: 'Mga Kategorya | Getmeds' },
   cart: { en: 'Your Request List | Getmeds', tl: 'Ang Iyong Request List | Getmeds' },
   account: { en: 'My Account | Getmeds', tl: 'Aking Account | Getmeds' },
+  notifications: { en: 'Notifications | Getmeds', tl: 'Mga Notification | Getmeds' },
   chat: { en: 'Chat with Getmeds | Getmeds', tl: 'Mag-chat sa Getmeds | Getmeds' },
   order: { en: 'Order Medicines | Getmeds', tl: 'Mag-order ng Gamot | Getmeds' },
 };
@@ -79,6 +81,8 @@ function Screen({ route }: { route: Route }) {
           <QueuedInquiryNotice />
         </div>
       );
+    case 'notifications':
+      return <NotificationsClient />;
     case 'chat':
       return (
         <div className="gm-page-chat" data-page="chat">
