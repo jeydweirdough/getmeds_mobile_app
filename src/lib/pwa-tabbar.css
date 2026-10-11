@@ -18,11 +18,8 @@
    value only because every page sets viewport-fit=cover — without it the
    capsule would sit on top of the iPhone home indicator. */
 :root {
-  --gm-tabbar-inset: 12px;
-  /* The gap under the capsule. Small: on a phone it already sits above the
-     system's gesture/button bar (--gm-safe-bottom), so a large gap on top of
-     that left a tall empty band at the bottom of the screen. */
-  --gm-tabbar-gap: 4px;
+  /* No gap: the bar is welded to the bottom edge, full width. */
+  --gm-tabbar-gap: 0px;
   --gm-tabbar-height: 66px;
   --gm-tabbar-space: calc(var(--gm-tabbar-gap) + var(--gm-tabbar-height) + var(--gm-safe-bottom));
 }
@@ -188,20 +185,22 @@ body:not(:has([data-page="chat"])) .tawk-min-container {
   }
 }
 
-/* A capsule floating clear of all three edges, not a slab welded to the
-   bottom. The page showing through around it is the whole point: it reads as
-   a control resting on the content rather than a border framing it. */
+/* A full-width slab welded to the bottom edge. The white extends through the
+   safe area (home indicator) via padding, so the system band never shows the
+   page behind it; the hairline on top is what separates bar from content. */
 .gm-tabbar {
   position: fixed;
-  left: var(--gm-tabbar-inset);
-  right: var(--gm-tabbar-inset);
-  bottom: calc(var(--gm-tabbar-gap) + var(--gm-safe-bottom));
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 9997;
-  height: var(--gm-tabbar-height);
+  height: calc(var(--gm-tabbar-height) + var(--gm-safe-bottom));
+  padding-bottom: var(--gm-safe-bottom);
   align-items: stretch;
   justify-content: space-around;
   background: #fff;
-  border-radius: 999px;
+  border-top: 1px solid #EEF1F5;
+  box-shadow: 0 -4px 16px rgba(23, 43, 77, .06);
   /* The raised centre button and its halo overhang the top edge. */
   overflow: visible;
 }

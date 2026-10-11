@@ -1708,16 +1708,14 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
       {app && product && (
         <>
         <div
-          className="fixed z-[9995] flex items-center gap-2.5 rounded-t-[24px] border border-b-0 border-gray-100 bg-white px-4 pt-2.5 pb-6"
-          /* Attached to the tab bar capsule: same side insets, top corners
-             rounded to match, and the bottom edge tucked 16px behind the
-             capsule (which stacks above at z-9997), so the two read as one
-             piece. --gm-tabbar-space and --gm-tabbar-inset are the bar's own
-             published geometry, so this follows it if the bar changes shape. */
+          className="fixed z-[9995] flex items-center gap-2.5 rounded-t-[24px] border border-b-0 border-gray-100 bg-white px-4 pt-2.5 pb-3"
+          /* Sits directly on the tab bar, full width like the bar itself, so
+             the two read as one piece. --gm-tabbar-space is the bar's own
+             published footprint, so this follows it if the bar changes shape. */
           style={{
-            left: 'var(--gm-tabbar-inset, 12px)',
-            right: 'var(--gm-tabbar-inset, 12px)',
-            bottom: 'calc(var(--gm-tabbar-space, 74px) - 16px)',
+            left: 0,
+            right: 0,
+            bottom: 'var(--gm-tabbar-space, 66px)',
           }}
         >
           <div className="flex-1 [&>button]:py-2 [&>button]:text-[12px]">
