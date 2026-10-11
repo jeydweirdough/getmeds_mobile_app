@@ -126,3 +126,24 @@ a:active, button:active, [role="button"]:active {
 @media (prefers-reduced-motion: reduce) {
   .gm-screen-in, .gm-auth-in, .gm-auth-in-late, .gm-ill-float, .gm-ill-drop, .gm-ill-bump, .gm-ill-twinkle, .gm-ill-roll { animation: none; }
 }
+
+/* Brand checkbox with a guaranteed-white tick. accent-color leaves the tick
+   glyph to the platform, and Android WebView draws it dark on the brand blue;
+   drawing the tick ourselves is the only way to pin its colour. */
+.gm-check {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #FFFFFF;
+  border: 1.5px solid #C9D3E0;
+  border-radius: 5px;
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+}
+.gm-check:checked { background: #1D9FDA; border-color: #1D9FDA; }
+.gm-check:checked::after {
+  content: "";
+  width: 11px;
+  height: 11px;
+  background: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 12 12%27%3E%3Cpath d=%27M2 6.5 4.7 9 10 3.5%27 fill=%27none%27 stroke=%27%23FFFFFF%27 stroke-width=%272.2%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E") center/contain no-repeat;
+}

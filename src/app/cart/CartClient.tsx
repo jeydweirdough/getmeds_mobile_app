@@ -72,6 +72,14 @@ const BLANK = {
  */
 const REFILL_KEY = 'getmeds_refill_key';
 
+/**
+ * The upload slot for a prescription that covers the whole request. Uploaded
+ * under the plain "prescription" category (no :index), which the backend
+ * already attaches to every product's row — so one photo of one script
+ * reaches the pharmacist checking any of the medicines on it.
+ */
+const SHARED_RX = '__all__';
+
 function readRefill(): { key: string; name: string } | null {
   try {
     const raw = sessionStorage.getItem(REFILL_KEY);
@@ -164,7 +172,13 @@ function Cart({
   const knownIds = React.useRef<Set<string>>(new Set());
   // One prescription per product, keyed by item id — a pharmacist reading a row
   // has to see the script for THAT medicine, not a pile of every upload.
+  // SHARED_RX is the one extra key: the single script that covers everything.
   const [rxByItem, setRxByItem] = useState<Record<string, File[]>>({});
+  // Doctors commonly write several medicines on ONE prescription, and asking
+  // for the same photo six times is a chore nobody should be given. So with
+  // more than one Rx item the form asks which shape this request is, and
+  // starts from the common one: a single script covering all of them.
+  const [oneRx, setOneRx] = useState(true);
   const [idFile, setIdFile] = useState<File | null>(null);
   const [sameAsPatient, setSameAsPatient] = useState(true);
   const [terms, setTerms] = useState(false);
@@ -412,16 +426,25 @@ function Cart({
     // before the spinner starts, so a refusal is immediate rather than a
     // pretend send followed by an error.
     if (type.kind === 'patient') {
-      const missing = rxNeeded.filter((it) => !(rxByItem[it.id]?.length));
-      if (missing.length) {
-        return setError(
-          missing.length === 1
-            ? tr(`Please upload the prescription for ${missing[0].name}.`, `Paki-upload ang reseta para sa ${missing[0].name}.`)
-            : tr(
-                `Please upload a prescription for each of: ${missing.map((m) => m.name).join(', ')}.`,
-                `Paki-upload ang reseta para sa bawat isa sa: ${missing.map((m) => m.name).join(', ')}.`
-              )
-        );
+      if (useOneRx) {
+        if (!(rxByItem[SHARED_RX]?.length)) {
+          return setError(tr(
+            'Please upload the prescription that covers these medicines.',
+            'Paki-upload ang resetang sumasaklaw sa mga gamot na ito.'
+          ));
+        }
+      } else {
+        const missing = rxNeeded.filter((it) => !(rxByItem[it.id]?.length));
+        if (missing.length) {
+          return setError(
+            missing.length === 1
+              ? tr(`Please upload the prescription for ${missing[0].name}.`, `Paki-upload ang reseta para sa ${missing[0].name}.`)
+              : tr(
+                  `Please upload a prescription for each of: ${missing.map((m) => m.name).join(', ')}.`,
+                  `Paki-upload ang reseta para sa bawat isa sa: ${missing.map((m) => m.name).join(', ')}.`
+                )
+          );
+        }
       }
       if (!idFile) return setError(tr("Please upload the patient's valid ID.", 'Paki-upload ang valid ID ng pasyente.'));
       if (!sameAsPatient && !form.contactName.trim()) return setError(tr("Please provide the contact person's full name.", 'Pakilagay ang buong pangalan ng contact person.'));
@@ -442,9 +465,16 @@ function Cart({
         // which is exactly what a multi-product request with two phone photos
         // was doing.
         const prepared: Array<{ file: File; category: string }> = [];
-        for (let i = 0; i < chosen.length; i++) {
-          for (const f of rxByItem[chosen[i].id] || []) {
-            prepared.push({ file: await compressImage(f), category: `prescription:${i}` });
+        if (useOneRx) {
+          // Plain "prescription": the backend puts it on every product row.
+          for (const f of rxByItem[SHARED_RX] || []) {
+            prepared.push({ file: await compressImage(f), category: 'prescription' });
+          }
+        } else {
+          for (let i = 0; i < chosen.length; i++) {
+            for (const f of rxByItem[chosen[i].id] || []) {
+              prepared.push({ file: await compressImage(f), category: `prescription:${i}` });
+            }
           }
         }
         if (idFile) prepared.push({ file: await compressImage(idFile), category: 'id' });
@@ -495,16 +525,27 @@ function Cart({
       // is cleared; saved only once the request has gone.
       const toWallet =
         member && type.kind === 'patient'
-          ? rxNeeded
-              .filter((it) => saveToWallet[it.id] && !walletUsed[it.id])
-              .flatMap((it) => {
-                const files = rxByItem[it.id] || [];
-                return files.map((file, n) => ({
-                  file,
-                  medicine: it.name,
-                  label: files.length > 1 ? `${it.name}, page ${n + 1}` : it.name,
-                }));
-              })
+          ? useOneRx
+            ? saveToWallet[SHARED_RX] && !walletUsed[SHARED_RX]
+              ? (rxByItem[SHARED_RX] || []).map((file, n, arr) => {
+                  const title = `Prescription (${rxNeeded.length} medicines)`;
+                  return {
+                    file,
+                    medicine: rxNeeded.map((it) => it.name).join(', '),
+                    label: arr.length > 1 ? `${title}, page ${n + 1}` : title,
+                  };
+                })
+              : []
+            : rxNeeded
+                .filter((it) => saveToWallet[it.id] && !walletUsed[it.id])
+                .flatMap((it) => {
+                  const files = rxByItem[it.id] || [];
+                  return files.map((file, n) => ({
+                    file,
+                    medicine: it.name,
+                    label: files.length > 1 ? `${it.name}, page ${n + 1}` : it.name,
+                  }));
+                })
           : [];
 
       const payload = {
@@ -593,9 +634,65 @@ function Cart({
   // Everything downstream works on the ticked subset, never the whole list.
   const chosen = (items || []).filter((it) => selected.has(it.id));
   const rxNeeded = chosen.filter((it) => it.needsRx);
+  // The choice only exists when there is more than one script to need; with a
+  // single Rx item the per-medicine slot IS the one upload.
+  const useOneRx = oneRx && rxNeeded.length > 1;
   const empty = items !== null && items.length === 0;
   const field = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-[13.5px] outline-none focus:border-primary';
   const count = chosen.length;
+
+  /**
+   * One prescription upload slot: the file input, the wallet shortcut, the
+   * attached note and the save-back tick. The same slot serves a single
+   * medicine (keyed by its item id) and the whole-request script (SHARED_RX),
+   * so the two modes cannot drift apart.
+   */
+  const rxSlot = (slotId: string, walletItem: CartItem) => (
+    <>
+      <input
+        id={`rx-file-${slotId}`}
+        type="file" multiple accept={ALLOWED_FILE_TYPES_ACCEPT}
+        onChange={(e) => {
+          const { valid, errors } = validateFiles(Array.from(e.target.files || []));
+          setError(errors[0] || '');
+          setRxByItem((prev) => ({ ...prev, [slotId]: valid }));
+          if (member) {
+            // A fresh upload replaces anything taken from the wallet.
+            setWalletUsed(({ [slotId]: _gone, ...rest }) => rest);
+          }
+        }}
+        className="mt-1 w-full text-[12px] file:mr-3 file:rounded-full file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-[12px] file:font-semibold"
+      />
+      {member && (
+        <button id={`rx-wallet-${slotId}`} type="button" onClick={() => setWalletFor(walletItem)}
+          className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-[#F1F8FE] px-3 py-1.5 text-[12px] font-semibold text-[#1D9FDA]">
+          <i className="fa-solid fa-wallet text-[10.5px]"></i>{tr('Use from wallet', 'Gamitin mula sa wallet')}
+        </button>
+      )}
+      {rxByItem[slotId]?.length ? (
+        <p className="mt-1 text-[11.5px] text-green-700">
+          {walletUsed[slotId]
+            ? tr(`From your wallet: ${walletUsed[slotId]}`, `Mula sa iyong wallet: ${walletUsed[slotId]}`)
+            : tr(
+                `${rxByItem[slotId].length} file${rxByItem[slotId].length === 1 ? '' : 's'} attached`,
+                `${rxByItem[slotId].length} ${rxByItem[slotId].length === 1 ? 'file' : 'mga file'} ang naka-attach`
+              )}
+        </p>
+      ) : null}
+      {member && rxByItem[slotId]?.length && !walletUsed[slotId] ? (
+        <label htmlFor={`rx-save-${slotId}`} className="mt-1.5 flex items-center gap-2">
+          <input
+            id={`rx-save-${slotId}`}
+            type="checkbox"
+            checked={Boolean(saveToWallet[slotId])}
+            onChange={(e) => setSaveToWallet((prev) => ({ ...prev, [slotId]: e.target.checked }))}
+            className="gm-check h-4 w-4"
+          />
+          <span className="text-[11.5px] text-gray-600">{tr('Save to my prescription wallet', 'I-save sa aking prescription wallet')}</span>
+        </label>
+      ) : null}
+    </>
+  );
 
   return (
     <>
@@ -771,63 +868,58 @@ function Cart({
                   {rxNeeded.length > 0 && (
                     <div className="rounded-xl border border-gray-200 p-3">
                       <p className="text-[12.5px] font-semibold text-gray-700">
-                        {tr('Prescriptions', 'Mga reseta')} * <span className="font-normal text-gray-400">({tr(`${rxNeeded.length} needed`, `${rxNeeded.length} kailangan`)})</span>
-                      </p>
-                      <p className="mt-0.5 text-[11px] leading-snug text-gray-400">
-                        {tr(
-                          'One per prescription-only medicine, so each can be checked against the right item.',
-                          'Isa para sa bawat gamot na kailangan ng reseta, para matsek ang bawat isa sa tamang item.'
+                        {useOneRx ? (
+                          <>{tr('Prescription', 'Reseta')} *</>
+                        ) : (
+                          <>
+                            {tr('Prescriptions', 'Mga reseta')} * <span className="font-normal text-gray-400">({tr(`${rxNeeded.length} needed`, `${rxNeeded.length} kailangan`)})</span>
+                          </>
                         )}
                       </p>
-                      <div className="mt-3 space-y-3">
-                        {rxNeeded.map((it) => (
-                          <div key={it.id}>
-                            <p className="text-[12px] font-semibold leading-snug text-gray-700">{it.name}</p>
-                            <input
-                              id={`rx-file-${it.id}`}
-                              type="file" multiple accept={ALLOWED_FILE_TYPES_ACCEPT}
-                              onChange={(e) => {
-                                const { valid, errors } = validateFiles(Array.from(e.target.files || []));
-                                setError(errors[0] || '');
-                                setRxByItem((prev) => ({ ...prev, [it.id]: valid }));
-                                if (member) {
-                                  // A fresh upload replaces anything taken from the wallet.
-                                  setWalletUsed(({ [it.id]: _gone, ...rest }) => rest);
-                                }
-                              }}
-                              className="mt-1 w-full text-[12px] file:mr-3 file:rounded-full file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-[12px] file:font-semibold"
-                            />
-                            {member && (
-                              <button id={`rx-wallet-${it.id}`} type="button" onClick={() => setWalletFor(it)}
-                                className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-[#F1F8FE] px-3 py-1.5 text-[12px] font-semibold text-[#1D9FDA]">
-                                <i className="fa-solid fa-wallet text-[10.5px]"></i>{tr('Use from wallet', 'Gamitin mula sa wallet')}
-                              </button>
+                      <p className="mt-0.5 text-[11px] leading-snug text-gray-400">
+                        {useOneRx
+                          ? tr(
+                              'Upload it once — we will check it against every medicine in this request.',
+                              'Isang beses lang i-upload — itse-tsek namin ito sa bawat gamot sa request na ito.'
+                            )
+                          : tr(
+                              'One per prescription-only medicine, so each can be checked against the right item.',
+                              'Isa para sa bawat gamot na kailangan ng reseta, para matsek ang bawat isa sa tamang item.'
                             )}
-                            {rxByItem[it.id]?.length ? (
-                              <p className="mt-1 text-[11.5px] text-green-700">
-                                {walletUsed[it.id]
-                                  ? tr(`From your wallet: ${walletUsed[it.id]}`, `Mula sa iyong wallet: ${walletUsed[it.id]}`)
-                                  : tr(
-                                      `${rxByItem[it.id].length} file${rxByItem[it.id].length === 1 ? '' : 's'} attached`,
-                                      `${rxByItem[it.id].length} ${rxByItem[it.id].length === 1 ? 'file' : 'mga file'} ang naka-attach`
-                                    )}
-                              </p>
-                            ) : null}
-                            {member && rxByItem[it.id]?.length && !walletUsed[it.id] ? (
-                              <label htmlFor={`rx-save-${it.id}`} className="mt-1.5 flex items-center gap-2">
-                                <input
-                                  id={`rx-save-${it.id}`}
-                                  type="checkbox"
-                                  checked={Boolean(saveToWallet[it.id])}
-                                  onChange={(e) => setSaveToWallet((prev) => ({ ...prev, [it.id]: e.target.checked }))}
-                                  className="h-4 w-4 rounded border-gray-300"
-                                  style={{ accentColor: '#1D9FDA' }}
-                                />
-                                <span className="text-[11.5px] text-gray-600">{tr('Save to my prescription wallet', 'I-save sa aking prescription wallet')}</span>
-                              </label>
-                            ) : null}
+                      </p>
+
+                      {/* Which shape is this request? Most scripts list several
+                          medicines at once, so that is the default — nobody
+                          should attach the same photo six times. */}
+                      {rxNeeded.length > 1 && (
+                        <div className="mt-2.5 flex flex-wrap gap-1.5">
+                          <Chip id="rx-mode-one" on={oneRx} onClick={() => setOneRx(true)}>
+                            <i className="fa-solid fa-file-prescription text-[10px]"></i>
+                            {tr('All in one prescription', 'Lahat sa isang reseta')}
+                          </Chip>
+                          <Chip id="rx-mode-separate" on={!oneRx} onClick={() => setOneRx(false)}>
+                            {tr('Separate prescriptions', 'Magkahiwalay na reseta')}
+                          </Chip>
+                        </div>
+                      )}
+
+                      <div className="mt-3 space-y-3">
+                        {useOneRx ? (
+                          <div>
+                            <p className="text-[12px] leading-snug text-gray-500">
+                              {tr('Covers:', 'Sakop:')}{' '}
+                              <span className="font-semibold text-gray-700">{rxNeeded.map((it) => it.name).join(', ')}</span>
+                            </p>
+                            {rxSlot(SHARED_RX, { id: SHARED_RX, name: tr('all medicines in this request', 'lahat ng gamot sa request na ito') } as CartItem)}
                           </div>
-                        ))}
+                        ) : (
+                          rxNeeded.map((it) => (
+                            <div key={it.id}>
+                              <p className="text-[12px] font-semibold leading-snug text-gray-700">{it.name}</p>
+                              {rxSlot(it.id, it)}
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
                   )}
@@ -902,16 +994,9 @@ function Cart({
           </>
         ) : (
           <>
-            {/* Only the heading shares its row with "Clear list"; the note
-                below gets the full width rather than wrapping beside it. */}
-            <div className="flex items-start justify-between gap-4">
-              <h1 className="text-2xl font-semibold text-gray-900">{tr('Your request list', 'Ang iyong request list')}</h1>
-              {count > 0 && (
-                <button type="button" onClick={() => clearCart()} className="mt-1.5 shrink-0 text-[12px] font-semibold text-gray-400 hover:text-gray-600">
-                  {tr('Clear list', 'I-clear ang listahan')}
-                </button>
-              )}
-            </div>
+            {/* No "Clear list" here: the selection bar's Remove already covers
+                deleting, including everything at once via the master tick. */}
+            <h1 className="text-2xl font-semibold text-gray-900">{tr('Your request list', 'Ang iyong request list')}</h1>
             <p className="mt-1.5 text-sm leading-relaxed text-gray-500">
               {tr(
                 'Add medicines you want a quote for, then send them to us in one request.',
@@ -940,36 +1025,50 @@ function Cart({
               </div>
             ) : (
               <>
-                <ul className="mt-6 space-y-2.5">
+                {/* Storefront-style selection bar: how many of the list this
+                    request covers, a master tick, and Remove for the ticked
+                    rows. Only when there is more than one row — with a single
+                    item there is nothing to select between. */}
+                {items.length > 1 && (
+                  <div className="mt-6 flex items-center justify-between">
+                    <label className="flex items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        checked={count === items.length}
+                        aria-label={tr('Select all items', 'Piliin lahat ng item')}
+                        onChange={(e) =>
+                          setSelected(e.target.checked ? new Set(items.map((i) => i.id)) : new Set())
+                        }
+                        className="gm-check h-[18px] w-[18px]"
+                      />
+                      <span className="text-[13px] font-semibold text-gray-900">
+                        {count}/{items.length} {tr('items selected', 'item ang napili')}
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      disabled={count === 0}
+                      onClick={() => { for (const it of chosen) removeFromCart(it.id); }}
+                      className="text-[12.5px] font-semibold text-gray-500 disabled:opacity-40"
+                    >
+                      {tr('Remove', 'Alisin')}
+                    </button>
+                  </div>
+                )}
+
+                <ul className={`${items.length > 1 ? 'mt-3' : 'mt-6'} space-y-2.5`}>
                   {items.map((it) => (
                     <li
                       key={it.id}
-                      className={`flex items-center gap-3 rounded-[16px] border border-gray-100 bg-white ${app ? 'p-2.5' : 'p-3'}`}
+                      className="relative flex items-start gap-3 rounded-[16px] border border-gray-100 bg-white p-3"
                     >
-                      {/* Only asked when there is genuinely something to choose
-                          between. With a single row the answer is already known,
-                          and a tickbox for it is a decision that buys nothing —
-                          it only stands between the visitor and the one button
-                          on the screen. */}
-                      {items.length > 1 && (
-                        <input
-                          type="checkbox"
-                          checked={selected.has(it.id)}
-                          aria-label={tr(`Include ${it.name} in this request`, `Isama ang ${it.name} sa request na ito`)}
-                          onChange={(e) => setSelected((prev) => {
-                            const next = new Set(prev);
-                            if (e.target.checked) next.add(it.id); else next.delete(it.id);
-                            return next;
-                          })}
-                          className="h-[18px] w-[18px] shrink-0 rounded"
-                          style={{ accentColor: '#1D9FDA' }}
-                        />
-                      )}
-
                       {/* Not a link, though it sits beside one: a second anchor
                           to the same page is another tab stop and another thing
-                          a screen reader reads out, for no new destination. */}
-                      <div className="flex h-[56px] w-[56px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#F6F8FC] p-1.5">
+                          a screen reader reads out, for no new destination. The
+                          tickbox rides the picture's corner, storefront-style;
+                          with a single row the answer is already known, so no
+                          tickbox is drawn at all. */}
+                      <div className="relative flex h-[88px] w-[88px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#F6F8FC] p-2">
                         {it.image ? (
                           <img
                             src={it.image}
@@ -979,25 +1078,58 @@ function Cart({
                             onError={(e) => { const i = e.currentTarget; i.onerror = null; i.style.display = 'none'; }}
                           />
                         ) : (
-                          <i className="fa-solid fa-prescription-bottle-medical text-[18px] text-gray-300"></i>
+                          <i className="fa-solid fa-prescription-bottle-medical text-[22px] text-gray-300"></i>
+                        )}
+                        {items.length > 1 && (
+                          <input
+                            type="checkbox"
+                            checked={selected.has(it.id)}
+                            aria-label={tr(`Include ${it.name} in this request`, `Isama ang ${it.name} sa request na ito`)}
+                            onChange={(e) => setSelected((prev) => {
+                              const next = new Set(prev);
+                              if (e.target.checked) next.add(it.id); else next.delete(it.id);
+                              return next;
+                            })}
+                            className="gm-check absolute left-1.5 top-1.5 h-[18px] w-[18px]"
+                          />
                         )}
                       </div>
 
-                      <div className="min-w-0 flex-1">
+                      {/* The reference stack, minus money: title, seller,
+                          attribute row, and the Rx status where a storefront
+                          would show the price — the one per-item fact that
+                          actually decides what happens next here. */}
+                      <div className="min-w-0 flex-1 pr-6">
                         <a href={it.url} className="line-clamp-2 block text-[13.5px] font-semibold leading-snug text-gray-900">{it.name}</a>
+                        <p className="mt-0.5 text-[11.5px] text-gray-400">
+                          {tr('Sold by:', 'Mula sa:')} <span className="text-gray-500">Getmeds</span>
+                        </p>
                         {(it.strength || it.form) && (
-                          <p className="mt-0.5 line-clamp-1 text-[11.5px] text-gray-400">{[it.strength, it.form].filter(Boolean).join(' · ')}</p>
+                          <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-gray-500">
+                            {it.strength && (
+                              <span className="inline-flex items-center gap-1.5">
+                                <i className="fa-solid fa-scale-balanced text-[9.5px] text-gray-400"></i>{it.strength}
+                              </span>
+                            )}
+                            {it.strength && it.form && <span className="text-gray-300">·</span>}
+                            {it.form && (
+                              <span className="inline-flex items-center gap-1.5">
+                                <i className="fa-solid fa-tablets text-[9.5px] text-gray-400"></i>{it.form}
+                              </span>
+                            )}
+                          </p>
                         )}
-                        {it.needsRx && (
-                          <span className="mt-1.5 inline-block rounded-full bg-[#E8F5FC] px-2 py-[3px] text-[10px] font-semibold text-[#1D9FDA]">
-                            <i className="fa-solid fa-file-prescription mr-1"></i>{tr('Prescription required', 'Kailangan ng reseta')}
-                          </span>
-                        )}
+                        <p className={`mt-1.5 text-[12.5px] font-semibold ${it.needsRx ? 'text-[#1D9FDA]' : 'text-[#4E8F35]'}`}>
+                          <i className={`fa-solid ${it.needsRx ? 'fa-file-prescription' : 'fa-circle-check'} mr-1.5 text-[11px]`}></i>
+                          {it.needsRx
+                            ? tr('Prescription required', 'Kailangan ng reseta')
+                            : tr('No prescription needed', 'Hindi kailangan ng reseta')}
+                        </p>
                       </div>
 
                       <button type="button" onClick={() => removeFromCart(it.id)} aria-label={tr(`Remove ${it.name}`, `Alisin ang ${it.name}`)}
-                        className="shrink-0 rounded-full p-2 text-gray-300 hover:text-red-500">
-                        <i className="fa-solid fa-xmark"></i>
+                        className="absolute right-2 top-2 rounded-full p-2 text-gray-300 hover:text-red-500">
+                        <i className="fa-solid fa-xmark text-[14px]"></i>
                       </button>
                     </li>
                   ))}
