@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import AuthForm, { type AuthMode } from './AuthForm';
 import { translate, useLang } from '@/lib/i18n';
-import { useConfirmLogout } from '@/lib/LogoutConfirm';
 import {
   REWARDS_CHANGED_EVENT,
   RewardsError,
@@ -231,7 +230,6 @@ export default function PointsCard({
 }) {
   const { tr } = useLang();
   const { signedIn, summary, loadError } = points;
-  const confirmLogout = useConfirmLogout(signOut);
 
   // ── Signed in ──────────────────────────────────────────────────────────────
   if (signedIn) {
@@ -289,19 +287,9 @@ export default function PointsCard({
             </p>
           )}
 
-          <div className="mt-3 border-t border-gray-50 pt-3">
-            <p className="truncate text-center text-[11.5px] text-gray-400">{account?.login || account?.mobile}</p>
-            {/* A real button, full width and red so it reads as leaving; it asks before it acts. */}
-            <button
-              type="button"
-              onClick={confirmLogout.ask}
-              className="mt-2.5 flex h-[46px] w-full items-center justify-center gap-2 rounded-full border border-[#F6C9CB] bg-[#FDF1F1] text-[13.5px] font-semibold text-[#D63B40] transition active:scale-[0.98]"
-            >
-              <i className="fa-solid fa-arrow-right-from-bracket text-[12px]" />
-              {tr('Log out', 'Mag-log out')}
-            </button>
-          </div>
-          {confirmLogout.dialog}
+          {/* No login line or Log out button here: the account page's own
+              menu below already carries Log out, and two of them on one
+              screen read as two different accounts. */}
         </div>
       </section>
     );

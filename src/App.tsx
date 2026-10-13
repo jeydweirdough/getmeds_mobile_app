@@ -13,6 +13,7 @@ import ChromeExtras from '@/components/ChromeExtras';
 import Onboarding from '@/components/Onboarding';
 import GuidedTour from '@/components/GuidedTour';
 import PwaTabbar from '@/lib/PwaTabbar';
+import PullToRefresh from '@/lib/PullToRefresh';
 import { QueuedInquiryNotice } from '@/lib/QueuedInquiryNotice';
 import { useCategories } from '@/lib/useSanity';
 import { resolveRoute, type Route } from '@/platform/routes';
@@ -138,6 +139,7 @@ export default function App() {
         <Screen route={route} />
       </main>
       <PwaTabbar />
+      <PullToRefresh />
       <ChromeExtras />
       <Onboarding />
       <GuidedTour />

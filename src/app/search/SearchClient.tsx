@@ -322,7 +322,7 @@ export default function SearchClient() {
               }}
               enterKeyHint="search"
               autoComplete="off"
-              placeholder={tr('Search brand, generic or condition', 'Maghanap ng brand, generic o kondisyon')}
+              placeholder={tr('Search by brand, generic name, category, or disease...', 'Maghanap ayon sa brand, generic name, kategorya, o sakit...')}
               aria-label={tr('Search the catalogue', 'Maghanap sa catalogue')}
               className="h-[46px] w-full rounded-full border border-transparent pl-11 pr-11 text-[13.5px] text-gray-800 outline-none placeholder:text-gray-400 focus:border-[#1D9FDA]"
               style={{ background: FIELD }}

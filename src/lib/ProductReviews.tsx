@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { BRAND, PrimaryButton, Sheet, Toast, useToast } from './ui/Screen';
+import { BRAND, PrimaryButton, Sheet } from './ui/Screen';
 import { REWARDS_CHANGED_EVENT, RewardsError, authedCall, call, isSignedIn } from './rewards';
 import PointsCard, { usePoints } from './PointsCard';
 import { SignInSheet } from './ProfileCard';
@@ -17,8 +17,9 @@ import { useLang, translate } from './i18n';
  * - A customer can write one review per medicine once they have requested it
  *   through the app; it shows "Requested via Getmeds".
  * - Every new or edited review waits for staff approval in the Studio, so it
- *   is not public, and not in the stars, until then. The author sees theirs as
- *   "Waiting for approval".
+ *   is not public, and not in the stars, until then. The author is thanked
+ *   with a submitted modal; the wait itself is not surfaced (only a
+ *   rejection shows a note, since that asks them to act).
  */
 
 const STAR = '#F5A623';
@@ -218,7 +219,10 @@ export function ReviewsSection({
   const [writing, setWriting] = useState(false);
   const [askSignIn, setAskSignIn] = useState(false);
   const [note, setNote] = useState('');
-  const [toast, showToast] = useToast();
+  // The confirmation after sending a review — the same modal the product
+  // page shows after sending an inquiry, so the two "it went through"
+  // moments look like one system.
+  const [submitted, setSubmitted] = useState(false);
   const { tr } = useLang();
 
   // Signed in from the sheet this section opened: carry on to writing if allowed.
@@ -284,14 +288,14 @@ export function ReviewsSection({
             </div>
           </div>
 
-          {mine && mine.status !== 'approved' && (
+          {/* A pending review shows nothing here: the submitted modal already
+              thanked the author, and a "waiting for approval" banner would
+              just sit on the page for days. Only a rejection needs a note,
+              because it asks the author to act. */}
+          {mine && mine.status === 'rejected' && (
             <p className="mt-3 flex gap-2 rounded-2xl bg-[#FFF8E6] px-3.5 py-3 text-[12px] leading-snug text-[#8A6100]" role="status">
               <i className="fa-solid fa-hourglass-half mt-[3px] text-[11px]" />
-              <span>
-                {mine.status === 'pending'
-                  ? tr('Thanks! Your review is waiting for approval and will appear once our team has checked it.', 'Salamat! Naghihintay pa ng approval ang iyong review at lalabas ito kapag nasuri na ng aming team.')
-                  : tr('Your review wasn’t published. You can edit it and send it again.', 'Hindi na-publish ang iyong review. Puwede mo itong i-edit at ipadala ulit.')}
-              </span>
+              <span>{tr('Your review wasn’t published. You can edit it and send it again.', 'Hindi na-publish ang iyong review. Puwede mo itong i-edit at ipadala ulit.')}</span>
             </p>
           )}
           {note && (
@@ -348,10 +352,40 @@ export function ReviewsSection({
           onClose={() => setWriting(false)}
           onSaved={() => {
             setWriting(false);
-            showToast(tr('Thanks! Your review will appear once approved.', 'Salamat! Lalabas ang iyong review kapag na-approve na.'));
+            setSubmitted(true);
             reload();
           }}
         />
+      )}
+
+      {/* Success modal — the same style as the inquiry's "Inquiry Sent!". */}
+      {submitted && (
+        <div className="fixed inset-0 z-[10070] flex items-center justify-center p-4" style={{ background: 'rgba(26,32,44,0.7)' }}>
+          <div className="w-full max-w-sm rounded-[20px] bg-white p-10 text-center shadow-2xl">
+            <div
+              className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+              style={{ background: 'linear-gradient(135deg,#61A644,#1D9FDA)' }}
+            >
+              <i className="fa-solid fa-check animate-bounce text-2xl text-white" />
+            </div>
+            <h3 className="mb-2 text-xl font-bold text-gray-900">{tr('Review Submitted!', 'Naipadala na ang Review!')}</h3>
+            <p className="mb-6 text-sm text-gray-500">
+              {tr(
+                'Thank you for sharing your experience. It helps other customers choose with confidence.',
+                'Salamat sa pagbabahagi ng iyong karanasan. Nakakatulong ito sa ibang customer.',
+              )}
+            </p>
+            <div className="border-t border-gray-100 pt-4 text-center">
+              <button
+                onClick={() => setSubmitted(false)}
+                className="text-[13px] font-semibold hover:underline"
+                style={{ background: 'linear-gradient(to right,#61A644,#1D9FDA)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
+              >
+                {tr('Close', 'Isara')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       <SignInSheet open={askSignIn && !points.signedIn} onClose={() => setAskSignIn(false)}>
         <PointsCard
@@ -361,7 +395,6 @@ export function ReviewsSection({
           intro={tr("Log in to review medicines you've requested through Getmeds.", 'Mag-log in para i-review ang mga gamot na na-request mo sa Getmeds.')}
         />
       </SignInSheet>
-      <Toast text={toast} />
     </section>
   );
 }

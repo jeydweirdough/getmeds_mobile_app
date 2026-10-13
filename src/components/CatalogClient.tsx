@@ -268,21 +268,8 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
   const hasRestoredCategoryRef = useRef(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [sortBy, setSortBy] = useState('Default');
   const [successModalOpen, setSuccessModalOpen] = useState(false);
-  const [searchHistory, setSearchHistory] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('getmeds-search-history');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
-  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>(() => {
-    try {
-      const saved = localStorage.getItem('getmeds-category-counts');
-      return saved ? JSON.parse(saved) : {};
-    } catch { return {}; }
-  });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeFlyoutCat, setActiveFlyoutCat] = useState<any | null>(null);
   const [flyoutVisible, setFlyoutVisible] = useState(false);
@@ -351,7 +338,6 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
     setTimeout(() => setActiveFlyoutCat(null), 450);
   };
 
-  const searchWrapperRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -361,9 +347,6 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
     if (query) setSearchTerm(query);
 
     const handleClick = (e: MouseEvent) => {
-      if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false);
-      }
       // Close inquiry dropdown if click is outside the trigger wrapper or the portaled menu itself
       const target = e.target as HTMLElement;
       if (!target.closest('.inquiry-dropdown-wrapper') && !target.closest('.inquiry-dropdown-portal')) {
@@ -672,110 +655,6 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productsData, categoriesData, processedCats, selectedCategory, activeFolder, searchTerm, sortBy]);
-
-  // ── Search History & Suggestions Logic ──────────────────
-  const onEnterSearch = (query: string) => {
-    const trimmed = query.trim();
-    if (!trimmed || !productsData) return;
-
-    // 1. Save to search history (deduped, most recent first, max 10)
-    setSearchHistory(prev => {
-      const filtered = prev.filter(h => h.toLowerCase() !== trimmed.toLowerCase());
-      const next = [trimmed, ...filtered].slice(0, 10);
-      localStorage.setItem('getmeds-search-history', JSON.stringify(next));
-      return next;
-    });
-
-    // 2. Find matching products and increment their category counts
-    const matchedProducts = productsData.filter(p =>
-      fieldsMatchSearch([p.name, p.brandName, p.genericName], trimmed)
-    );
-
-    if (matchedProducts.length > 0) {
-      setCategoryCounts(prev => {
-        const next = { ...prev };
-        const seenCats = new Set<string>();
-        matchedProducts.forEach(p => {
-          const cat = p.category?.category || '';
-          const cats = cat.split('/').map(s => s.trim()).filter(Boolean);
-          cats.forEach(c => {
-            if (c && !seenCats.has(c)) {
-              seenCats.add(c);
-              next[c] = (next[c] || 0) + 1;
-            }
-          });
-        });
-        localStorage.setItem('getmeds-category-counts', JSON.stringify(next));
-        return next;
-      });
-    }
-  };
-
-  const removeSearchHistoryItem = (item: string) => {
-    setSearchHistory(prev => {
-      const next = prev.filter(h => h !== item);
-      localStorage.setItem('getmeds-search-history', JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const clearSearchHistory = () => {
-    setSearchHistory([]);
-    setCategoryCounts({});
-    localStorage.removeItem('getmeds-search-history');
-    localStorage.removeItem('getmeds-category-counts');
-  };
-
-  const suggestedProducts = useMemo(() => {
-    if (!productsData || productsData.length === 0) return [];
-
-    const MAX_SUGGESTIONS = 5;
-
-    // If no category counts, show 5 random products
-    if (Object.keys(categoryCounts).length === 0) {
-      const shuffled = [...productsData].sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, MAX_SUGGESTIONS);
-    }
-
-    // Sort categories by count descending
-    const sortedCats = Object.entries(categoryCounts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([cat]) => cat);
-
-    const suggestions: ProductWithCategory[] = [];
-    const usedIds = new Set<string>();
-
-    for (const cat of sortedCats) {
-      if (suggestions.length >= MAX_SUGGESTIONS) break;
-      const catProducts = productsData.filter(
-        p => {
-          const pCat = p.category?.category || p.excelCategory || '';
-          const pCats = pCat.split('/').map(s => s.trim().toLowerCase()).filter(Boolean);
-          return pCats.includes(cat.toLowerCase()) && !usedIds.has(p._id);
-        }
-      );
-      // Shuffle within category so it's not always the same order
-      const shuffled = [...catProducts].sort(() => Math.random() - 0.5);
-      const remaining = MAX_SUGGESTIONS - suggestions.length;
-      const toAdd = shuffled.slice(0, remaining);
-      toAdd.forEach(p => {
-        suggestions.push(p);
-        usedIds.add(p._id);
-      });
-    }
-
-    // If still fewer than MAX, fill with random products from other categories
-    if (suggestions.length < MAX_SUGGESTIONS) {
-      const remaining = MAX_SUGGESTIONS - suggestions.length;
-      const others = productsData
-        .filter(p => !usedIds.has(p._id))
-        .sort(() => Math.random() - 0.5)
-        .slice(0, remaining);
-      suggestions.push(...others);
-    }
-
-    return suggestions;
-  }, [productsData, categoryCounts]);
 
   const totalPages = Math.ceil(sorted.length / ITEMS_PER_PAGE);
   const paginated = sorted.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -1206,26 +1085,22 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                 </button>
               )}
 
-              {/* Search Bar */}
-              <div className="relative w-full sm:flex-1 sm:min-w-0" ref={searchWrapperRef}>
-                <div className="rounded-full py-1.5 px-1.5 border border-transparent focus-within:border-primary flex items-center" style={{ background: '#F6F7F9' }}>
+              {/* Search Bar — the same deal as the home screen's: a link, not
+                  an input. Searching has its own screen (/search), so tapping
+                  here opens it instead of a second, lesser copy of that UI in
+                  a dropdown. The bar still shows an active deep-linked filter
+                  (?search=) and offers to clear it. */}
+              <div className="relative w-full sm:flex-1 sm:min-w-0">
+                <div className="rounded-full py-1.5 px-1.5 border border-transparent flex items-center" style={{ background: '#F6F7F9' }}>
                   <div className="relative flex-grow flex items-center ml-3">
                     <i className="fa-solid fa-magnifying-glass text-gray-400 text-[13px]" />
-                    <input
-                      type="text"
-                      placeholder={tr('Search by brand, generic name, category, or disease...', 'Maghanap ayon sa brand, generic name, kategorya, o sakit...')}
-                      value={searchTerm}
-                      onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                      onFocus={() => setShowSuggestions(true)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          onEnterSearch(searchTerm);
-                          setShowSuggestions(false);
-                          scrollToTable();
-                        }
-                      }}
-                      className="w-full bg-transparent border-none pl-2.5 pr-2 py-1.5 text-[13px] text-gray-700 outline-none placeholder-gray-400"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => goTo('/search')}
+                      className={`w-full truncate bg-transparent border-none pl-2.5 pr-2 py-1.5 text-left text-[13px] outline-none ${searchTerm ? 'text-gray-700' : 'text-gray-400'}`}
+                    >
+                      {searchTerm || tr('Search by brand, generic name, category, or disease...', 'Maghanap ayon sa brand, generic name, kategorya, o sakit...')}
+                    </button>
                     {searchTerm && (
                       <button
                         onClick={() => { setSearchTerm(''); setCurrentPage(1); }}
@@ -1238,87 +1113,6 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                   </div>
                 </div>
 
-                {/* Suggestions Dropdown */}
-                {showSuggestions && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50">
-                    <div className="flex items-center justify-between mb-3 px-1">
-                      <h4 className="text-[12px] font-medium text-gray-500">{tr('Recent Searches', 'Mga Huling Hinanap')}</h4>
-                      {searchHistory.length > 0 && (
-                        <button
-                          onClick={() => clearSearchHistory()}
-                          className="text-[11px] font-bold text-primary hover:text-blue-700 transition"
-                        >
-                          {tr('Clear All', 'I-clear Lahat')}
-                        </button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-1 gap-1 mb-4">
-                      {searchHistory.length > 0 ? (
-                        searchHistory.map((term, idx) => (
-                          <div
-                            key={`${term}-${idx}`}
-                            className="flex items-center justify-between p-2 hover:bg-blue-50/50 rounded-xl cursor-pointer group transition"
-                            onClick={() => {
-                              setSelectedCategory({ category: 'All', subCategory: 'All' });
-                              setSearchTerm(term);
-                              setCurrentPage(1);
-                              setShowSuggestions(false);
-                              scrollToTable();
-                            }}
-                          >
-                            <div className="flex items-center gap-2">
-                              <i className="fa-solid fa-clock-rotate-left text-gray-300 text-[11px]" />
-                              <span className="text-[13px] text-gray-600 font-medium">{term}</span>
-                            </div>
-                            <button
-                              onClick={e => { e.stopPropagation(); removeSearchHistoryItem(term); }}
-                              className="p-1"
-                              aria-label={tr(`Remove ${term}`, `Alisin ang ${term}`)}
-                            >
-                              <i className="fa-solid fa-xmark text-gray-300 hover:text-red-500 text-[10px] transition opacity-0 group-hover:opacity-100" />
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="col-span-full py-8 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100">
-                          <i className="fa-solid fa-ghost text-gray-300 text-2xl mb-3 block" />
-                          <p className="text-xs font-semibold text-gray-400">{tr('No search history found', 'Wala pang search history')}</p>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between mb-3 px-1">
-                      <h4 className="text-[12px] font-medium text-gray-500">{tr('Suggested', 'Mungkahi')}</h4>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2 max-h-[280px] overflow-y-auto">
-                      {suggestedProducts.map(sp => (
-                        <div
-                          key={sp._id}
-                          className="flex items-center gap-3 p-2 hover:bg-blue-50/50 rounded-xl cursor-pointer transition group"
-                          onClick={() => {
-                            setSelectedCategory({ category: 'All', subCategory: 'All' });
-                            setSearchTerm(sp.brandName || sp.name || '');
-                            setCurrentPage(1);
-                            setShowSuggestions(false);
-                            scrollToTable();
-                          }}
-                        >
-                          <div className="w-10 h-10 bg-white border border-gray-100 p-1.5 rounded-lg flex items-center justify-center overflow-hidden">
-                            <img
-                              src={getProductImage(sp, 80)}
-                              className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition duration-300"
-                              alt={sp.brandName || sp.name || tr('Product', 'Produkto')}
-                              onError={(e) => { const img = e.currentTarget; img.onerror = null; img.src = '/assets/no-image.png'; }}
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[13px] font-bold text-gray-800 truncate">{sp.brandName || sp.name}</p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">{sp.category?.category || 'General'}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
             </div>
