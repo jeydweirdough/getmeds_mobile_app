@@ -7,6 +7,7 @@ import { usePoints } from '@/lib/PointsCard';
 import { CategoryCard, useCatalogueCategories } from '@/lib/CategoryCard';
 import { typeByValue } from '@/lib/audienceTypes';
 import { useLang } from '@/lib/i18n';
+import { SEARCH_PLACEHOLDER } from '@/lib/searchCopy';
 import { HealthArticles, QuickActions } from './HomeSections';
 import { WeatherCard } from './WeatherCard';
 import { UploadRxIcon } from '@/lib/BrandIcons';
@@ -339,7 +340,7 @@ function AppHome() {
             className="flex h-[46px] w-full items-center rounded-full pl-11 pr-12 text-[13.5px] text-gray-400"
             style={{ background: GROUND }}
           >
-            {tr('Search medicine', 'Maghanap ng gamot')}
+            {tr(...SEARCH_PLACEHOLDER)}
           </a>
           <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-gray-400" />
           {/* A visual-search shortcut in spirit: there is no image search to

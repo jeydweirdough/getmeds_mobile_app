@@ -1,4 +1,5 @@
 import { translate as t } from '@/lib/i18n';
+import { hasSeen as onboarded, ONBOARDING_DONE_EVENT } from '@/components/Onboarding';
 /*
  * Getmeds cookie consent, and website analytics that only run after a "yes".
  * Port of getmeds_frontend/public/components/analytics-consent.js (loaded on every
@@ -637,6 +638,8 @@ export function initGetmedsConsent(): void {
       saveConsent(false, 'gpc');
       send('consent', { decision: 'rejected', source: 'gpc' });
       showNotice();
+    } else if (!onboarded()) {
+      window.addEventListener(ONBOARDING_DONE_EVENT, showBanner, { once: true });
     } else {
       showBanner();
     }

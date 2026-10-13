@@ -271,13 +271,21 @@ function Cart({
   const autoFilled = React.useRef<Partial<typeof BLANK>>({});
   // Set once the visitor picks an audience themselves; a later fill keeps it.
   const typePicked = React.useRef(false);
+  // Set by "Change type": they asked for the picker, so a late fill must not skip it.
+  const pickerAsked = React.useRef(false);
 
   const applyPrefill = useCallback(() => {
     if (!device.current && !server.current) return;
     const d: SavedDetails = { ...(device.current || {}), ...(server.current || {}) };
     saved.current = d;
     const known = typeByValue(d.userType) || null;
-    if (known) setType((t) => (t && typePicked.current ? t : known));
+    if (known) {
+      setType((t) => (t && typePicked.current ? t : known));
+      // The account loads after the screen does, so "Request a quote" can be
+      // tapped before the profile's type is known. When it arrives, carry on
+      // past the picker instead of asking something the profile already says.
+      if (!typePicked.current && !pickerAsked.current) setStep((s) => (s === 'type' ? 'form' : s));
+    }
 
     const fill = formFor(known);
     // Snapshot first: the updater may run after the ref below has moved on.
@@ -768,7 +776,7 @@ function Cart({
           </>
         ) : step === 'form' && type ? (
           <>
-            <button type="button" onClick={() => setStep('type')} className="mb-4 self-start text-[13px] font-semibold text-gray-400">
+            <button type="button" onClick={() => { pickerAsked.current = true; setStep('type'); }} className="mb-4 self-start text-[13px] font-semibold text-gray-400">
               <i className="fa-solid fa-chevron-left mr-1.5 text-[11px]"></i>{tr('Change type', 'Palitan ang type')}
             </button>
             <h1 className="text-2xl font-semibold text-gray-900">{tr('Request a quote', 'Humingi ng quote')}</h1>

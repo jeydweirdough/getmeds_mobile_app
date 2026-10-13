@@ -25,6 +25,8 @@ import { TOUR_START_EVENT } from '@/components/GuidedTour';
  */
 
 const SEEN_KEY = 'getmeds:onboarded';
+/** Fired when the slides close. The cookie banner waits for it rather than covering slide 1. */
+export const ONBOARDING_DONE_EVENT = 'getmeds:onboarding-done';
 const BRAND = '#1D9FDA';
 const BRAND_GREEN = '#61A644';
 const IMG = '/assets/onboarding';
@@ -32,7 +34,7 @@ const IMG = '/assets/onboarding';
 const GROUND = BRAND;
 const GROUND_RGB = '29,159,218';
 
-const hasSeen = () => {
+export const hasSeen = () => {
   try {
     return window.localStorage.getItem(SEEN_KEY) === '1';
   } catch {
@@ -273,6 +275,7 @@ export default function Onboarding() {
     setLeaving(true);
     window.setTimeout(() => {
       setOpen(false);
+      window.dispatchEvent(new Event(ONBOARDING_DONE_EVENT));
       // Hand over to the home-screen tour (GuidedTour), which runs once.
       window.dispatchEvent(new Event(TOUR_START_EVENT));
     }, 280);

@@ -17,6 +17,7 @@ import { CatalogueRow, cartItemFor, displayName, productImage, productUrl, rxReq
 import { Stars, type ReviewsData } from '@/lib/ProductReviews';
 import { call } from '@/lib/rewards';
 import { useLang } from '@/lib/i18n';
+import { SEARCH_PLACEHOLDER } from '@/lib/searchCopy';
 
 
 interface ProductWithCategory extends Omit<SanityProduct, 'category'> {
@@ -1099,7 +1100,7 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                       onClick={() => goTo('/search')}
                       className={`w-full truncate bg-transparent border-none pl-2.5 pr-2 py-1.5 text-left text-[13px] outline-none ${searchTerm ? 'text-gray-700' : 'text-gray-400'}`}
                     >
-                      {searchTerm || tr('Search by brand, generic name, category, or disease...', 'Maghanap ayon sa brand, generic name, kategorya, o sakit...')}
+                      {searchTerm || tr(...SEARCH_PLACEHOLDER)}
                     </button>
                     {searchTerm && (
                       <button
