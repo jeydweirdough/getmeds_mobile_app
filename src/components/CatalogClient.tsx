@@ -8,6 +8,7 @@ import { AddToCart } from '@/lib/AddToCart';
 import { urlFor } from '@/lib/sanity';
 import type { Product as SanityProduct, Category } from '@/types/sanity';
 import { sortByFeaturedOrder } from '@/lib/categoryImageKey';
+import { folderLabel } from '@/lib/CategoryCard';
 import { setPageMeta, injectJsonLd, removeJsonLd, specialtyUrl, conditionReviewFields, ogImageForFolder, CONDITIONS_OG_IMAGE, ORGANIZATION_ID } from '@/lib/seo';
 import { folderDisplayName } from '@/lib/queries';
 import { usePageReady } from '@/lib/handoff';
@@ -1073,6 +1074,12 @@ export default function CatalogClient(_props: { initialFolder?: string } = {}) {
                 <h1 className="text-xl font-semibold text-gray-900 leading-snug tracking-tight">
                   {conditionName ? (lang === 'tl' ? conditionHeadingTl(conditionName) : conditionHeading(conditionName)) : displayCategory === 'All' ? tr('Products', 'Mga Produkto') : displayCategory}
                 </h1>
+                {/* Opened from a folder ("/cancer-medicines"): its name goes under the
+                    category, as on the Categories cards ("Oncology" over "Cancer Medicines"). */}
+                {!conditionName && activeFolder && selectedCategory.category !== 'All' && (() => {
+                  const { subtitle } = folderLabel(activeFolder, new Map([[activeFolder, selectedCategory.category]]));
+                  return subtitle ? <p className="mt-0.5 text-[13px] text-gray-500">{subtitle}</p> : null;
+                })()}
               </div>
 
               {/* Check Products */}

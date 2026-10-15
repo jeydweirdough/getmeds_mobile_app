@@ -8,12 +8,12 @@ import {
   CatalogueRow,
   ProductRow,
   displayName,
-  prettyFolder,
   productImage,
   productUrl,
   rxRequired,
   specLine,
 } from '@/lib/catalogueItem';
+import { folderLabel, useCategoryNames } from '@/lib/CategoryCard';
 import { goBack } from '@/platform/navigation';
 import { useLang } from '@/lib/i18n';
 import { SEARCH_PLACEHOLDER } from '@/lib/searchCopy';
@@ -87,9 +87,12 @@ const writeRecents = (persistent: boolean, list: string[]) => {
   }
 };
 
-/** Does this row answer the query at all? One rule, used by every mode. */
-const matches = (p: CatalogueRow, q: string) =>
-  [p.name, p.brandName, p.genericName, p.subCategory, p.categoryFolder]
+/**
+ * Does this row answer the query at all? One rule, used by every mode. The
+ * category name counts too, so "oncology" finds what the Oncology filter shows.
+ */
+const matches = (p: CatalogueRow, q: string, names: Map<string, string>) =>
+  [p.name, p.brandName, p.genericName, p.subCategory, p.categoryFolder, names.get((p.categoryFolder || '').trim())]
     .filter(Boolean)
     .some((v) => String(v).toLowerCase().includes(q));
 
@@ -124,6 +127,7 @@ export default function SearchClient() {
   const { tr } = useLang();
   const { data: raw, loading, error: catalogueError } = useProducts();
   const products = (raw || []) as CatalogueRow[];
+  const categoryNames = useCategoryNames();
 
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState<string | null>(null);
@@ -242,14 +246,14 @@ export default function SearchClient() {
   const preview = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (q.length < 2 || submitted) return [];
-    return products.filter((p) => matches(p, q)).slice(0, 4);
-  }, [query, products, submitted]);
+    return products.filter((p) => matches(p, q, categoryNames)).slice(0, 4);
+  }, [query, products, submitted, categoryNames]);
 
   const results = useMemo(() => {
     if (!submitted) return [];
     const q = submitted.toLowerCase();
-    return products.filter((p) => matches(p, q)).slice(0, 60);
-  }, [submitted, products]);
+    return products.filter((p) => matches(p, q, categoryNames)).slice(0, 60);
+  }, [submitted, products, categoryNames]);
 
   const categories = useMemo(() => {
     const acc = new Map<string, { count: number }>();
@@ -399,16 +403,23 @@ export default function SearchClient() {
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {categories.map(([folder]) => (
-                    <a
-                      key={folder}
-                      href={`/${folder}`}
-                      className="rounded-lg px-3 py-1.5 text-[12px] font-medium text-gray-600 transition active:scale-95"
-                      style={{ background: '#EEF0F3' }}
-                    >
-                      {prettyFolder(folder).replace(' Medicines', '')}
-                    </a>
-                  ))}
+                  {/* Named as on the Products filters ("Oncology"), with the folder's own
+                      name after it ("Cancer"), so a category under two folders still
+                      gives two chips you can tell apart. */}
+                  {categories.map(([folder]) => {
+                    const { name, subtitle } = folderLabel(folder, categoryNames);
+                    return (
+                      <a
+                        key={folder}
+                        href={`/${folder}`}
+                        className="rounded-lg px-3 py-1.5 text-[12px] font-medium text-gray-600 transition active:scale-95"
+                        style={{ background: '#EEF0F3' }}
+                      >
+                        {name}
+                        {subtitle && <span className="ml-1 font-normal text-gray-400">{subtitle.replace(' Medicines', '')}</span>}
+                      </a>
+                    );
+                  })}
                 </div>
               )}
             </section>

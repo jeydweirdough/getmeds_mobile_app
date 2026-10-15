@@ -14,6 +14,7 @@ import Onboarding from '@/components/Onboarding';
 import GuidedTour from '@/components/GuidedTour';
 import PwaTabbar from '@/lib/PwaTabbar';
 import PullToRefresh from '@/lib/PullToRefresh';
+import SwipeNavigator from '@/lib/SwipeNavigator';
 import { QueuedInquiryNotice } from '@/lib/QueuedInquiryNotice';
 import { useCategories } from '@/lib/useSanity';
 import { resolveRoute, type Route } from '@/platform/routes';
@@ -140,6 +141,7 @@ export default function App() {
       </main>
       <PwaTabbar />
       <PullToRefresh />
+      <SwipeNavigator />
       <ChromeExtras />
       <Onboarding />
       <GuidedTour />

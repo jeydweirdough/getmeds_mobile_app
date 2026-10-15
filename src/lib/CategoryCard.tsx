@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { CatalogueRow, prettyFolder, productImage } from '@/lib/catalogueItem';
 import { useLang } from '@/lib/i18n';
-import { goTo } from '@/platform/navigation';
+import { useCategories } from '@/lib/useSanity';
 
 /**
  * CategoryCard.tsx
@@ -42,7 +42,38 @@ const FOLDER_ICON: Record<string, string> = {
   'anti-inflammatory-medicines': 'fa-fire',
 };
 
-export type CategoryInfo = { count: number; images: string[] };
+export type CategoryInfo = { count: number; images: string[]; name: string; subtitle: string };
+
+/**
+ * Folder -> the category name the Products screen's filters show
+ * ("cancer-medicines" -> "Oncology"), from the same category documents, so a
+ * group is called the same thing on every screen. Empty until they load.
+ */
+export function useCategoryNames(): Map<string, string> {
+  const { data } = useCategories();
+  return useMemo(() => {
+    const names = new Map<string, string>();
+    for (const cat of data || []) {
+      if (!cat.category) continue;
+      const folders = cat.folders && cat.folders.length ? cat.folders : [cat.slug?.current];
+      for (const f of folders) if (f && !names.has(f)) names.set(f, cat.category);
+    }
+    return names;
+  }, [data]);
+}
+
+/**
+ * A folder's title and subtext: "Oncology" over "Cancer Medicines". Before the
+ * category names load, or for a folder with none, the folder name is the title
+ * and there is no subtext; likewise when the subtext would only repeat it.
+ */
+export function folderLabel(folder: string, names: Map<string, string>): { name: string; subtitle: string } {
+  const pretty = prettyFolder(folder);
+  const name = names.get(folder);
+  if (!name) return { name: pretty.replace(' Medicines', ''), subtitle: '' };
+  const same = (a: string) => a.toLowerCase() === name.toLowerCase();
+  return { name, subtitle: same(pretty) || same(pretty.replace(' Medicines', '')) ? '' : pretty };
+}
 
 /**
  * Every category folder in the catalogue, biggest first, with a few product
@@ -50,18 +81,19 @@ export type CategoryInfo = { count: number; images: string[] };
  * attached yet just show the count.
  */
 export function useCatalogueCategories(products: CatalogueRow[]): [string, CategoryInfo][] {
+  const names = useCategoryNames();
   return useMemo(() => {
     const acc = new Map<string, CategoryInfo>();
     for (const p of products) {
       const f = (p.categoryFolder || '').trim();
       if (!f) continue;
-      const cur = acc.get(f) || { count: 0, images: [] };
+      const cur = acc.get(f) || { count: 0, images: [], ...folderLabel(f, names) };
       cur.count += 1;
       if (cur.images.length < CATEGORY_AVATARS && p.image && p.image.asset) cur.images.push(productImage(p, 96));
       acc.set(f, cur);
     }
     return [...acc.entries()].sort((a, b) => b[1].count - a[1].count);
-  }, [products]);
+  }, [products, names]);
 }
 
 /**
@@ -80,7 +112,7 @@ export function CategoryCard({
   className?: string;
 }) {
   const { tr } = useLang();
-  const name = prettyFolder(folder).replace(' Medicines', '');
+  const { name, subtitle } = info;
   const extra = info.count - info.images.length;
   const bg = CATEGORY_CARD_COLORS[index % CATEGORY_CARD_COLORS.length];
   return (
@@ -89,8 +121,8 @@ export function CategoryCard({
       className={`relative flex h-[178px] flex-col overflow-hidden rounded-[22px] p-4 text-white transition active:scale-[0.98] ${className}`}
       style={{ background: bg }}
       aria-label={tr(
-        `${name}, ${info.count} ${info.count === 1 ? 'medicine' : 'medicines'}. View`,
-        `${name}, ${info.count} gamot. Tingnan`,
+        `${name}${subtitle ? `, ${subtitle}` : ''}, ${info.count} ${info.count === 1 ? 'medicine' : 'medicines'}. View`,
+        `${name}${subtitle ? `, ${subtitle}` : ''}, ${info.count} gamot. Tingnan`,
       )}
     >
       {/* Soft rings in the top-right corner, as in the slider. */}
@@ -104,7 +136,8 @@ export function CategoryCard({
       </div>
 
       {/* Name and count on the left, photo stack on the right. The name keeps to
-          one line (a size down, with smaller photos, so there is room for it). */}
+          one line (a size down, with smaller photos, so there is room for it). It is
+          the category the Products filters show ("Oncology"). */}
       <div className="relative mt-2.5 flex items-end justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="truncate text-[17px] font-semibold leading-[1.2]">{name}</p>
@@ -143,22 +176,18 @@ export function CategoryCard({
       </div>
 
       <div className="relative mt-auto flex items-center justify-between gap-2 pt-3">
-        {/* Its own button inside the card's link: it goes to the prescription
-            upload, not into the category (the link handler leaves it alone). */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            goTo('/order-medicines/patients');
-          }}
-          className="flex min-w-0 items-center gap-2 py-1.5 text-[10.5px] leading-tight text-white/90 transition active:scale-[0.97]"
-        >
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
-            <i className="fa-solid fa-file-prescription text-[10px]" />
+        {/* The folder's own name ("Cancer Medicines") under the category name;
+            empty when it would only repeat it. */}
+        {subtitle ? (
+          <span className="flex min-w-0 items-center gap-2 py-1.5 text-[11.5px] leading-tight text-white/90">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
+              <i className={`fa-solid ${FOLDER_ICON[folder] || 'fa-pills'} text-[10px]`} />
+            </span>
+            <span className="truncate">{subtitle}</span>
           </span>
-          <span className="truncate">{tr('Request with your Rx', 'Mag-request gamit ang Rx mo')}</span>
-        </button>
+        ) : (
+          <span />
+        )}
         <span
           className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[12px] font-semibold"
           style={{ color: '#172B4D' }}
