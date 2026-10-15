@@ -6,8 +6,8 @@ import { useLang } from '@/lib/i18n';
 /**
  * ProfileCard.tsx
  * ─────────────────────────────────────────────
- * The top of the app's account screen: a sky cover, the customer's picture
- * inside a progress ring, their name, three numbers, and three shortcuts.
+ * The top of the app's account screen: a brand cover, the customer's picture
+ * inside a progress ring, their name, three numbers, and the shortcuts.
  *
  * The ring shows how complete the saved details are. Those details fill in
  * every inquiry form, so a full ring means a request is a few taps; that is
@@ -21,6 +21,8 @@ const BRAND = '#1D9FDA';
 export interface ProfileStat {
   label: string;
   value: string;
+  /** Font Awesome icon drawn beside the value. */
+  icon?: string;
   onClick?: () => void;
 }
 
@@ -42,8 +44,11 @@ interface Props {
   actions: ProfileAction[];
 }
 
-const RING = 108;
+const RING = 96;
 const STROKE = 4;
+
+/** The profile cover: brand blue into green, bright enough to carry the card. */
+const COVER = 'linear-gradient(135deg,#1D9FDA 0%,#3BB0E0 45%,#61A644 100%)';
 
 function Ring({ pct }: { pct: number }) {
   const r = (RING - STROKE) / 2;
@@ -194,103 +199,137 @@ export function SignInSheet({ open, onClose, children }: { open: boolean; onClos
   );
 }
 
+/**
+ * Laid out like a creator profile card: a bold cover, the picture overlapping
+ * its lower-left corner, the name left-aligned with the edit button beside it,
+ * a status chip, the numbers split by dividers, and ONE full-width call to
+ * action. The remaining shortcuts sit underneath as quiet links, so the first
+ * action is unmistakably the main one.
+ */
 export default function ProfileCard({ name, subtitle, avatar, completeness, onEdit, stats, actions }: Props) {
   const { tr } = useLang();
   const initial = (name || 'G').charAt(0).toUpperCase();
   const pct = Math.max(0, Math.min(100, Math.round(completeness)));
+  const [primary, ...rest] = actions;
 
   return (
     <section
-      className="mb-5 rounded-[28px] bg-white p-2 pb-3"
+      className="mb-5 rounded-[28px] bg-white p-2 pb-4"
       aria-label={tr('Your profile', 'Ang profile mo')}
     >
-      {/* Cover: a soft sky, drawn in CSS so it costs no download. */}
-      <div
-        className="relative h-[112px] overflow-hidden rounded-[22px]"
-        style={{
-          background:
-            'radial-gradient(60% 55% at 30% 70%, rgba(255,255,255,.85), transparent 70%),' +
-            'radial-gradient(45% 45% at 62% 45%, rgba(255,255,255,.7), transparent 70%),' +
-            'radial-gradient(40% 40% at 88% 80%, rgba(255,255,255,.55), transparent 70%),' +
-            'linear-gradient(180deg,#BFD9EE 0%,#D8E8F4 60%,#E6EFF6 100%)',
-        }}
-      >
+      {/* Cover: a plain brand gradient, with the Getmeds cross in the corner. */}
+      <div className="relative h-[132px] overflow-hidden rounded-[22px]" style={{ background: COVER }} aria-hidden="true">
+        <img src="/assets/getmeds-cross-white.png" alt="" className="absolute bottom-3 right-4 h-20 w-auto opacity-90" />
+      </div>
+
+      {/* Picture inside the completeness ring, overlapping the cover's corner. */}
+      <div className="-mt-[52px] px-3">
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={tr(`Profile ${pct}% complete. Edit profile`, `${pct}% kumpleto ang profile. I-edit ang profile`)}
+          className="relative block rounded-full bg-white p-[3px]"
+          style={{ width: RING + 6, height: RING + 6 }}
+        >
+          <span className="relative block" style={{ width: RING, height: RING }}>
+            <Ring pct={pct} />
+            <span
+              className="absolute inset-[7px] flex items-center justify-center overflow-hidden rounded-full text-[30px] font-bold text-white"
+              style={{ background: BRAND }}
+            >
+              {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover" /> : initial}
+            </span>
+          </span>
+        </button>
+      </div>
+
+      {/* Name and role, with the edit button where the reference has its bookmark. */}
+      <div className="mt-2.5 flex items-start gap-3 px-3">
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-[21px] font-semibold leading-tight text-gray-900">{name || tr('Guest', 'Bisita')}</h1>
+          <p className="mt-0.5 truncate text-[13px] text-gray-500">{subtitle}</p>
+        </div>
         <button
           type="button"
           onClick={onEdit}
           data-tour="profile-edit"
           aria-label={tr('Edit profile', 'I-edit ang profile')}
-          className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-700 backdrop-blur"
-          style={{ boxShadow: '0 2px 8px rgba(23,43,77,.12)' }}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-700"
         >
           <i className="fa-solid fa-pen text-[13px]" />
         </button>
       </div>
 
-      {/* Picture inside the completeness ring, overlapping the cover. */}
-      <div className="-mt-[62px] flex flex-col items-center">
-        <div className="relative rounded-full bg-white p-[3px]" style={{ width: RING + 6, height: RING + 6 }}>
-          <div className="relative" style={{ width: RING, height: RING }}>
-            <Ring pct={pct} />
-            <span
-              className="absolute inset-[8px] flex items-center justify-center overflow-hidden rounded-full text-[32px] font-bold text-white"
-              style={{ background: BRAND }}
-            >
-              {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover" /> : initial}
-            </span>
-          </div>
-        </div>
-        <button type="button" onClick={onEdit} className="mt-1.5 text-[11.5px] font-medium text-gray-400">
+      {/* Status chip: how complete the details are that fill in every request. */}
+      <div className="mt-3 flex flex-wrap items-center gap-1.5 px-3">
+        <button
+          type="button"
+          onClick={onEdit}
+          className={`inline-flex items-center gap-1.5 rounded-full py-1 pl-1 pr-3 text-[12px] font-semibold ${
+            pct >= 100 ? 'bg-[#EEF7EA] text-[#4E8F35]' : 'bg-[#F1F8FE] text-[#1D9FDA]'
+          }`}
+        >
+          <span className={`flex h-5 w-5 items-center justify-center rounded-full text-white ${pct >= 100 ? 'bg-[#61A644]' : 'bg-[#1D9FDA]'}`}>
+            <i className={`fa-solid ${pct >= 100 ? 'fa-check' : 'fa-user-pen'} text-[9px]`} />
+          </span>
           {pct >= 100
             ? tr('Profile complete', 'Kumpleto na ang profile')
-            : tr(`Profile ${pct}% complete · Finish it`, `${pct}% kumpleto ang profile · Tapusin na`)}
+            : tr(`Profile ${pct}% · Finish it`, `Profile ${pct}% · Tapusin na`)}
         </button>
       </div>
 
-      <div className="mt-2 px-4 text-center">
-        <h1 className="truncate text-[21px] font-semibold text-gray-900">{name || tr('Guest', 'Bisita')}</h1>
-        <p className="mx-auto mt-1 max-w-[280px] text-[13px] leading-relaxed text-gray-500">{subtitle}</p>
-      </div>
-
-      {/* Numbers, in an inset panel. */}
-      <div
-        data-tour="profile-stats"
-        className="mx-2 mt-4 grid grid-cols-3 rounded-[20px] bg-[#F7F9FC] py-3.5"
-        style={{ boxShadow: 'inset 0 1px 2px rgba(23,43,77,.04)' }}
-      >
+      {/* Numbers, split by hairlines between them only. */}
+      <div data-tour="profile-stats" className="mx-3 mt-4 grid grid-cols-3 divide-x divide-gray-100 py-1">
         {stats.map((s) => {
           const body = (
             <>
-              <span className="block text-[18px] font-semibold tabular-nums text-gray-900">{s.value}</span>
-              <span className="mt-0.5 block text-[12px] text-gray-500">{s.label}</span>
+              <span className="flex items-center justify-center gap-1.5 text-[17px] font-semibold tabular-nums text-gray-900">
+                <i className={`fa-solid ${s.icon ?? 'fa-circle'} text-[12px] text-[#1D9FDA]`} aria-hidden="true" />
+                {s.value}
+              </span>
+              <span className="mt-0.5 block text-[11.5px] text-gray-500">{s.label}</span>
             </>
           );
           return s.onClick ? (
-            <button key={s.label} type="button" onClick={s.onClick} className="text-center">
+            <button key={s.label} type="button" onClick={s.onClick} className="px-1 text-center">
               {body}
             </button>
           ) : (
-            <div key={s.label} className="text-center">
+            <div key={s.label} className="px-1 text-center">
               {body}
             </div>
           );
         })}
       </div>
 
-      {/* Shortcuts. */}
-      <div className="mt-3 flex justify-center gap-6">
-        {actions.map((a) => (
+      {/* One clear call to action, then the rest as quiet links. */}
+      {primary && (
+        <div className="mt-4 px-3">
           <button
-            key={a.label}
             type="button"
-            onClick={a.onClick}
-            className={`flex min-w-[64px] flex-col items-center gap-1 rounded-xl px-2 py-1.5 ${a.tone === 'danger' ? 'text-red-400' : 'text-gray-600'}`}
+            onClick={primary.onClick}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-gray-900 py-3.5 text-[14px] font-semibold text-white active:scale-[.99]"
           >
-            <i className={`fa-solid ${a.icon} text-[16px]`} aria-hidden="true" />
-            <span className="text-[11px] font-medium">{a.label}</span>
+            <i className={`fa-solid ${primary.icon} text-[13px]`} aria-hidden="true" />
+            {primary.label}
           </button>
-        ))}
-      </div>
+        </div>
+      )}
+      {rest.length > 0 && (
+        <div className="mt-2 flex justify-center gap-2">
+          {rest.map((a) => (
+            <button
+              key={a.label}
+              type="button"
+              onClick={a.onClick}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[12.5px] font-semibold ${a.tone === 'danger' ? 'text-red-500' : 'text-gray-600'}`}
+            >
+              <i className={`fa-solid ${a.icon} text-[11.5px]`} aria-hidden="true" />
+              {a.label}
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

@@ -129,6 +129,115 @@ function Chip({ id, on, onClick, children }: { id: string; on: boolean; onClick:
   );
 }
 
+/** A titled card that groups one part of the request form. */
+function Section({ icon, title, hint, aside, children }: {
+  icon: string;
+  title: React.ReactNode;
+  hint?: React.ReactNode;
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl bg-white p-4">
+      <header className="flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+          style={{ background: 'linear-gradient(135deg,#eaf6fd,#eef7ea)' }}>
+          <i className={`fa-solid ${icon} text-[13px] text-[#1D9FDA]`}></i>
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[14px] font-semibold leading-tight text-gray-900">{title}</h2>
+          {hint && <p className="mt-0.5 text-[11.5px] leading-snug text-gray-500">{hint}</p>}
+        </div>
+        {aside}
+      </header>
+      <div className="mt-3.5 space-y-3">{children}</div>
+    </section>
+  );
+}
+
+/**
+ * The patient form's two-part progress line. Details first (with the security
+ * check), documents second — so the long, fiddly part comes after the easy
+ * part is already done.
+ */
+function Stepper({ part, labels }: { part: 1 | 2; labels: [string, string] }) {
+  return (
+    <ol className="mt-5 flex items-center gap-2" aria-label="Progress">
+      {labels.map((label, i) => {
+        const n = i + 1;
+        const done = part > n;
+        const on = part === n;
+        return (
+          <React.Fragment key={label}>
+            <li className="flex items-center gap-2" aria-current={on ? 'step' : undefined}>
+              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold transition ${
+                done ? 'bg-[#61A644] text-white' : on ? 'bg-[#1D9FDA] text-white' : 'bg-gray-100 text-gray-400'
+              }`}>
+                {done ? <i className="fa-solid fa-check text-[11px]"></i> : n}
+              </span>
+              <span className={`text-[12.5px] font-semibold ${on || done ? 'text-gray-900' : 'text-gray-400'}`}>{label}</span>
+            </li>
+            {n === 1 && (
+              <li aria-hidden="true" className="h-[3px] flex-1 overflow-hidden rounded-full bg-gray-100">
+                <span className={`block h-full rounded-full bg-[#61A644] transition-all duration-300 ${part > 1 ? 'w-full' : 'w-0'}`} />
+              </li>
+            )}
+          </React.Fragment>
+        );
+      })}
+    </ol>
+  );
+}
+
+/**
+ * A tappable upload area in place of the bare browser file input, which on a
+ * phone reads as "Choose Files / No file chosen" and says nothing about what
+ * is wanted or whether it worked. The real input stays inside (visually
+ * hidden), keeping its id so the wallet picker can still clear it.
+ */
+function UploadTile({ id, multiple = false, files, fromWallet, onFiles, emptyTitle, emptyHint, replaceHint }: {
+  id: string;
+  multiple?: boolean;
+  files: File[];
+  /** The wallet label when the file came from the wallet rather than an upload. */
+  fromWallet?: string;
+  onFiles: (files: File[]) => void;
+  emptyTitle: string;
+  emptyHint: string;
+  replaceHint: string;
+}) {
+  const has = files.length > 0;
+  return (
+    <label
+      htmlFor={id}
+      className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed p-3 transition active:scale-[.99] ${
+        has ? 'border-[#61A644]/40 bg-[#F4FAF0]' : 'border-[#1D9FDA]/30 bg-[#F7FBFE] hover:border-[#1D9FDA]/60'
+      }`}
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
+        <i className={`fa-solid ${has ? 'fa-circle-check text-[#61A644]' : 'fa-cloud-arrow-up text-[#1D9FDA]'} text-[16px]`}></i>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[13px] font-semibold text-gray-800">
+          {has ? (fromWallet || files.map((f) => f.name).join(', ')) : emptyTitle}
+        </span>
+        <span className="block text-[11px] text-gray-500">{has ? replaceHint : emptyHint}</span>
+      </span>
+      {has && files.length > 1 && (
+        <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-[#4E8F35]">{files.length}</span>
+      )}
+      <input
+        id={id}
+        type="file"
+        multiple={multiple}
+        accept={ALLOWED_FILE_TYPES_ACCEPT}
+        onChange={(e) => onFiles(Array.from(e.target.files || []))}
+        className="sr-only"
+      />
+    </label>
+  );
+}
+
 function Cart({
   app,
   member,
@@ -205,6 +314,23 @@ function Cart({
   const [walletNote, setWalletNote] = useState('');
 
   const turnstile = useTurnstile(step === 'form');
+  /**
+   * A patient's form is split in two: details + security check, then the
+   * documents. Part 1 stays mounted (only hidden) while on part 2, because the
+   * Turnstile widget lives there — unmounting it would orphan the widget and
+   * lose its expiry callback, so an expired token would go unnoticed.
+   */
+  const [part, setPart] = useState<1 | 2>(1);
+  const formRef = React.useRef<HTMLFormElement>(null);
+  const topRef = React.useRef<HTMLDivElement>(null);
+  const goPart = (p: 1 | 2) => {
+    setPart(p);
+    setError('');
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  // A different audience or a trip back to the list starts again at part 1.
+  useEffect(() => { if (step !== 'form') setPart(1); }, [step]);
+  useEffect(() => { setPart(1); }, [type]);
 
   /**
    * Autofill from the account.
@@ -430,6 +556,16 @@ function Cart({
     if (chosen.length === 0 || !type) return;
     setError('');
 
+    // Enter in a part-1 field submits the form; for a patient that means
+    // "continue", not "send". The browser has already checked the required
+    // fields by the time this runs.
+    if (twoPart && part === 1) {
+      if (turnstile.enabled && !turnstile.token) {
+        return setError(tr('Please complete the security check first.', 'Pakikumpleto muna ang security check.'));
+      }
+      return goPart(2);
+    }
+
     // Same gates the website applies before a patient may submit — checked
     // before the spinner starts, so a refusal is immediate rather than a
     // pretend send followed by an error.
@@ -645,6 +781,19 @@ function Cart({
   // The choice only exists when there is more than one script to need; with a
   // single Rx item the per-medicine slot IS the one upload.
   const useOneRx = oneRx && rxNeeded.length > 1;
+  /** "Done" / "Required" beside a section title, so progress reads at a glance. */
+  const statusPill = (done: boolean) => (
+    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${done ? 'bg-[#EEF7EA] text-[#4E8F35]' : 'bg-gray-100 text-gray-500'}`}>
+      {done
+        ? <><i className="fa-solid fa-check mr-1 text-[9px]"></i>{tr('Done', 'Tapos na')}</>
+        : tr('Required', 'Kailangan')}
+    </span>
+  );
+  // Only patients attach documents, so only their form needs a second part.
+  const twoPart = type?.kind === 'patient';
+  const rxDone = useOneRx
+    ? Boolean(rxByItem[SHARED_RX]?.length)
+    : rxNeeded.every((it) => rxByItem[it.id]?.length);
   const empty = items !== null && items.length === 0;
   const field = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-[13.5px] outline-none focus:border-primary';
   const count = chosen.length;
@@ -656,12 +805,14 @@ function Cart({
    * so the two modes cannot drift apart.
    */
   const rxSlot = (slotId: string, walletItem: CartItem) => (
-    <>
-      <input
+    <div className="space-y-2">
+      <UploadTile
         id={`rx-file-${slotId}`}
-        type="file" multiple accept={ALLOWED_FILE_TYPES_ACCEPT}
-        onChange={(e) => {
-          const { valid, errors } = validateFiles(Array.from(e.target.files || []));
+        multiple
+        files={rxByItem[slotId] || []}
+        fromWallet={walletUsed[slotId] ? tr(`From your wallet: ${walletUsed[slotId]}`, `Mula sa iyong wallet: ${walletUsed[slotId]}`) : undefined}
+        onFiles={(picked) => {
+          const { valid, errors } = validateFiles(picked);
           setError(errors[0] || '');
           setRxByItem((prev) => ({ ...prev, [slotId]: valid }));
           if (member) {
@@ -669,26 +820,18 @@ function Cart({
             setWalletUsed(({ [slotId]: _gone, ...rest }) => rest);
           }
         }}
-        className="mt-1 w-full text-[12px] file:mr-3 file:rounded-full file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-[12px] file:font-semibold"
+        emptyTitle={tr('Tap to upload prescription', 'I-tap para i-upload ang reseta')}
+        emptyHint={tr('Photo or PDF · several pages allowed', 'Litrato o PDF · puwede ang ilang pahina')}
+        replaceHint={tr('Attached · tap to replace', 'Naka-attach · i-tap para palitan')}
       />
       {member && (
         <button id={`rx-wallet-${slotId}`} type="button" onClick={() => setWalletFor(walletItem)}
-          className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-[#F1F8FE] px-3 py-1.5 text-[12px] font-semibold text-[#1D9FDA]">
+          className="inline-flex items-center gap-1.5 rounded-full bg-[#F1F8FE] px-3 py-1.5 text-[12px] font-semibold text-[#1D9FDA]">
           <i className="fa-solid fa-wallet text-[10.5px]"></i>{tr('Use from wallet', 'Gamitin mula sa wallet')}
         </button>
       )}
-      {rxByItem[slotId]?.length ? (
-        <p className="mt-1 text-[11.5px] text-green-700">
-          {walletUsed[slotId]
-            ? tr(`From your wallet: ${walletUsed[slotId]}`, `Mula sa iyong wallet: ${walletUsed[slotId]}`)
-            : tr(
-                `${rxByItem[slotId].length} file${rxByItem[slotId].length === 1 ? '' : 's'} attached`,
-                `${rxByItem[slotId].length} ${rxByItem[slotId].length === 1 ? 'file' : 'mga file'} ang naka-attach`
-              )}
-        </p>
-      ) : null}
       {member && rxByItem[slotId]?.length && !walletUsed[slotId] ? (
-        <label htmlFor={`rx-save-${slotId}`} className="mt-1.5 flex items-center gap-2">
+        <label htmlFor={`rx-save-${slotId}`} className="flex items-center gap-2">
           <input
             id={`rx-save-${slotId}`}
             type="checkbox"
@@ -699,7 +842,7 @@ function Cart({
           <span className="text-[11.5px] text-gray-600">{tr('Save to my prescription wallet', 'I-save sa aking prescription wallet')}</span>
         </label>
       ) : null}
-    </>
+    </div>
   );
 
   return (
@@ -776,228 +919,334 @@ function Cart({
           </>
         ) : step === 'form' && type ? (
           <>
-            <button type="button" onClick={() => { pickerAsked.current = true; setStep('type'); }} className="mb-4 self-start text-[13px] font-semibold text-gray-400">
-              <i className="fa-solid fa-chevron-left mr-1.5 text-[11px]"></i>{tr('Change type', 'Palitan ang type')}
+            <div ref={topRef} className="scroll-mt-4" />
+            <button
+              type="button"
+              onClick={() => {
+                if (twoPart && part === 2) return goPart(1);
+                pickerAsked.current = true;
+                setStep('type');
+              }}
+              className="mb-4 self-start text-[13px] font-semibold text-gray-400"
+            >
+              <i className="fa-solid fa-chevron-left mr-1.5 text-[11px]"></i>
+              {twoPart && part === 2 ? tr('Back to details', 'Bumalik sa detalye') : tr('Change type', 'Palitan ang type')}
             </button>
-            <h1 className="text-2xl font-semibold text-gray-900">{tr('Request a quote', 'Humingi ng quote')}</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              {twoPart && part === 2 ? tr('Upload documents', 'Mag-upload ng mga dokumento') : tr('Request a quote', 'Humingi ng quote')}
+            </h1>
             <p className="mt-1.5 text-sm text-gray-500">
               {tr(type.label, type.labelTl ?? type.label)} · {tr(
                 `${count} product${count === 1 ? '' : 's'}`,
                 `${count} ${count === 1 ? 'produkto' : 'mga produkto'}`
               )}
             </p>
+            {twoPart && <Stepper part={part} labels={[tr('Your details', 'Iyong detalye'), tr('Documents', 'Mga dokumento')]} />}
 
-            <form onSubmit={submit} className="mt-6 space-y-3">
-              {member && type.kind === 'patient' && (
-                <div>
-                  <div className="mb-1.5 flex items-center justify-between px-0.5">
-                    <p className="text-[12.5px] font-semibold text-gray-700">{tr('Ordering for', 'Para kay')}</p>
-                    <button id="cart-add-patient" type="button" onClick={() => setScreen('patients')}
-                      className="text-[12px] font-semibold text-[#1D9FDA]">
-                      <i className="fa-solid fa-plus mr-1 text-[10px]"></i>{tr('Add patient', 'Magdagdag ng pasyente')}
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    <Chip id="cart-for-me" on={!forKey} onClick={() => orderFor('')}>
-                      <i className="fa-solid fa-user text-[10px]"></i>{tr('Me', 'Ako')}
-                    </Chip>
-                    {patients.map((p) => (
-                      <Chip key={p._key} id={`cart-for-${p._key}`} on={forKey === p._key} onClick={() => orderFor(p._key)}>
-                        {p.name}
-                        {p.relationship && <span className="font-normal opacity-70">{p.relationship}</span>}
-                      </Chip>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <input id="cart-name" required className={field}
-                placeholder={member && forKey ? tr("Patient's name *", 'Pangalan ng pasyente *') : tr('Your name *', 'Iyong pangalan *')} value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })} />
-
-              {type.fields.map((f) => (
-                <React.Fragment key={f.key}>
-                  {member && f.key === 'address' && (
+            <form ref={formRef} onSubmit={submit} className="mt-5 space-y-4">
+              {/* ── Part 1: details and the security check ──────────────────
+                  Hidden rather than unmounted on part 2; see `part`. */}
+              <div className={twoPart && part === 2 ? 'hidden' : 'space-y-4'}>
+                <Section
+                  icon={type.kind === 'patient' ? 'fa-user-injured' : 'fa-user'}
+                  title={type.kind === 'patient' ? tr('Patient details', 'Detalye ng pasyente') : tr('Your details', 'Iyong detalye')}
+                  hint={type.kind === 'patient'
+                    ? tr('Who the medicine is for.', 'Kung para kanino ang gamot.')
+                    : tr('So the right team can help you.', 'Para matulungan ka ng tamang team.')}
+                >
+                  {member && type.kind === 'patient' && (
                     <div>
                       <div className="mb-1.5 flex items-center justify-between px-0.5">
-                        <p className="text-[12.5px] font-semibold text-gray-700">{tr('Deliver to', 'Ide-deliver sa')}</p>
-                        <button id="cart-add-address" type="button" onClick={() => setScreen('addresses')}
+                        <p className="text-[12.5px] font-semibold text-gray-700">{tr('Ordering for', 'Para kay')}</p>
+                        <button id="cart-add-patient" type="button" onClick={() => setScreen('patients')}
                           className="text-[12px] font-semibold text-[#1D9FDA]">
-                          <i className="fa-solid fa-plus mr-1 text-[10px]"></i>{tr('Add address', 'Magdagdag ng address')}
+                          <i className="fa-solid fa-plus mr-1 text-[10px]"></i>{tr('Add patient', 'Magdagdag ng pasyente')}
                         </button>
                       </div>
-                      {addresses.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {addresses.map((a) => (
-                            <Chip key={a._key} id={`cart-address-${a._key}`}
-                              on={form.address.trim() === a.address.trim()}
-                              onClick={() => setForm((cur) => ({ ...cur, address: a.address }))}>
-                              <i className="fa-solid fa-location-dot text-[10px]"></i>
-                              {a.label || 'Address'}
-                              {a.isDefault && <span className="font-normal opacity-70">Default</span>}
-                            </Chip>
-                          ))}
-                        </div>
-                      )}
+                      <div className="flex flex-wrap gap-1.5">
+                        <Chip id="cart-for-me" on={!forKey} onClick={() => orderFor('')}>
+                          <i className="fa-solid fa-user text-[10px]"></i>{tr('Me', 'Ako')}
+                        </Chip>
+                        {patients.map((p) => (
+                          <Chip key={p._key} id={`cart-for-${p._key}`} on={forKey === p._key} onClick={() => orderFor(p._key)}>
+                            {p.name}
+                            {p.relationship && <span className="font-normal opacity-70">{p.relationship}</span>}
+                          </Chip>
+                        ))}
+                      </div>
                     </div>
                   )}
-                  <input
-                    id={`cart-${f.key}`}
-                    required={f.required}
-                    className={field}
-                    placeholder={f.required ? `${tr(f.label, f.labelTl ?? f.label)} *` : `${tr(f.label, f.labelTl ?? f.label)} ${tr('(optional)', '(opsyonal)')}`}
-                    value={form[f.key]}
-                    onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                  />
-                </React.Fragment>
-              ))}
 
-              <input required type="email" className={field} placeholder="Email *" value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })} />
-              <input required className={field} placeholder="Mobile number *" value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-              {type.kind === 'patient' && (
-                <>
-                  <label className="flex items-start gap-2.5 pt-1">
-                    <input type="checkbox" checked={sameAsPatient} onChange={(e) => setSameAsPatient(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-gray-300" />
-                    <span className="text-[12.5px] leading-snug text-gray-600">{tr('The contact person is the patient', 'Ang pasyente ang contact person')}</span>
-                  </label>
+                  <input id="cart-name" required className={field}
+                    placeholder={member && forKey ? tr("Patient's name *", 'Pangalan ng pasyente *') : tr('Your name *', 'Iyong pangalan *')} value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })} />
 
-                  {!sameAsPatient && (
+                  {type.fields.map((f) => (
+                    <React.Fragment key={f.key}>
+                      {member && f.key === 'address' && (
+                        <div>
+                          <div className="mb-1.5 flex items-center justify-between px-0.5">
+                            <p className="text-[12.5px] font-semibold text-gray-700">{tr('Deliver to', 'Ide-deliver sa')}</p>
+                            <button id="cart-add-address" type="button" onClick={() => setScreen('addresses')}
+                              className="text-[12px] font-semibold text-[#1D9FDA]">
+                              <i className="fa-solid fa-plus mr-1 text-[10px]"></i>{tr('Add address', 'Magdagdag ng address')}
+                            </button>
+                          </div>
+                          {addresses.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {addresses.map((a) => (
+                                <Chip key={a._key} id={`cart-address-${a._key}`}
+                                  on={form.address.trim() === a.address.trim()}
+                                  onClick={() => setForm((cur) => ({ ...cur, address: a.address }))}>
+                                  <i className="fa-solid fa-location-dot text-[10px]"></i>
+                                  {a.label || 'Address'}
+                                  {a.isDefault && <span className="font-normal opacity-70">Default</span>}
+                                </Chip>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <input
+                        id={`cart-${f.key}`}
+                        required={f.required}
+                        className={field}
+                        placeholder={f.required ? `${tr(f.label, f.labelTl ?? f.label)} *` : `${tr(f.label, f.labelTl ?? f.label)} ${tr('(optional)', '(opsyonal)')}`}
+                        value={form[f.key]}
+                        onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                      />
+                    </React.Fragment>
+                  ))}
+                </Section>
+
+                <Section
+                  icon="fa-address-book"
+                  title={tr('Contact details', 'Contact details')}
+                  hint={tr('Where we send availability and pricing.', 'Dito namin ipapadala ang availability at presyo.')}
+                >
+                  <input required type="email" className={field} placeholder="Email *" value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                  <input required type="tel" inputMode="tel" className={field} placeholder={tr('Mobile number *', 'Mobile number *')} value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                  {type.kind === 'patient' && (
                     <>
-                      <input required className={field} placeholder={tr("Contact person's full name *", 'Buong pangalan ng contact person *')} value={form.contactName}
-                        onChange={(e) => setForm({ ...form, contactName: e.target.value })} />
-                      <input className={field} placeholder={tr('Relationship to patient (optional)', 'Relasyon sa pasyente (opsyonal)')} value={form.contactRelationship}
-                        onChange={(e) => setForm({ ...form, contactRelationship: e.target.value })} />
+                      <label className="flex items-start gap-2.5 px-0.5 pt-0.5">
+                        <input type="checkbox" checked={sameAsPatient} onChange={(e) => setSameAsPatient(e.target.checked)}
+                          className="gm-check mt-0.5 h-4 w-4 shrink-0" />
+                        <span className="text-[12.5px] leading-snug text-gray-600">{tr('The contact person is the patient', 'Ang pasyente ang contact person')}</span>
+                      </label>
+
+                      {!sameAsPatient && (
+                        <>
+                          <input required className={field} placeholder={tr("Contact person's full name *", 'Buong pangalan ng contact person *')} value={form.contactName}
+                            onChange={(e) => setForm({ ...form, contactName: e.target.value })} />
+                          <input className={field} placeholder={tr('Relationship to patient (optional)', 'Relasyon sa pasyente (opsyonal)')} value={form.contactRelationship}
+                            onChange={(e) => setForm({ ...form, contactRelationship: e.target.value })} />
+                        </>
+                      )}
                     </>
+                  )}
+                  <textarea rows={3} className={`${field} resize-none`} placeholder={tr('Anything else we should know? (optional)', 'May iba pa ba kaming dapat malaman? (opsyonal)')}
+                    value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
+                </Section>
+
+                {turnstile.enabled && (
+                  <Section
+                    icon="fa-shield-halved"
+                    title={tr('Security check', 'Security check')}
+                    hint={tr('Confirms you are a real person. It usually ticks itself.', 'Kinukumpirma na totoong tao ka. Kadalasan ay kusa itong nagti-tick.')}
+                    aside={turnstile.token ? statusPill(true) : undefined}
+                  >
+                    <Turnstile turnstile={turnstile} className="w-full max-w-full overflow-x-auto" />
+                  </Section>
+                )}
+              </div>
+
+              {/* ── Part 2: documents and confirmations (patients only) ───── */}
+              {twoPart && part === 2 && (
+                <>
+                  <div className="flex items-center gap-3 rounded-2xl bg-[#F6F7F9] px-3.5 py-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white">
+                      <i className="fa-solid fa-user text-[13px] text-[#1D9FDA]"></i>
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-semibold text-gray-900">{form.name}</p>
+                      <p className="truncate text-[11.5px] text-gray-500">{[form.phone, form.email].filter(Boolean).join(' · ')}</p>
+                    </div>
+                    <button type="button" onClick={() => goPart(1)} className="shrink-0 text-[12px] font-semibold text-[#1D9FDA]">
+                      {tr('Edit', 'I-edit')}
+                    </button>
+                  </div>
+
+                  {turnstile.enabled && !turnstile.token && (
+                    <div role="alert" className="flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-3">
+                      <i className="fa-solid fa-shield-halved mt-[2px] text-[12px] text-amber-600"></i>
+                      <p className="flex-1 text-[12px] leading-snug text-amber-800">
+                        {tr('The security check expired. Please tick it again before sending.', 'Nag-expire ang security check. Paki-tick ulit bago ipadala.')}{' '}
+                        <button type="button" onClick={() => goPart(1)} className="font-semibold underline underline-offset-2">
+                          {tr('Go to security check', 'Pumunta sa security check')}
+                        </button>
+                      </p>
+                    </div>
                   )}
 
                   {rxNeeded.length > 0 && (
-                    <div className="rounded-xl border border-gray-200 p-3">
-                      <p className="text-[12.5px] font-semibold text-gray-700">
-                        {useOneRx ? (
-                          <>{tr('Prescription', 'Reseta')} *</>
-                        ) : (
-                          <>
-                            {tr('Prescriptions', 'Mga reseta')} * <span className="font-normal text-gray-400">({tr(`${rxNeeded.length} needed`, `${rxNeeded.length} kailangan`)})</span>
-                          </>
-                        )}
-                      </p>
-                      <p className="mt-0.5 text-[11px] leading-snug text-gray-400">
-                        {useOneRx
-                          ? tr(
-                              'Upload it once — we will check it against every medicine in this request.',
-                              'Isang beses lang i-upload — itse-tsek namin ito sa bawat gamot sa request na ito.'
-                            )
-                          : tr(
-                              'One per prescription-only medicine, so each can be checked against the right item.',
-                              'Isa para sa bawat gamot na kailangan ng reseta, para matsek ang bawat isa sa tamang item.'
-                            )}
-                      </p>
-
+                    <Section
+                      icon="fa-file-prescription"
+                      title={<>{useOneRx || rxNeeded.length === 1 ? tr('Prescription', 'Reseta') : tr('Prescriptions', 'Mga reseta')} <span className="text-red-500">*</span></>}
+                      hint={useOneRx
+                        ? tr('Upload it once — we will check it against every medicine in this request.', 'Isang beses lang i-upload — itse-tsek namin ito sa bawat gamot sa request na ito.')
+                        : tr('One per prescription-only medicine, so each can be checked against the right item.', 'Isa para sa bawat gamot na kailangan ng reseta, para matsek ang bawat isa sa tamang item.')}
+                      aside={statusPill(rxDone)}
+                    >
                       {/* Which shape is this request? Most scripts list several
                           medicines at once, so that is the default — nobody
                           should attach the same photo six times. */}
                       {rxNeeded.length > 1 && (
-                        <div className="mt-2.5 flex flex-wrap gap-1.5">
-                          <Chip id="rx-mode-one" on={oneRx} onClick={() => setOneRx(true)}>
-                            <i className="fa-solid fa-file-prescription text-[10px]"></i>
-                            {tr('All in one prescription', 'Lahat sa isang reseta')}
-                          </Chip>
-                          <Chip id="rx-mode-separate" on={!oneRx} onClick={() => setOneRx(false)}>
-                            {tr('Separate prescriptions', 'Magkahiwalay na reseta')}
-                          </Chip>
+                        <div className="grid grid-cols-2 gap-2">
+                          {([
+                            { id: 'rx-mode-one', one: true, icon: 'fa-file-prescription',
+                              title: tr('One prescription', 'Isang reseta'),
+                              sub: tr('All medicines on one paper', 'Lahat ng gamot sa iisang papel') },
+                            { id: 'rx-mode-separate', one: false, icon: 'fa-copy',
+                              title: tr('Separate ones', 'Magkahiwalay'),
+                              sub: tr('A different paper for each', 'Ibang papel para sa bawat isa') },
+                          ] as const).map((o) => {
+                            const on = oneRx === o.one;
+                            return (
+                              <button key={o.id} id={o.id} type="button" aria-pressed={on} onClick={() => setOneRx(o.one)}
+                                className={`rounded-xl border p-3 text-left transition ${on ? 'border-[#1D9FDA] bg-[#F1F8FE] ring-1 ring-[#1D9FDA]' : 'border-gray-200 bg-white'}`}>
+                                <i className={`fa-solid ${o.icon} text-[15px] ${on ? 'text-[#1D9FDA]' : 'text-gray-400'}`}></i>
+                                <span className={`mt-1.5 block text-[12.5px] font-semibold ${on ? 'text-[#1D9FDA]' : 'text-gray-800'}`}>{o.title}</span>
+                                <span className="block text-[11px] leading-snug text-gray-500">{o.sub}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
 
-                      <div className="mt-3 space-y-3">
-                        {useOneRx ? (
+                      {useOneRx ? (
+                        <div className="space-y-2.5">
                           <div>
-                            <p className="text-[12px] leading-snug text-gray-500">
-                              {tr('Covers:', 'Sakop:')}{' '}
-                              <span className="font-semibold text-gray-700">{rxNeeded.map((it) => it.name).join(', ')}</span>
-                            </p>
-                            {rxSlot(SHARED_RX, { id: SHARED_RX, name: tr('all medicines in this request', 'lahat ng gamot sa request na ito') } as CartItem)}
+                            <p className="text-[11.5px] font-semibold text-gray-500">{tr('This prescription covers', 'Sakop ng resetang ito')}</p>
+                            <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                              {rxNeeded.map((it) => (
+                                <li key={it.id} className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-[#F6F7F9] px-2.5 py-1 text-[11.5px] font-medium text-gray-700">
+                                  <i className="fa-solid fa-capsules text-[9.5px] text-[#1D9FDA]"></i>
+                                  <span className="truncate">{it.name}</span>
+                                </li>
+                              ))}
+                            </ul>
                           </div>
-                        ) : (
-                          rxNeeded.map((it) => (
-                            <div key={it.id}>
-                              <p className="text-[12px] font-semibold leading-snug text-gray-700">{it.name}</p>
+                          {rxSlot(SHARED_RX, { id: SHARED_RX, name: tr('all medicines in this request', 'lahat ng gamot sa request na ito') } as CartItem)}
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {rxNeeded.map((it, i) => (
+                            <div key={it.id} className="rounded-xl bg-[#FAFBFC] p-2.5">
+                              <p className="mb-2 flex items-center gap-2 text-[12.5px] font-semibold leading-snug text-gray-800">
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-[10.5px] font-bold text-[#1D9FDA]">{i + 1}</span>
+                                <span className="min-w-0 flex-1">{it.name}</span>
+                              </p>
                               {rxSlot(it.id, it)}
                             </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
+                          ))}
+                        </div>
+                      )}
+                    </Section>
                   )}
 
-                  <div className="rounded-xl border border-gray-200 p-3">
-                    <p className="text-[12.5px] font-semibold text-gray-700">{tr('Upload valid ID of patient *', 'I-upload ang valid ID ng pasyente *')}</p>
-                    <input
-                      type="file" accept={ALLOWED_FILE_TYPES_ACCEPT}
-                      onChange={(e) => {
-                        const { valid, errors } = validateFiles(Array.from(e.target.files || []));
+                  <Section
+                    icon="fa-id-card"
+                    title={<>{tr('Valid ID of the patient', 'Valid ID ng pasyente')} <span className="text-red-500">*</span></>}
+                    hint={tr('Any government-issued ID. Make sure the name and photo are readable.', 'Kahit anong government ID. Siguraduhing nababasa ang pangalan at litrato.')}
+                    aside={statusPill(Boolean(idFile))}
+                  >
+                    <UploadTile
+                      id="cart-id-file"
+                      files={idFile ? [idFile] : []}
+                      onFiles={(picked) => {
+                        const { valid, errors } = validateFiles(picked);
                         setError(errors[0] || '');
                         setIdFile(valid[0] || null);
                       }}
-                      className="mt-2 w-full text-[12px] file:mr-3 file:rounded-full file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-[12px] file:font-semibold"
+                      emptyTitle={tr('Tap to upload valid ID', 'I-tap para i-upload ang valid ID')}
+                      emptyHint={tr('Photo or PDF of the front of the ID', 'Litrato o PDF ng harap ng ID')}
+                      replaceHint={tr('Attached · tap to replace', 'Naka-attach · i-tap para palitan')}
                     />
-                    {idFile && <p className="mt-1.5 text-[11.5px] text-green-700">{idFile.name}</p>}
-                  </div>
+                  </Section>
+
+                  <Section icon="fa-circle-check" title={tr('Confirm and send', 'Kumpirmahin at ipadala')}>
+                    <label className="flex items-start gap-2.5">
+                      <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)}
+                        className="gm-check mt-0.5 h-4 w-4 shrink-0" />
+                      <span className="text-[11.5px] leading-snug text-gray-600">
+                        {tr(
+                          'I confirm the information provided is accurate and the prescription submitted is valid.',
+                          'Kinukumpirma ko na tama ang impormasyong ibinigay at valid ang isinumiteng reseta.'
+                        )} *
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2.5">
+                      <input type="checkbox" checked={privacy} onChange={(e) => setPrivacy(e.target.checked)}
+                        className="gm-check mt-0.5 h-4 w-4 shrink-0" />
+                      <span className="text-[11.5px] leading-snug text-gray-600">
+                        {tr(
+                          'I have read and consent to the processing of my personal and sensitive personal information under the ',
+                          'Nabasa ko at pumapayag ako sa pagproseso ng aking personal at sensitibong personal na impormasyon ayon sa '
+                        )}
+                        <a href="/privacy-policy" className="underline">Privacy Policy</a>. *
+                      </span>
+                    </label>
+                  </Section>
                 </>
               )}
 
-              <textarea rows={3} className={`${field} resize-none`} placeholder={tr('Anything else we should know? (optional)', 'May iba pa ba kaming dapat malaman? (opsyonal)')}
-                value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
+              {error && (
+                <p role="alert" className="flex items-start gap-2 rounded-xl bg-red-50 px-3.5 py-2.5 text-[12.5px] leading-snug text-red-600">
+                  <i className="fa-solid fa-circle-exclamation mt-[2px] text-[12px]"></i>
+                  <span>{error}</span>
+                </p>
+              )}
 
-              {type.kind === 'patient' && (
+              {twoPart && part === 1 ? (
+                <div>
+                  <button
+                    type="submit"
+                    disabled={turnstile.enabled && !turnstile.token}
+                    className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-[14px] font-semibold text-white disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
+                  >
+                    {tr('Continue to documents', 'Magpatuloy sa mga dokumento')}
+                    <i className="fa-solid fa-arrow-right text-[12px]"></i>
+                  </button>
+                  <p className="pt-2 text-center text-[11px] text-gray-400">
+                    {rxNeeded.length > 0
+                      ? tr('Next: upload the prescription and a valid ID.', 'Susunod: i-upload ang reseta at valid ID.')
+                      : tr('Next: upload a valid ID.', 'Susunod: i-upload ang valid ID.')}
+                  </p>
+                </div>
+              ) : (
                 <>
-                  <label className="flex items-start gap-2.5">
-                    <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-gray-300" />
-                    <span className="text-[11.5px] leading-snug text-gray-600">
-                      {tr(
-                        'I confirm the information provided is accurate and the prescription submitted is valid.',
-                        'Kinukumpirma ko na tama ang impormasyong ibinigay at valid ang isinumiteng reseta.'
-                      )} *
-                    </span>
-                  </label>
-                  <label className="flex items-start gap-2.5">
-                    <input type="checkbox" checked={privacy} onChange={(e) => setPrivacy(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-gray-300" />
-                    <span className="text-[11.5px] leading-snug text-gray-600">
-                      {tr(
-                        'I have read and consent to the processing of my personal and sensitive personal information under the ',
-                        'Nabasa ko at pumapayag ako sa pagproseso ng aking personal at sensitibong personal na impormasyon ayon sa '
-                      )}
-                      <a href="/privacy-policy" className="underline">Privacy Policy</a>. *
-                    </span>
-                  </label>
+                  <button
+                    type="submit"
+                    disabled={sending || (turnstile.enabled && !turnstile.token)}
+                    className="w-full rounded-full py-3.5 text-[14px] font-semibold text-white disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
+                  >
+                    {sending
+                      ? tr('Sending…', 'Ipinapadala…')
+                      : tr(
+                          `Send request for ${count} item${count === 1 ? '' : 's'}`,
+                          `Ipadala ang request para sa ${count} ${count === 1 ? 'item' : 'mga item'}`
+                        )}
+                  </button>
+                  <p className="pt-1 text-center text-[11px] text-gray-400">
+                    {tr('By submitting, you agree to our ', 'Sa pagpapadala, sumasang-ayon ka sa aming ')}
+                    <a href="/privacy-policy" className="underline">Privacy Policy</a>.
+                  </p>
                 </>
               )}
-
-              <Turnstile turnstile={turnstile} />
-
-              {error && <p className="text-[12.5px] text-red-600">{error}</p>}
-
-              <button
-                type="submit"
-                disabled={sending || (turnstile.enabled && !turnstile.token)}
-                className="w-full rounded-full py-3.5 text-[14px] font-semibold text-white disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg,#1D9FDA,#61A644)' }}
-              >
-                {sending
-                  ? tr('Sending…', 'Ipinapadala…')
-                  : tr(
-                      `Send request for ${count} item${count === 1 ? '' : 's'}`,
-                      `Ipadala ang request para sa ${count} ${count === 1 ? 'item' : 'mga item'}`
-                    )}
-              </button>
-              <p className="pt-1 text-center text-[11px] text-gray-400">
-                {tr('By submitting, you agree to our ', 'Sa pagpapadala, sumasang-ayon ka sa aming ')}
-                <a href="/privacy-policy" className="underline">Privacy Policy</a>.
-              </p>
             </form>
           </>
         ) : (

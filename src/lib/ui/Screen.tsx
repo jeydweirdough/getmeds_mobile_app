@@ -135,7 +135,7 @@ export function Card({ title, note, action, children }: { title?: string; note?:
           {action}
         </div>
       )}
-      <div className="overflow-hidden rounded-[20px] border border-[#EEF1F5] bg-white">{children}</div>
+      <div className="overflow-hidden rounded-[20px] bg-white">{children}</div>
     </section>
   );
 }
@@ -193,8 +193,8 @@ export function ListRow({
   const body = (
     <>
       {icon && (
-        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tone === 'danger' ? 'bg-red-50 text-red-500' : 'bg-[#F1F8FE] text-[#1D9FDA]'}`}>
-          <i className={`fa-solid ${icon} text-[13px]`} />
+        <span className={`flex h-9 w-7 shrink-0 items-center justify-center ${tone === 'danger' ? 'text-red-500' : 'text-[#1D9FDA]'}`}>
+          <i className={`fa-solid ${icon} text-[16px]`} />
         </span>
       )}
       <span className="min-w-0 flex-1">

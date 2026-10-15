@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useLang } from '@/lib/i18n';
+import { House, Menu, Pill, ShoppingCart } from 'lucide-react';
 import { ChatIcon } from '@/lib/BrandIcons';
 import { replayTour } from '@/components/GuidedTour';
 import './pwa-tabbar.css';
@@ -104,23 +105,26 @@ export default function PwaTabbar() {
   }, []);
 
   const cls = (i: number) => (isActive(TABS[i].match, path) ? 'is-active' : undefined);
+  /** Outlined at rest; the solid icon (inner details intact) on the page you are on. */
+  const ico = (i: number, Outline: typeof House, solid: string) =>
+    cls(i) ? <i className={`fa-solid ${solid}`} aria-hidden="true"></i> : <Outline className="gm-tab-ico" aria-hidden="true" />;
 
   return (
     <>
       <nav className="gm-tabbar" aria-label={tr('Primary', 'Pangunahing menu')}>
-        <a href="/app-home" data-match="/app-home,/" className={cls(0)}><i className="fa-solid fa-house"></i><span>{tr('Home', 'Home')}</span></a>
-        <a href="/product-range" data-match="/product-range" className={cls(1)}><i className="fa-solid fa-capsules"></i><span>{tr('Products', 'Produkto')}</span></a>
+        <a href="/app-home" data-match="/app-home,/" className={cls(0)}>{ico(0, House, 'fa-house')}<span>{tr('Home', 'Home')}</span></a>
+        <a href="/product-range" data-match="/product-range" className={cls(1)}>{ico(1, Pill, 'fa-capsules')}<span>{tr('Products', 'Produkto')}</span></a>
         <a href="/chat" data-tour="chat" aria-label={tr('Chat with us', 'Mag-chat sa amin')} className={`gm-mid${cls(2) ? ' is-active' : ''}`} data-match="/chat">
           <span className="gm-mid-btn"><ChatIcon size={30} mono /></span>
           <span className="gm-label">{tr('Chat', 'Chat')}</span>
         </a>
         <a href="/cart" data-match="/cart" data-tour="requests" aria-label={tr('Your request list', 'Ang iyong request list')} className={cls(3)}>
-          <i className="fa-solid fa-cart-shopping"></i>
+          {ico(3, ShoppingCart, 'fa-cart-shopping')}
           <span className="gm-cart-badge" data-count={String(count)}>{count > 99 ? '99+' : String(count)}</span>
           <span>{tr('Requests', 'Requests')}</span>
         </a>
         <button type="button" id="gm-more" aria-haspopup="dialog" aria-expanded={open ? 'true' : 'false'} onClick={() => setSheet(!open)}>
-          <i className="fa-solid fa-bars"></i><span>{tr('More', 'Iba pa')}</span>
+          <Menu className="gm-tab-ico" aria-hidden="true" /><span>{tr('More', 'Iba pa')}</span>
         </button>
       </nav>
 

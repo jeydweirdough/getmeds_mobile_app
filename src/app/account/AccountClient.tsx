@@ -423,7 +423,7 @@ function Account() {
   const invite = async () => {
     const code = points.summary?.account.referralCode;
     if (!code) {
-      scrollTo('points');
+      open('rewards');
       return;
     }
     const text = tr(
@@ -514,35 +514,33 @@ function Account() {
             stats={[
               {
                 label: tr('Points', 'Points'),
+                icon: 'fa-star',
                 value: pointsAccount ? pointsAccount.pointsBalance.toLocaleString('en-PH') : '—',
-                onClick: () => scrollTo('points'),
+                onClick: () => open('rewards'),
               },
               {
                 label: tr('Requests', 'Mga request'),
+                icon: 'fa-file-lines',
                 value: String(points.signedIn ? serverRequests : inquiries?.length ?? 0),
-                onClick: () => {
-                  setTab('inquiries');
-                  window.setTimeout(() => scrollTo('account-tabs'), 50);
-                },
+                onClick: () => open('requests'),
               },
               {
                 label: tr('Friends invited', 'Naimbitahan'),
+                icon: 'fa-user-plus',
                 value: points.signedIn ? String(points.summary?.referral?.friendsJoined ?? 0) : '—',
-                onClick: () => scrollTo('points'),
+                onClick: () => open('rewards'),
               },
             ]}
-            // Inviting and logging out only mean something to a signed-in
-            // customer; a guest gets the way in instead.
+            // Inviting only means something to a signed-in customer; anyone
+            // else gets the way in instead. Contact us and Log out live in
+            // Settings below.
             actions={
               points.signedIn
                 ? [
                     { icon: 'fa-share-nodes', label: tr('Invite a friend', 'Mag-imbita'), onClick: invite },
-                    { icon: 'fa-headset', label: tr('Contact us', 'Kontakin kami'), onClick: () => { goTo('/contact-us'); } },
-                    { icon: 'fa-arrow-right-from-bracket', label: tr('Log out', 'Mag-log out'), onClick: confirmLogout.ask, tone: 'danger' },
                   ]
                 : [
-                    { icon: 'fa-right-to-bracket', label: tr('Sign in', 'Mag-log in'), onClick: () => { scrollTo('points'); document.getElementById('points-mobile')?.focus({ preventScroll: true }); } },
-                    { icon: 'fa-headset', label: tr('Contact us', 'Kontakin kami'), onClick: () => { goTo('/contact-us'); } },
+                    { icon: 'fa-right-to-bracket', label: tr('Sign in', 'Mag-log in'), onClick: () => setSignInOpen(true) },
                   ]
             }
           />
@@ -585,9 +583,6 @@ function Account() {
         </div>
         )}
 
-        {/* Getmeds Points: an app-only feature, and the one thing on this
-            screen that lives with Getmeds rather than on the phone. */}
-        {app && !guest && <PointsCard points={points} />}
         {app && !guest && (
           <div className="mb-6 space-y-5">
             <div data-tour="account-list">
@@ -599,6 +594,7 @@ function Account() {
             </Card>
             </div>
             <Card title={tr('Medicines', 'Mga gamot')}>
+              <ListRow icon="fa-file-lines" title={tr('My requests', 'Mga request ko')} detail={tr('Order again or ask about a past request', 'Mag-order ulit o magtanong tungkol sa dating request')} hint={serverRequests || undefined} onClick={() => open('requests')} />
               <ListRow icon="fa-bookmark" title={tr('Saved medicines', 'Mga naka-save na gamot')} detail={tr('Get a text when one is back in stock', 'Ite-text ka namin kapag may stock na ulit')} hint={acct?.savedProducts.length || undefined} onClick={() => open('saved')} />
               <ListRow icon="fa-bell" title={tr('Refill reminders', 'Mga paalala sa refill')} detail={tr('We text you the day before', 'Ite-text ka namin isang araw bago')} hint={remindersDue ? <span className="font-semibold text-[#1D9FDA]">{tr(`${remindersDue} due`, `${remindersDue} kailangan na`)}</span> : acct?.refillReminders.length || undefined} onClick={() => open('reminders')} />
             </Card>
@@ -625,6 +621,15 @@ function Account() {
                 hint={LANGUAGES.find((l) => l.value === lang)?.native}
                 onClick={() => setLangOpen(true)}
               />
+              <ListRow
+                icon="fa-headset"
+                title={tr('Contact us', 'Kontakin kami')}
+                detail={tr('Call, email or visit Getmeds', 'Tumawag, mag-email o bumisita sa Getmeds')}
+                onClick={() => { goTo('/contact-us'); }}
+              />
+              {points.signedIn && !guest && (
+                <ListRow icon="fa-arrow-right-from-bracket" title={tr('Log out', 'Mag-log out')} tone="danger" onClick={confirmLogout.ask} />
+              )}
             </Card>
           </div>
         )}
@@ -741,20 +746,13 @@ function Account() {
                 </button>
               </div>
             )
-          ) : app ? (
-            <p className="mb-3 px-1 text-[15px] font-semibold text-gray-900">
-              {tr('Your requests', 'Mga request mo')}
-              {(points.signedIn ? serverRequests : counts.inquiries) > 0 && (
-                <span className="ml-1.5 text-[12px] font-medium text-gray-400">{points.signedIn ? serverRequests : counts.inquiries}</span>
-              )}
-            </p>
-          ) : (
+          ) : app ? null : (
             <Segmented tab={tab} setTab={setTab} counts={counts} />
           )}
         </div>
 
         {/* ── Inquiries ─────────────────────────────────────────────────── */}
-        {app && !guest && <RequestsScreen embedded />}
+        {/* A signed-in app customer opens theirs from Medicines > My requests. */}
 
         {tab === 'inquiries' && showSections && !(app && !guest) && (
           <section>
@@ -1018,16 +1016,11 @@ function Account() {
         )}
 
         {/* Privacy — stated plainly rather than buried, because what is stored
-            here says which medicines someone has asked for. */}
-        <div className="mt-8 border-t border-gray-200 pt-4">
-          {app && points.signedIn ? (
-            <p className="text-[11.5px] leading-relaxed text-gray-400">
-              {tr(
-                'Your details, patients, addresses, saved medicines, reminders, prescriptions and request history are kept with Getmeds, so they are there on any phone you sign in on. Your picture and your request list stay on this phone. See Privacy and data to download or delete everything.',
-                'Ang mga detalye, pasyente, address, naka-save na gamot, paalala, reseta at request history mo ay nasa Getmeds, kaya makikita mo ang mga ito sa kahit anong phone na pag-log-in-an mo. Ang picture at request list mo ay nananatili sa phone na ito. Pumunta sa Privacy at data para i-download o i-delete ang lahat.',
-              )}
-            </p>
-          ) : (
+            here says which medicines someone has asked for. A signed-in app
+            customer gets none of this: their data is kept with Getmeds and
+            Privacy and data (above) is where they download or delete it. */}
+        {!(app && points.signedIn) && (
+          <div className="mt-8 border-t border-gray-200 pt-4">
             <p className="text-[11.5px] leading-relaxed text-gray-400">
               {tr(
                 'Your inquiries and details are stored on this device only. They are not sent to Getmeds until you submit a request, and they will not appear on your other devices.',
@@ -1039,11 +1032,11 @@ function Account() {
                   ' Kapag nag-log in ka, sa Getmeds na ito itatabi, kaya kasama mo ito sa kahit anong phone.',
                 )}
             </p>
-          )}
-          <button type="button" onClick={wipe} className="mt-3 text-[12px] font-semibold text-gray-400 underline">
-            {tr('Clear saved data on this device', 'Burahin ang naka-save na data sa device na ito')}
-          </button>
-        </div>
+            <button type="button" onClick={wipe} className="mt-3 text-[12px] font-semibold text-gray-400 underline">
+              {tr('Clear saved data on this device', 'Burahin ang naka-save na data sa device na ito')}
+            </button>
+          </div>
+        )}
       </main>
 
       <AlertModal open={!!alert} onClose={() => setAlert(null)} title={alert?.title} message={alert?.message ?? ''} />

@@ -107,7 +107,7 @@ export function SaveProductButton({ product }: { product: ProductRef }) {
         disabled={busy}
         aria-pressed={Boolean(saved)}
         aria-label={saved ? tr('Remove from saved medicines', 'Alisin sa mga naka-save na gamot') : tr('Save this medicine', 'I-save ang gamot na ito')}
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F3F6FB] text-gray-700"
+        className="flex h-10 w-10 items-center justify-center rounded-full text-gray-700"
       >
         <i className={`fa-${saved ? 'solid' : 'regular'} fa-bookmark text-[14px]`} style={saved ? { color: BRAND } : undefined} />
       </button>

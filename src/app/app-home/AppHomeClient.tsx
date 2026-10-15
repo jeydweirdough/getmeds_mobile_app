@@ -296,7 +296,6 @@ function AppHome() {
               href="/notifications"
               aria-label={tr('Notifications', 'Mga notification')}
               className="relative flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full"
-              style={{ background: GROUND }}
             >
               <i className="fa-regular fa-bell text-[15px] text-gray-700" />
             </a>
@@ -483,7 +482,7 @@ function AppHome() {
           )}
         >
           <img
-            src="/assets/pazopanib.webp"
+            src="/assets/pazopanib-featured.webp"
             alt=""
             loading="lazy"
             className="absolute inset-0 h-full w-full object-cover"

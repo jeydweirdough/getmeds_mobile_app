@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { BRAND, Card, Empty, ErrorNote, ListRow, PrimaryButton, Screen, Sheet, SmallButton, GRADIENT } from '../ui/Screen';
 import { redeemReward, shortDate, useAccountData, type Redemption, type Reward } from '../accountApi';
-import { usePoints } from '../PointsCard';
+import { Referral, usePoints } from '../PointsCard';
 import { useLang } from '../i18n';
 
 /**
@@ -88,6 +88,14 @@ export default function RewardsScreen({ onClose }: { onClose: () => void }) {
           <p className="mt-0.5 text-[28px] font-bold leading-tight">{pts(balance)}</p>
         )}
       </div>
+
+      {/* Invite friends and add a friend's code: moved here from the account
+          page so everything about points lives on one screen. */}
+      {summary?.referral?.enabled && (
+        <section className="rounded-[20px] bg-white p-4 pt-1">
+          <Referral summary={summary} />
+        </section>
+      )}
 
       {!data ? (
         loadError ? (

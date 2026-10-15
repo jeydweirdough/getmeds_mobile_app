@@ -797,7 +797,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
               type="button"
               onClick={() => goBack(backUrl)}
               aria-label={tr('Back', 'Bumalik')}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F3F6FB] text-gray-700"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-gray-700"
             >
               <i className="fa-solid fa-arrow-left text-[14px]" />
             </button>
@@ -807,7 +807,7 @@ export default function ProductDetailClient(_props: { categorySlug?: string; pro
                 type="button"
                 onClick={shareProduct}
                 aria-label={tr('Share this product', 'Ibahagi ang produktong ito')}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F3F6FB] text-gray-700"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-gray-700"
               >
                 <i className="fa-solid fa-share-nodes text-[14px]" />
               </button>

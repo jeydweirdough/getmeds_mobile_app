@@ -79,7 +79,7 @@ export default function RequestsScreen({ onClose, embedded }: { onClose?: () => 
       {requests.length > 0 && (
         <ul className="space-y-2.5">
           {requests.map((r) => (
-            <li key={r._id} className="overflow-hidden rounded-[20px] border border-[#EEF1F5] bg-white">
+            <li key={r._id} className="overflow-hidden rounded-[20px] bg-white">
               <div className="px-4 pb-2 pt-3.5">
                 <div className="flex items-baseline justify-between gap-3">
                   <p className="truncate text-[14px] font-semibold text-gray-900">{r.inquiryType || tr('Request', 'Request')}</p>
@@ -102,16 +102,17 @@ export default function RequestsScreen({ onClose, embedded }: { onClose?: () => 
                             <span className="block truncate text-[13.5px] text-gray-900">{item.name}</span>
                           )}
                           {detail && <span className="block truncate text-[11.5px] text-gray-500">{detail}</span>}
-                          <button
-                            type="button"
-                            onClick={() => setRemind(item)}
-                            className="mt-1 inline-flex items-center gap-1.5 text-[11.5px] font-semibold"
-                            style={{ color: BRAND }}
-                          >
-                            <i className="fa-regular fa-bell text-[10.5px]" />
-                            {tr('Remind me to refill', 'Paalalahanan akong mag-refill')}
-                          </button>
                         </span>
+                        {/* Just the bell, at the row's end; the sheet it opens says what it is for. */}
+                        <button
+                          type="button"
+                          onClick={() => setRemind(item)}
+                          aria-label={tr(`Remind me to refill ${item.name}`, `Paalalahanan akong mag-refill ng ${item.name}`)}
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                          style={{ color: BRAND }}
+                        >
+                          <i className="fa-regular fa-bell text-[15px]" />
+                        </button>
                       </li>
                     );
                   })}
@@ -136,6 +137,7 @@ export default function RequestsScreen({ onClose, embedded }: { onClose?: () => 
       {remind && (
         <AddReminderSheet
           initial={{ name: remind.name, url: remind.url, image: remind.image, strength: remind.strength, form: remind.form }}
+          title={tr('Remind me to refill', 'Paalalahanan akong mag-refill')}
           onClose={() => setRemind(null)}
           onSaved={showToast}
         />

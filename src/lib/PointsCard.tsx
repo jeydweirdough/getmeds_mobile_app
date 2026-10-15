@@ -37,8 +37,10 @@ const message = (e: unknown) =>
  * Referral codes: share your own, or add a friend's before your first
  * request. Both sides are paid when that first request is sent, which is
  * said plainly so nobody expects points the moment a code is typed.
+ *
+ * Shown on the Rewards screen, beside the balance and history it adds to.
  */
-function Referral({ summary }: { summary: PointsSummary }) {
+export function Referral({ summary }: { summary: PointsSummary }) {
   const { tr } = useLang();
   const r = summary.referral;
   const code = summary.account.referralCode;

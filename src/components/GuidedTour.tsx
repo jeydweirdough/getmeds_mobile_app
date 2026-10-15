@@ -124,24 +124,8 @@ const TOURS: Tour[] = [
         key: 'profile-stats',
         title: ['Your numbers at a glance', 'Ang mga numero mo'],
         body: [
-          'Your points and the friends you have invited. Tap one to jump to it.',
-          'Ang points mo at ang mga naimbitahan mong kaibigan. I-tap ang isa para puntahan ito.',
-        ],
-      },
-      {
-        key: 'points',
-        title: ['Getmeds Points', 'Getmeds Points'],
-        body: [
-          'You earn points on every request you send from the app. Your balance and history show here.',
-          'Kumikita ka ng points sa bawat request na ipinapadala mo mula sa app. Makikita rito ang balance at history mo.',
-        ],
-      },
-      {
-        key: 'referral',
-        title: ['Invite friends, both earn', 'Mag-imbita, pareho kayong kikita'],
-        body: [
-          'Share your code. When a friend adds it and sends their first request, you both get points.',
-          'Ibahagi ang code mo. Kapag inilagay ito ng kaibigan at nagpadala siya ng unang request, pareho kayong may points.',
+          'Your points and the friends you have invited. Tap one to open Rewards, where you can also share your invite code.',
+          'Ang points mo at ang mga naimbitahan mong kaibigan. I-tap ang isa para buksan ang Rewards, kung saan puwede mo ring i-share ang invite code mo.',
         ],
       },
       {

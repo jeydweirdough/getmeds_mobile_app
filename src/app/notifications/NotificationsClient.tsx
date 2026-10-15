@@ -220,7 +220,7 @@ export default function NotificationsClient() {
           type="button"
           onClick={() => goBack('/app-home')}
           aria-label={tr('Back', 'Bumalik')}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F3F6FB] text-gray-700"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-gray-700"
         >
           <i className="fa-solid fa-arrow-left text-[14px]" />
         </button>

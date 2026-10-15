@@ -219,7 +219,7 @@ body:not(:has([data-page="chat"])) .tawk-min-container {
   padding: 0 2px;
   border: 0;
   background: none;
-  color: #9CA3AF;
+  color: #374151;
   font: 600 9.5px "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   letter-spacing: .01em;
   text-decoration: none;
@@ -241,6 +241,17 @@ body:not(:has([data-page="chat"])) .tawk-min-container {
 }
 
 .gm-tabbar .is-active { color: #1D9FDA; }
+
+/* Outlined (stroke) icons from lucide at rest, in a soft near-black. The
+   active tab swaps to the Font Awesome solid icon in brand blue instead, which
+   keeps its inner details (the house's door, the cart's wheels). */
+.gm-tabbar .gm-tab-ico {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.8;
+  transition: color .18s ease;
+}
+.gm-tabbar .is-active i { font-size: 20px; height: 22px; display: flex; align-items: center; }
 
 /* The middle tab sits raised, the way a primary action reads on a phone.
    Search holds that slot: in a catalogue this size — thousands of rows,

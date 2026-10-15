@@ -75,7 +75,10 @@ export function AddReminderSheet({
   initial,
   onClose,
   onSaved,
+  title,
 }: {
+  /** Replaces the sheet's heading when adding, e.g. "Remind me to refill". */
+  title?: string;
   /** Set to edit an existing reminder. */
   reminder?: RefillReminder;
   /** A medicine to start with, e.g. from a product page or an old request. */
@@ -226,7 +229,7 @@ export function AddReminderSheet({
 
   return (
     <Sheet
-      title={reminder ? tr('Edit reminder', 'I-edit ang reminder') : tr('Add a refill reminder', 'Magdagdag ng refill reminder')}
+      title={reminder ? tr('Edit reminder', 'I-edit ang reminder') : title ?? tr('Add a refill reminder', 'Magdagdag ng refill reminder')}
       onClose={onClose}
     >
       <Card title={tr('Medicine', 'Gamot')}>
