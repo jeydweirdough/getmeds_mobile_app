@@ -19,6 +19,13 @@ import { translate } from './i18n';
 
 const SESSION_KEY = 'getmeds_points_session';
 const PENDING_REFERRAL_KEY = 'getmeds_pending_referral';
+/**
+ * The last summary the server sent, kept so a signed-in customer's name and
+ * balance are on screen the moment the app reloads, instead of a "Guest"
+ * placeholder for the second or two /account/me takes. Always replaced by the
+ * fresh copy, and removed on sign-out.
+ */
+const SUMMARY_CACHE_KEY = 'getmeds_points_summary';
 
 /** Fired on window when the session or the balance changes. */
 export const REWARDS_CHANGED_EVENT = 'getmeds:rewards-changed';
@@ -85,12 +92,33 @@ const changed = () => window.dispatchEvent(new CustomEvent(REWARDS_CHANGED_EVENT
 
 export const isSignedIn = (): boolean => Boolean(readSession());
 
+/** The cached summary, only while signed in; null if none or unreadable. */
+export function readCachedSummary(): PointsSummary | null {
+  if (!isSignedIn()) return null;
+  try {
+    const raw = window.localStorage.getItem(SUMMARY_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as PointsSummary) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeCachedSummary(summary: PointsSummary | null): void {
+  try {
+    if (summary) window.localStorage.setItem(SUMMARY_CACHE_KEY, JSON.stringify(summary));
+    else window.localStorage.removeItem(SUMMARY_CACHE_KEY);
+  } catch {
+    /* storage full or blocked: the screen just waits for the server */
+  }
+}
+
 export function signOut(): void {
   try {
     window.localStorage.removeItem(SESSION_KEY);
   } catch {
     /* storage blocked — nothing was stored either */
   }
+  writeCachedSummary(null);
   changed();
 }
 

@@ -157,7 +157,9 @@ function profileOf(d: SavedDetails): Profile {
 
 function Account() {
   const [app] = useState(isAppMode);
-  const [user, setUser] = useState<LocalUser | null>(null);
+  // Read at once rather than in the mount effect, so the first frame already
+  // has the saved name and picture.
+  const [user, setUser] = useState<LocalUser | null>(readUser);
   const [tab, setTab] = useState<Tab>('inquiries');
   const [consented, setConsented] = useState<boolean | null>(null);
 

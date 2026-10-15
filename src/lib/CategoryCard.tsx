@@ -152,7 +152,7 @@ export function CategoryCard({
             e.stopPropagation();
             goTo('/order-medicines/patients');
           }}
-          className="flex min-w-0 items-center gap-2 rounded-full bg-white/15 py-1.5 pl-1.5 pr-3 text-[10.5px] leading-tight text-white/90 transition active:scale-[0.97] active:bg-white/25"
+          className="flex min-w-0 items-center gap-2 py-1.5 text-[10.5px] leading-tight text-white/90 transition active:scale-[0.97]"
         >
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
             <i className="fa-solid fa-file-prescription text-[10px]" />

@@ -11,6 +11,8 @@ import {
   inviteLink,
   pendingReferral,
   isSignedIn,
+  readCachedSummary,
+  writeCachedSummary,
   signOut,
   type PointsSummary,
 } from './rewards';
@@ -183,7 +185,9 @@ export interface PointsState {
  */
 export function usePoints(): PointsState {
   const [signedIn, setSignedIn] = useState(isSignedIn);
-  const [summary, setSummary] = useState<PointsSummary | null>(null);
+  // Starts from the copy kept on the phone, so a reload shows the customer's
+  // own name and balance straight away; load() swaps in the fresh one.
+  const [summary, setSummary] = useState<PointsSummary | null>(readCachedSummary);
   const [loadError, setLoadError] = useState('');
 
   const load = useCallback(async () => {
@@ -194,7 +198,10 @@ export function usePoints(): PointsState {
       return;
     }
     try {
-      setSummary(await fetchSummary());
+      const fresh = await fetchSummary();
+      // Signed out while the request was in flight: do not bring the copy back.
+      if (fresh && isSignedIn()) writeCachedSummary(fresh);
+      setSummary(fresh);
       setLoadError('');
     } catch (e) {
       setLoadError(message(e));

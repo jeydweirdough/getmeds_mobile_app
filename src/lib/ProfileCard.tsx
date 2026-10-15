@@ -246,7 +246,13 @@ export default function ProfileCard({ name, subtitle, avatar, completeness, onEd
       {/* Name and role, with the edit button where the reference has its bookmark. */}
       <div className="mt-2.5 flex items-start gap-3 px-3">
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[21px] font-semibold leading-tight text-gray-900">{name || tr('Guest', 'Bisita')}</h1>
+          {/* Only signed-in customers get this card, so an empty name means
+              "not loaded yet": a placeholder bar, never the word Guest. */}
+          {name ? (
+            <h1 className="truncate text-[21px] font-semibold leading-tight text-gray-900">{name}</h1>
+          ) : (
+            <div className="my-1 h-6 w-40 animate-pulse rounded-md bg-gray-100" aria-label={tr('Loading', 'Naglo-load')} />
+          )}
           <p className="mt-0.5 truncate text-[13px] text-gray-500">{subtitle}</p>
         </div>
         <button

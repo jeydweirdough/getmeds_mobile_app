@@ -125,12 +125,12 @@ export default function PullToRefresh() {
         className="flex h-10 w-10 items-center justify-center rounded-full bg-white"
         style={{ boxShadow: '0 2px 10px rgba(23,43,77,.18)' }}
       >
-        <i
-          className={`fa-solid fa-arrows-rotate text-[16px] ${state === 'refreshing' ? 'fa-spin' : ''}`}
+        {/* A plain grey ring with a gap, no arrowheads. */}
+        <span
+          className={`block h-[18px] w-[18px] rounded-full border-2 border-gray-400 border-t-transparent ${state === 'refreshing' ? 'animate-spin' : ''}`}
           style={{
-            color: '#1D9FDA',
             // Winds up with the pull, so the drag visibly does something
-            // before the threshold; fa-spin takes over on release.
+            // before the threshold; animate-spin takes over on release.
             transform: state === 'refreshing' ? undefined : `rotate(${pull * 2.2}deg)`,
           }}
         />
