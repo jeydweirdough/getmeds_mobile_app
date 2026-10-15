@@ -16,9 +16,10 @@ import { TOUR_START_EVENT } from '@/components/GuidedTour';
  *   3  a collage of patient portraits           — how to request
  *
  * The slides swipe (native scroll-snap); the footer — dots, "Let's explore"
- * and the round next button — stays put. "Skip", "Let's explore" and the
- * round button on the last slide all lead to the log-in screen,
- * which is where onboarding finishes: by signing in, or as a guest.
+ * and the round next button — stays put. "Let's explore" and the round
+ * button on the last slide both lead to the log-in screen, which is where
+ * onboarding finishes: by signing in, or as a guest. There is no "Skip": it
+ * read as "into the app" but led to the same sign-in screen.
  *
  * "Seen" is a localStorage flag. The app's web view keeps it across launches
  * and clears it on uninstall, which is exactly "first time after installing".
@@ -298,17 +299,6 @@ export default function Onboarding() {
       aria-modal="true"
       aria-label={tr('Welcome to Getmeds', 'Welcome sa Getmeds')}
     >
-
-      {step === 'slides' && (
-      <button
-        type="button"
-        onClick={toAuth}
-        className="absolute right-4 z-20 rounded-full px-3 py-1.5 text-[13px] font-medium text-white"
-        style={{ top: 'calc(10px + var(--gm-safe-top))', background: 'rgba(10,42,67,.35)', backdropFilter: 'blur(8px)' }}
-      >
-        {tr('Skip', 'Laktawan')}
-      </button>
-      )}
 
       {step === 'auth' ? (
         <AuthStep onDone={finish} onBack={() => { setIndex(0); setStep('slides'); }} />
